@@ -1,0 +1,10 @@
+{
+  "ignorePatterns": [
+    "dist/**",
+    "vendor/**",
+    "packages/collab-web/**",
+    "packages/collab-gateway/test/**",
+    "packages/importrange-formula/**",
+    "packages/render-preset/**"
+  ]
+}

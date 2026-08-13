@@ -1,0 +1,79 @@
+{
+  "name": "univer-cli",
+  "version": "0.5.0",
+  "private": true,
+  "description": "Agent-friendly authoring and verification for office content.",
+  "keywords": [
+    "automation",
+    "cli",
+    "local-first",
+    "univer"
+  ],
+  "bin": {
+    "univer": "./dist/bin.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "type": "module",
+  "scripts": {
+    "build": "pnpm --filter @univer/collab-web build && pnpm --filter @univer/render-runtime-client build && node scripts/build.mjs && node scripts/copy-render-runtime.mjs",
+    "dev": "tsx src/bin.ts",
+    "dev:link": "pnpm build && npm link",
+    "dev:unlink": "npm unlink --global univer-cli",
+    "pack:check": "npm pack --dry-run",
+    "start": "node dist/bin.js",
+    "test": "vitest run test/*.test.ts",
+    "typecheck": "tsc -p tsconfig.test.json --noEmit"
+  },
+  "dependencies": {
+    "@univer-cli/api-reference": "1.0.0-insiders.20260813-30ff2fe",
+    "@univer-cli/api-reference-command": "1.0.0-insiders.20260813-30ff2fe",
+    "@univer-cli/config": "1.0.0-insiders.20260813-30ff2fe",
+    "@univer-cli/config-command": "1.0.0-insiders.20260813-30ff2fe",
+    "@univer-cli/content-execution": "1.0.0-insiders.20260813-30ff2fe",
+    "@univer-cli/content-inspection": "1.0.0-insiders.20260813-30ff2fe",
+    "@univer-cli/content-inspection-command": "1.0.0-insiders.20260813-30ff2fe",
+    "@univer-cli/daemon": "1.0.0-insiders.20260813-30ff2fe",
+    "@univer-cli/daemon-command": "1.0.0-insiders.20260813-30ff2fe",
+    "@univer-cli/doc-typst-facade": "1.0.0-insiders.20260813-30ff2fe",
+    "@univer-cli/doc-typst-facade-command": "1.0.0-insiders.20260813-30ff2fe",
+    "@univer-cli/headless-univer": "1.0.0-insiders.20260813-30ff2fe",
+    "@univer-cli/resource-library": "1.0.0-insiders.20260813-30ff2fe",
+    "@univer-cli/resource-library-command": "1.0.0-insiders.20260813-30ff2fe",
+    "@univer-cli/svg-facade": "1.0.0-insiders.20260813-30ff2fe",
+    "@univer-cli/svg-facade-command": "1.0.0-insiders.20260813-30ff2fe",
+    "@univer-cli/unit-exchange": "1.0.0-insiders.20260813-30ff2fe",
+    "@univer-cli/unit-layout-lint": "1.0.0-insiders.20260813-30ff2fe",
+    "@univer-cli/unit-layout-lint-command": "1.0.0-insiders.20260813-30ff2fe",
+    "@univer-cli/unit-screenshot": "1.0.0-insiders.20260813-30ff2fe",
+    "@univer-cli/unit-screenshot-command": "1.0.0-insiders.20260813-30ff2fe",
+    "@univer-cli/univer-collaboration-runtime": "1.0.0-insiders.20260813-30ff2fe",
+    "@univer-cli/univer-collaboration-runtime-pool": "1.0.0-insiders.20260813-30ff2fe",
+    "@univer-cli/univer-render-runtime": "1.0.0-insiders.20260813-30ff2fe",
+    "@univer/collab-gateway": "workspace:*",
+    "@univer/collab-gateway-contract": "workspace:*",
+    "@univer/univerfile-sqlite": "workspace:*",
+    "@univerjs-pro/cli-assets": "0.1.0",
+    "@univerjs-pro/engine-formula-rust-binding": "1.0.0-insiders.20260811-001a0e5",
+    "@univerjs-pro/uexcli": "0.3.2",
+    "@univerjs/core": "1.0.0-insiders.20260813-30ff2fe",
+    "@univerjs/protocol": "1.0.0-insiders.20260813-30ff2fe",
+    "busboy": "^1.6.0",
+    "commander": "^15.0.0",
+    "libsql": "^0.5.29"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "@univerjs-pro/collaboration": "1.0.0-insiders.20260813-30ff2fe",
+    "esbuild": "^0.28.2",
+    "tsx": "4.19.4",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "packageManager": "pnpm@10.32.1"
+}

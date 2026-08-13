@@ -1,0 +1,33 @@
+{
+  "name": "univer-cli-workspace",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "pnpm --filter univer-cli build",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm --filter univer-cli pack:check",
+    "dev": "pnpm --filter univer-cli dev",
+    "dev:link": "pnpm --filter univer-cli dev:link",
+    "dev:unlink": "pnpm --filter univer-cli dev:unlink",
+    "format": "oxfmt --write .",
+    "format:check": "oxfmt --check .",
+    "lint": "oxlint . --deny-warnings",
+    "start": "pnpm --filter univer-cli start",
+    "release:pack": "node scripts/release/stage-insiders.mjs",
+    "release:verify": "node scripts/release/verify-tarball.mjs",
+    "test": "pnpm build && vitest run test/*.test.ts && pnpm --filter './apps/**' --filter './packages/**' -r --if-present test",
+    "typecheck": "pnpm --filter './apps/**' --filter './packages/**' -r --if-present typecheck"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "oxfmt": "^0.61.0",
+    "oxlint": "^1.76.0",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  },
+  "packageManager": "pnpm@10.32.1",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}
