@@ -121,4 +121,7 @@ pnpm release:pack
 pnpm release:verify
 ```
 
+需要让本地下游消费者（例如评测镜像）安装当前工作树时，使用 `pnpm release:pack-local`；
+它不要求工作树干净，并在 dirty 产物版本中显式标记 `dirty`。
+
 生成物写入 `.release/`，不进入 repository history。

@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   createInsidersVersion,
+  createLocalVersion,
   createReleaseManifest,
   INSIDERS_REGISTRY,
 } from "../scripts/release/release-package.mjs";
@@ -12,6 +13,11 @@ describe("insiders release package", () => {
     expect(createInsidersVersion("0.5.0", "20260813", "374ec99")).toBe(
       "0.5.0-insiders.20260813-374ec99",
     );
+  });
+
+  it("marks local consumer tarballs when the worktree is dirty", () => {
+    expect(createLocalVersion("0.5.0", "374ec99", false)).toBe("0.5.0-local.374ec99");
+    expect(createLocalVersion("0.5.0", "374ec99", true)).toBe("0.5.0-local.374ec99.dirty");
   });
 
   it("publishes only audited runtime dependencies without workspace protocols", () => {
@@ -62,6 +68,8 @@ describe("insiders release package", () => {
       "@univer-cli/univer-collaboration-runtime",
       "@univer-cli/univer-collaboration-runtime-pool",
       "@univerjs-pro/cli-assets",
+      "@univerjs-pro/engine-formula-rust-binding",
+      "@univerjs-pro/uexcli",
       "busboy",
       "libsql",
     ]);

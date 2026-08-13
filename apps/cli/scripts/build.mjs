@@ -105,7 +105,13 @@ await cp(join(projectRoot, "src", "skills"), join(projectRoot, "dist", "skills")
 });
 
 function externalDependencyAudit(metafiles) {
-  const required = new Set(["@univerjs-pro/cli-assets"]);
+  // These application adapters resolve their platform packages dynamically at runtime, so esbuild's
+  // metafile cannot see them. Keep them in the release audit rather than repairing downstream images.
+  const required = new Set([
+    "@univerjs-pro/cli-assets",
+    "@univerjs-pro/engine-formula-rust-binding",
+    "@univerjs-pro/uexcli",
+  ]);
   const conditional = new Set();
   for (const metafile of metafiles) {
     for (const output of Object.values(metafile.outputs)) {

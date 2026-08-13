@@ -12,6 +12,7 @@
     "format:check": "oxfmt --check .",
     "lint": "oxlint . --deny-warnings",
     "start": "pnpm --filter univer-cli start",
+    "release:pack-local": "node scripts/release/pack-local.mjs",
     "release:pack": "node scripts/release/stage-insiders.mjs",
     "release:verify": "node scripts/release/verify-tarball.mjs",
     "test": "pnpm build && vitest run test/*.test.ts && pnpm --filter './apps/**' --filter './packages/**' -r --if-present test",

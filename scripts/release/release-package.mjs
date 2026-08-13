@@ -15,6 +15,16 @@ export function createInsidersVersion(baseVersion, date, commit) {
   return `${baseVersion}-insiders.${date}-${commit}`;
 }
 
+export function createLocalVersion(baseVersion, commit, dirty) {
+  if (!/^\d+\.\d+\.\d+$/u.test(baseVersion)) {
+    throw new Error(`Expected a stable base version, received ${baseVersion}`);
+  }
+  if (!/^[0-9a-f]{7,40}$/u.test(commit)) {
+    throw new Error(`Expected a Git commit hash, received ${commit}`);
+  }
+  return `${baseVersion}-local.${commit}${dirty ? ".dirty" : ""}`;
+}
+
 export function createReleaseManifest(sourceManifest, version, externalPackageNames) {
   if (sourceManifest.name !== "univer-cli") {
     throw new Error(`Expected package name univer-cli, received ${String(sourceManifest.name)}`);
