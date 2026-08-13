@@ -3,6 +3,8 @@
 `univer-cli` 为 Agent 和本地工作流提供 office content 的创建、编辑、检查、交换、渲染与协作能力。npm
 package 名为 `univer-cli`，program 和 bin 均为 `univer`。
 
+application 基于 Univer CLI SDK 开发。标准 command 与通用能力由 CLI SDK package 提供，随 application 安装并在 `program.ts` 中显式装配；本地文件、进程、Gateway、数据升级等 application-specific 能力由本仓库实现。
+
 ## Commands
 
 ```text
@@ -178,9 +180,8 @@ argv 已识别 `--json` 后发生失败时，stderr 输出一个 JSON document �
 - Univer SDK 提供 Unit model、Facade、formula、render engine 和 browser plugin。
 - Collaboration SDK 提供 Snapshot、changeset、Worktree service、endpoint、transport、client 与 persistence
   contract。
-- Univer CLI SDK 提供 target-neutral capability、command preset、daemon、runtime pool、inspection、execution、
-  exchange、render、lint、authoring helper、config 与 API reference。
-- application 只拥有 path、Home、daemon/Gateway composition、数据升级、browser packaging、Local I/O 和诊断。
+- Univer CLI SDK 提供标准 command、通用 capability、Commander preset、daemon、runtime pool、inspection、execution、exchange、render、lint、authoring helper、config 与 API reference；这些 package 随 application 安装，并由 composition root 显式装配。
+- application-specific 能力由本仓库实现，包括 path、Home、daemon/Gateway composition、数据升级、browser packaging、Local I/O 和诊断。
 
 详细 ownership 和 dependency rule 见 [`../../docs/architecture.md`](../../docs/architecture.md)。
 

@@ -61,8 +61,16 @@ Command 在已识别 `--json` 模式失败时写入 stderr 的单个 JSON docume
 _Avoid_: stdout error、message parsing
 
 **SDK dependency boundary**:
-application 依赖 Univer SDK、Collaboration SDK 与 Univer CLI SDK 的正式 package 和 API。
+application 只通过 Univer SDK、Collaboration SDK 与 Univer CLI SDK 的正式 package 和 API 获得 Univer 能力。
 _Avoid_: adjacent checkout、copied SDK source
+
+**Standard CLI capability**:
+由 Univer CLI SDK package 提供、随 application 安装并由 composition root 显式装配的通用 command 或能力。
+_Avoid_: built-in application logic、automatic command discovery
+
+**Application-specific capability**:
+由本仓库为本地产品需求实现的文件、路径、进程、Gateway、数据升级或其他业务能力。
+_Avoid_: CLI SDK standard capability、copied SDK implementation
 
 **Runtime development license**:
 供本地 Univer runtime 使用、按 30 天周期更新的 application credential。

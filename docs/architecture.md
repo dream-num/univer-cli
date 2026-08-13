@@ -1,26 +1,26 @@
 # 架构
 
-Univer CLI 是一个单一 Lite target 的本地 application。npm package 名为 `univer-cli`，唯一 program/bin 为
-`univer`。`apps/cli` 负责 application composition，`packages/*` 提供不对用户单独发布的本地支撑能力。
+Univer CLI 是一个单一 Lite application。npm package 名为 `univer-cli`，唯一 program/bin 为 `univer`。application 基于 Univer CLI SDK 开发：标准 command 与通用能力由 CLI SDK package 提供并随 application 安装，`apps/cli` 负责显式装配；业务和本地环境相关的 application-specific 能力由本仓库实现。
 
 ## 分层
 
 ```text
 univer process
   -> Commander composition root
-       -> Univer CLI SDK command preset
-            -> Univer CLI SDK capability
-       -> local command adapter
+       -> CLI SDK standard feature
+            -> command preset
+            -> capability
+       -> application-specific feature
             -> application use case
                  -> Univer SDK
                  -> Collaboration SDK
                  -> local storage, process or browser adapter
 ```
 
-- CLI SDK capability 是 target-neutral 的业务能力，可脱离本 application 使用。
-- CLI SDK command preset 是原生 Commander `Command`，负责 argv、help 和 presentation。
-- local command adapter 把路径、环境变量、Application home 和本地输出映射到 capability input/output。
-- application use case 协调本地文件、daemon、Gateway、browser 与 SDK，不复制 SDK 内部规则。
+- CLI SDK standard feature 以 application dependency 的形式安装，并由 composition root 逐项注册。
+- CLI SDK command preset 是原生 Commander `Command`，负责 argv、help 和 presentation；对应 capability 提供通用业务规则。
+- application-specific feature 把路径、环境变量、Application home 和本地输出映射到 capability input/output，或实现本地产品独有的 use case。
+- application use case 协调本地文件、daemon、Gateway、browser 与 SDK，不复制 SDK 实现。
 - composition root 是唯一装配位置；仓库不建立额外 command registry framework 或 IoC container。
 
 ## SDK 边界
@@ -39,13 +39,11 @@ browser client 和 runtime integration。`packages/collab-gateway` 与
 
 ### Univer CLI SDK
 
-Univer CLI SDK 提供 target-neutral capability、Commander preset、daemon control、content execution、content
-inspection、unit exchange、layout lint、screenshot、SVG/Typst facade、resource library、configuration、API
-reference，以及 collaboration runtime/pool。`apps/cli` 负责组合这些 package，并为它们提供 Local adapter。
+Univer CLI SDK 提供标准 capability、Commander preset、daemon control、content execution、content inspection、unit exchange、layout lint、screenshot、SVG/Typst facade、resource library、configuration、API reference，以及 collaboration runtime/pool。这些 package 随 application 安装，`apps/cli` 在 composition root 中显式装配，并按需提供 application-specific adapter。
 
 ### Application-owned capability
 
-本仓库只拥有无法放入 target-neutral SDK 的本地语义：
+本仓库实现业务和本地环境相关的 application-specific 能力：
 
 - `.univer` path normalization、格式识别、安全升级和 SQLite connection lifecycle；
 - `${UNIVER_HOME:-~/.univer}`、config path、browser cache 与 daemon socket；
@@ -117,6 +115,8 @@ document 并以非零状态退出。
 
 ## Dependency rules
 
+- 标准 CLI command 和通用 capability 由 Univer CLI SDK 提供并在 composition root 显式装配；不得在 application 中重复实现。
+- application-specific 能力由本仓库实现，并通过 Univer SDK 与 Collaboration SDK 完成 runtime 和协作工作。
 - Univer 能力只能来自 Univer SDK、Collaboration SDK 或 Univer CLI SDK 的正式 package/API。
 - Workspace package 通过 `workspace:*` 依赖；application 不依赖相邻 checkout。
 - 不复制 SDK 源码或其他 Univer repository implementation。

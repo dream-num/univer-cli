@@ -4,6 +4,8 @@
 `apps/cli`，npm package 名是 `univer-cli`，program 和 bin 均为 `univer`。`packages/*` 是 application
 内部使用的 storage、Gateway、Viewer、rendering 与 formula package。
 
+`univer-cli` 基于 Univer CLI SDK 开发。标准 command 与通用能力由 CLI SDK package 提供，随 application 安装并在 composition root 中显式装配；本地文件、进程、Gateway、数据升级等 application-specific 能力由本仓库实现。底层 office runtime 与协作能力分别使用 Univer SDK 和 Collaboration SDK。
+
 ## 开发
 
 需要 Node.js 22.12 或更高版本，并使用仓库声明的 pnpm 版本。依赖版本和 registry 配置由

@@ -1,7 +1,6 @@
 # Repository Guidelines
 
-这是一个 TypeScript、pnpm、Node.js workspace。唯一公开 application 位于 `apps/cli`，使用 Univer CLI SDK
-组合本地 Univer 能力；`packages/*` 是其私有支撑 package。
+这是一个 TypeScript、pnpm、Node.js workspace。唯一公开 application 位于 `apps/cli`，基于 Univer CLI SDK 开发；`packages/*` 是其私有支撑 package。
 
 ## Product contract
 
@@ -15,17 +14,17 @@
 ## Architecture
 
 - `apps/cli/src/program.ts` 是 composition root，通过原生 Commander `addCommand()` 显式装配。
-- target-neutral 行为属于 Univer CLI SDK capability；本仓库只拥有 `.univer`、路径、进程和数据迁移等
-  application-specific adapter。
+- 标准 command、通用 capability、Commander preset 与 runtime orchestration 由 Univer CLI SDK package 提供，随 application 安装，并在 composition root 中显式装配。
+- `.univer`、路径、进程、Gateway、数据升级和其他 application-specific 能力由本仓库实现。
 - command handler 保持轻薄，业务规则进入 capability 或 application use case。
-- Univer runtime 和数据模型只通过 Univer SDK 使用；协作数据通道与 Worktree 语义只通过 Collaboration SDK
-  使用；CLI capability、Commander preset 和 runtime orchestration 只通过 Univer CLI SDK 使用。
+- Univer runtime 和数据模型只通过 Univer SDK 使用；协作数据通道与 Worktree 语义只通过 Collaboration SDK 使用。
 - 不依赖相邻 checkout，不复制 SDK 源码，不从其他 Univer repository 导入实现 snapshot。
 - 新增 Univer dependency 前必须确认它属于上述三个 SDK 边界，并在 architecture 文档中保持关系准确。
 
 ## Development
 
 - strict ESM、named exports、两空格缩进，导出函数显式返回类型。
+- Git commit message 必须使用英文。
 - 使用 Vitest、oxlint、oxfmt；CLI 测试放在 `apps/cli/test/*.test.ts`，package 测试放在各自的 `test/`。
 - 修改 command、manifest 或数据合同必须更新测试与 README/docs。
 - Runtime development license 是 30 天轮换的运行凭据；不得将其描述为 repository software license。
