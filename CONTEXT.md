@@ -73,5 +73,5 @@ _Avoid_: built-in application logic、automatic command discovery
 _Avoid_: CLI SDK standard capability、copied SDK implementation
 
 **Runtime development license**:
-供本地 Univer runtime 使用、按 30 天周期更新的 application credential。
+供本地 Univer runtime 使用、按 90 天周期更新的 application credential。
 _Avoid_: repository software license、package license

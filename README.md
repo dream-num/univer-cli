@@ -68,7 +68,7 @@ univer <command> --help
 
 `.univer` 是包含内容 Unit、revision、Worktree 和本地资源的 SQLite container。新文件使用 v2 格式；受支持的 v0 和 v1 输入会通过只读识别、完整备份、独立 candidate 验证和原子替换升级，失败时不会覆盖源文件。完整合同见 [`docs/data-compatibility.md`](docs/data-compatibility.md)。
 
-Univer runtime development license 是 application 运行凭据，按 30 天周期更新，与 repository software license 分离。可以通过 `UNIVER_LICENSE` 或 `univerRuntime.license` 配置覆盖内置凭据。
+Univer runtime development license 是 application 运行凭据，按 90 天周期更新，与 repository software license 分离。可以通过 `UNIVER_LICENSE` 或 `univerRuntime.license` 配置覆盖内置凭据。
 
 ## 架构
 

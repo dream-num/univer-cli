@@ -139,9 +139,9 @@ resource manifest，并将下载缓存写入 `${UNIVER_HOME}/cache/resources`。
 
 - Application home 是 `${UNIVER_HOME:-~/.univer}`，配置文件为 `${UNIVER_HOME}/config.json`。
 - `UNIVER_COLLAB_GATEWAY_PORT` 覆盖 Gateway port，默认值为 `9123`。
-- `UNIVER_LICENSE` 覆盖 `univerRuntime.license`；两者都未设置时使用 application 内置的 30 天 Runtime
+- `UNIVER_LICENSE` 覆盖 `univerRuntime.license`；两者都未设置时使用 application 内置的 90 天 Runtime
   development license。
-- Runtime development license 按 30 天周期更新，它不是 repository software license。
+- Runtime development license 按 90 天周期更新，它不是 repository software license。
 - browser cache 位于 `${UNIVER_HOME}/browsers`；`UNIVER_RENDER_BROWSER` 可指定 Chrome/Chromium，
   `UNIVER_RENDER_BROWSER_CACHE` 可覆盖 cache path。
 - `daemon status` 是只读检查；application 只管理身份验证属于自身的 daemon process。

@@ -122,7 +122,7 @@ document 并以非零状态退出。
 - 不复制 SDK 源码或其他 Univer repository implementation。
 - SDK package 使用一致且精确的版本集合，由 workspace manifest、`.npmrc` 和 lockfile 管理。
 - application build 记录真正留在 bundle 外部的 runtime dependency；release manifest 只包含该审计结果。
-- Runtime development license 是 30 天轮换的运行凭据，与 repository software license 分离。
+- Runtime development license 是 90 天轮换的运行凭据，与 repository software license 分离。
 
 ## Quality gate
 
