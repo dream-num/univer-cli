@@ -1,7 +1,14 @@
 import type { IBoardData } from "@univerjs-pro/boards";
 import { getBoardsEmptySnapshot } from "@univerjs-pro/boards";
 import type { IBaseSnapshot, IDocumentData, IWorkbookData } from "@univerjs/core";
-import { getBasesEmptySnapshot, LocaleType } from "@univerjs/core";
+import {
+  DocumentFlavor,
+  getBasesEmptySnapshot,
+  getDocsEmptySnapshot,
+  getSheetsEmptySnapshot,
+  LocaleType,
+  mergeWorksheetSnapshotWithDefault,
+} from "@univerjs/core";
 import type { ISlideData } from "@univerjs-pro/slides";
 import { getEmptySnapshot } from "@univerjs-pro/slides";
 import {
@@ -28,37 +35,23 @@ export interface UnitTypeAdapter {
 }
 
 function defaultWorkbookData(unitId: string, name: string): IWorkbookData {
+  const workbook = getSheetsEmptySnapshot(unitId, LocaleType.EN_US, name);
   return {
-    id: unitId,
-    name,
-    appVersion: "0.25.0",
-    locale: "enUS",
-    styles: {},
+    ...workbook,
     sheetOrder: [DEFAULT_SHEET_ID],
     sheets: {
-      [DEFAULT_SHEET_ID]: {
+      [DEFAULT_SHEET_ID]: mergeWorksheetSnapshotWithDefault({
         id: DEFAULT_SHEET_ID,
         name: "Sheet1",
         rowCount: DEFAULT_ROW_COUNT,
         columnCount: DEFAULT_COLUMN_COUNT,
-        cellData: {},
-      },
+      }),
     },
-    resources: [],
-  } as IWorkbookData;
+  };
 }
 
-function defaultDocumentData(unitId: string): IDocumentData {
-  return {
-    id: unitId,
-    body: {
-      dataStream: "\r\n",
-      textRuns: [],
-      paragraphs: [{ startIndex: 0, paragraphId: "p-0" }],
-      sectionBreaks: [{ startIndex: 1, sectionId: "section-0" }],
-    },
-    documentStyle: {},
-  } as IDocumentData;
+function defaultDocumentData(unitId: string, name: string): IDocumentData {
+  return getDocsEmptySnapshot(unitId, LocaleType.EN_US, name, DocumentFlavor.MODERN);
 }
 
 const UNIT_ADAPTER_ENTRIES: ReadonlyArray<readonly [UnitType, UnitTypeAdapter]> = [
@@ -74,7 +67,7 @@ const UNIT_ADAPTER_ENTRIES: ReadonlyArray<readonly [UnitType, UnitTypeAdapter]> 
     UNIT_TYPE_DOC,
     {
       type: UNIT_TYPE_DOC,
-      defaultData: (unitId) => defaultDocumentData(unitId),
+      defaultData: defaultDocumentData,
       sheetOrder: () => undefined,
     },
   ],
