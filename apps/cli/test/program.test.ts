@@ -12,7 +12,7 @@ describe("univer local CLI composition", () => {
   });
 
   it("pins every CLI SDK package to one exact internal build", () => {
-    const baseline = "1.0.0-insiders.20260813-30ff2fe";
+    const baseline = "1.0.0-insiders.20260813-7c9aa50";
     const versions = Object.entries(packageMetadata.dependencies)
       .filter(([name]) => name.startsWith("@univer-cli/"))
       .map(([, version]) => version);
