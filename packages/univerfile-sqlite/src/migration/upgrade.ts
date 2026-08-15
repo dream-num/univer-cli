@@ -6,6 +6,7 @@ import { UniverfileSQLiteAssetStore } from "../database-adapters/asset-store.js"
 import { UniverfileSQLiteError } from "../errors.js";
 import { detectUniverfileSQLiteFormat } from "../schema/detect.js";
 import { createUniverfileBackup, sha256 } from "./backup.js";
+import { migrateLegacyBaseContentToV2 } from "./base-content.js";
 import { withUniverfileUpgradeLock } from "./lock.js";
 import { migrateV0CandidateToV2 } from "./readers/v0.js";
 import { migrateV1CandidateToV2 } from "./readers/v1.js";
@@ -83,6 +84,7 @@ function migrateV0(candidatePath: string): number {
     const result = migrateV0CandidateToV2(connection);
     if (result.status !== "migrated") throw new Error("v0 reader did not migrate the candidate");
     new UniverfileSQLiteAssetStore({ connection });
+    migrateLegacyBaseContentToV2(connection.database);
     return 0;
   } finally {
     connection.dispose();
@@ -94,6 +96,7 @@ function migrateV1(candidatePath: string): number {
   try {
     const normalizedMergingWorktrees = migrateV1CandidateToV2(connection);
     new UniverfileSQLiteAssetStore({ connection });
+    migrateLegacyBaseContentToV2(connection.database);
     return normalizedMergingWorktrees;
   } finally {
     connection.dispose();
