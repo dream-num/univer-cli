@@ -138,6 +138,9 @@ importers:
       '@univerjs-pro/collaboration':
         specifier: 1.0.0-insiders.20260813-7c9aa50
         version: 1.0.0-insiders.20260813-7c9aa50(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/embed':
+        specifier: 1.0.0-insiders.20260813-7c9aa50
+        version: 1.0.0-insiders.20260813-7c9aa50(react@19.2.8)(rxjs@7.8.2)
       esbuild:
         specifier: ^0.28.2
         version: 0.28.2

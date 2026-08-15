@@ -70,6 +70,7 @@ describe("insiders release package", () => {
       "@univerjs-pro/cli-assets",
       "@univerjs-pro/engine-formula-rust-binding",
       "@univerjs-pro/uexcli",
+      "@univerjs/core",
       "busboy",
       "libsql",
     ]);
