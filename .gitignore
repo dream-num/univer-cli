@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .release/
+/.worktrees/
 *.tgz
 !vendor/*.tgz
 .DS_Store
