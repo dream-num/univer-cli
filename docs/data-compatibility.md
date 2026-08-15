@@ -12,6 +12,8 @@
 - backup 与升级前文件 byte-for-byte 一致，向调用方报告路径与 hash，且不自动删除。
 - candidate 使用当前 SQLite schema 写入，并通过 storage 与 runtime 的公开读取能力验证。
 - replace 前的任何失败都不得改变源路径；失败的 candidate 会被清理，backup 保留。
+- v0/v1 candidate 会把 Base 内容 schema v1 同步升级为当前 schema v2，包括 checkpoint、sheet block、
+  Worktree seed/merge artifact，以及依赖旧字段位置的 Base changeset；SQLite v2 schema 不因此改变。
 - v2 文件直接打开且不产生升级副作用。
 - 每个受支持输入格式都有固定 fixture、package test 和 built-bin end-to-end test。
 

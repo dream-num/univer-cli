@@ -2,7 +2,7 @@ import { mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import type { DatabaseContext } from "@univerjs-pro/collaboration-service";
-import { UniverType, type ISnapshot } from "@univerjs/protocol";
+import { UniverType, type IChangeset, type ISnapshot } from "@univerjs/protocol";
 import Database from "libsql";
 import { afterEach, describe, expect, it } from "vitest";
 import { sha256 } from "../src/migration/backup.js";
@@ -33,9 +33,12 @@ describe("Gateway v1 .univer upgrade", () => {
         preserved: { mergingWorktrees: 1 },
         warnings: [],
       });
-      expect(univerfile.databaseAdapter.listUnits()).toEqual([
-        expect.objectContaining({ unitId: "unit-1", name: "Budget", headRev: 1 }),
-      ]);
+      expect(univerfile.databaseAdapter.listUnits()).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ unitId: "unit-1", name: "Budget", headRev: 1 }),
+          expect.objectContaining({ unitId: "base-1", name: "Legacy Base", headRev: 2 }),
+        ]),
+      );
       expect(univerfile.worktreeDatabaseAdapter.listWorktrees()).toEqual([
         expect.objectContaining({ worktreeId: "wt-1", name: "Task", status: "merging" }),
       ]);
@@ -44,9 +47,81 @@ describe("Gateway v1 .univer upgrade", () => {
       ).resolves.toEqual(
         expect.objectContaining({
           worktree: expect.objectContaining({ status: "merging" }),
-          units: [expect.objectContaining({ readyDraftHeadRevision: 1 })],
+          units: expect.arrayContaining([
+            expect.objectContaining({ unitID: "unit-1", readyDraftHeadRevision: 1 }),
+            expect.objectContaining({ unitID: "base-wt", readyDraftHeadRevision: 2 }),
+          ]),
         }),
       );
+      const baseSeed = await univerfile.worktreeDatabaseAdapter.getUnitSeed(
+        context(),
+        "wt-1",
+        "base-wt",
+      );
+      expect(readJsonBytes(baseSeed?.snapshot.workbook?.originalMeta)).toMatchObject({
+        schemaVersion: 2,
+      });
+      const baseDraft = await univerfile.worktreeDatabaseAdapter.getDraftChangesets(
+        context(),
+        "wt-1",
+        "base-wt",
+        { from: 1, to: 0 },
+      );
+      expect(readMutationData(baseDraft.changesets[0], 2).op[2]).toEqual([
+        "cellData",
+        "0",
+        "1",
+        { i: { v: "new value", t: 1 } },
+      ]);
+
+      const snapshot = await univerfile.databaseAdapter.getSnapshot(context(), "base-1");
+      const workbook = snapshot?.workbook;
+      expect(readJsonBytes(workbook?.originalMeta)).toMatchObject({ schemaVersion: 2 });
+      expect(readJsonBytes(workbook?.sheets["table-a"]?.originalMeta)).toMatchObject({
+        fieldOrder: ["__record_id", "primary"],
+        colIndex: { __record_id: 0, primary: 1 },
+        records: {
+          "record-a": {
+            values: { __record_id: "record-a" },
+          },
+        },
+        cellData: {
+          "0": {
+            "0": { v: "record-a", t: 1 },
+            "1": { v: "old value", t: 1 },
+          },
+        },
+      });
+      const baseBlock = await univerfile.databaseAdapter.getSheetBlock(
+        context(),
+        "base-1",
+        "base-block",
+      );
+      expect(readJsonBytes(baseBlock?.data)).toEqual({
+        "0": {
+          "0": { v: "record-a", t: 1 },
+          "1": { v: "blocked value", t: 1 },
+        },
+      });
+      const baseChangeset = univerfile.databaseAdapter.getChangeset("base-1", 2);
+      const createTable = readMutationData(baseChangeset, 0);
+      expect(createTable.op[1][2].i).toMatchObject({
+        fieldOrder: ["__record_id", "primary"],
+        colIndex: { __record_id: 0, primary: 1 },
+      });
+      const createField = readMutationData(baseChangeset, 1);
+      expect(createField.op).toEqual([
+        "tables",
+        "table-b",
+        ["fieldOrder", 2, { i: "field-2" }],
+        ["fields", "field-2", { i: { id: "field-2", name: "Owner", type: "text", config: {} } }],
+        ["views", "view-table-b", "fieldOrder", 2, { i: "field-2" }],
+      ]);
+      const updateCell = readMutationData(baseChangeset, 2);
+      expect(updateCell.op[2]).toEqual(["cellData", "0", "1", { i: { v: "new value", t: 1 } }]);
+      expect(readMutationData(baseChangeset, 3)).toMatchObject({
+        reference: { range: { startColumn: 0, endColumn: 2 } },
+      });
     } finally {
       await univerfile.dispose();
     }
@@ -94,6 +169,28 @@ describe("Gateway v1 .univer upgrade", () => {
     );
   });
 
+  it("does not treat an already-v2 file as a Base repair target", async () => {
+    const filename = databasePath();
+    const created = createUniverfileSQLite(filename);
+    await created.databaseAdapter.createUnit(context(), {
+      record: { unitID: "base-v2", type: UniverType.UNIVER_BASE, headRevision: 1 },
+      snapshot: legacyBaseSnapshot("base-v2"),
+    });
+    await created.dispose();
+
+    const opened = openUniverfileSQLite(filename);
+    try {
+      expect(opened.upgrade).toEqual({ status: "unchanged", format: "v2" });
+      const snapshot = await opened.databaseAdapter.getSnapshot(context(), "base-v2");
+      expect(readJsonBytes(snapshot?.workbook?.originalMeta)).toMatchObject({ schemaVersion: 1 });
+    } finally {
+      await opened.dispose();
+    }
+    expect(readdirSync(dirname(filename)).filter((entry) => entry.includes(".backup-"))).toEqual(
+      [],
+    );
+  });
+
   it("upgrades an early Gateway v1 file that predates the Asset component", async () => {
     const filename = databasePath();
     await createV1Fixture(filename);
@@ -113,7 +210,7 @@ describe("Gateway v1 .univer upgrade", () => {
         targetFormat: "v2",
         verification: { assets: 0 },
       });
-      expect(opened.databaseAdapter.listUnits()).toHaveLength(1);
+      expect(opened.databaseAdapter.listUnits()).toHaveLength(2);
       expect(opened.assetStore.countAssets()).toBe(0);
     } finally {
       await opened.dispose();
@@ -136,6 +233,25 @@ async function createV1Fixture(filename: string): Promise<void> {
         snapshot: { unitID: "unit-1", type: UniverType.UNIVER_SHEET, rev: 1 } as ISnapshot,
       },
     );
+    await univerfile.databaseAdapter.createUnit(
+      context({ "@univer/univerfile-sqlite/unit-metadata": { name: "Legacy Base" } }),
+      {
+        record: { unitID: "base-1", type: UniverType.UNIVER_BASE, headRevision: 1 },
+        snapshot: legacyBaseSnapshot("base-1"),
+        sheetBlocks: [
+          {
+            id: "base-block",
+            startRow: 0,
+            endRow: 0,
+            data: jsonBytes({ "0": { "0": { v: "blocked value", t: 1 } } }),
+          },
+        ],
+      },
+    );
+    await univerfile.databaseAdapter.commitChangeset(context(), {
+      expectedHeadRevision: 1,
+      changeset: legacyBaseChangeset("base-1"),
+    });
     await univerfile.worktreeDatabaseAdapter.createWorktreeForGateway(
       context({
         "@univer/univerfile-sqlite/worktree-metadata": {
@@ -157,6 +273,21 @@ async function createV1Fixture(filename: string): Promise<void> {
         ],
       },
     );
+    await univerfile.worktreeDatabaseAdapter.createUnit(context(), {
+      unit: {
+        worktreeID: "wt-1",
+        unitID: "base-wt",
+        type: UniverType.UNIVER_BASE,
+        source: "worktree",
+        draftHeadRevision: 1,
+      },
+      seed: { snapshot: legacyBaseSnapshot("base-wt") },
+    });
+    await univerfile.worktreeDatabaseAdapter.commitDraftChangeset(context(), {
+      worktreeID: "wt-1",
+      expectedHeadRevision: 1,
+      changeset: legacyBaseChangeset("base-wt"),
+    });
   } finally {
     await univerfile.dispose();
   }
@@ -192,6 +323,149 @@ async function createV1Fixture(filename: string): Promise<void> {
   } finally {
     database.close();
   }
+}
+
+function legacyBaseSnapshot(unitId: string): ISnapshot {
+  const table = legacyBaseTable("table-a", "record-a", "old value");
+  return {
+    unitID: unitId,
+    type: UniverType.UNIVER_BASE,
+    rev: 1,
+    workbook: {
+      unitID: unitId,
+      rev: 1,
+      creator: "",
+      name: "Legacy Base",
+      sheetOrder: ["table-a"],
+      sheets: {
+        "table-a": {
+          id: "table-a",
+          type: 0,
+          name: "Table A",
+          rowCount: 1,
+          columnCount: 1,
+          originalMeta: jsonBytes(table),
+        },
+      },
+      blockMeta: { "table-a": { sheetID: "table-a", blocks: ["base-block"] } },
+      resources: [],
+      originalMeta: jsonBytes({
+        locale: "zhCN",
+        appVersion: "legacy",
+        schemaVersion: 1,
+        createdAt: 1,
+        updatedAt: 1,
+        resources: [],
+      }),
+    },
+  } as ISnapshot;
+}
+
+function legacyBaseChangeset(unitId: string): IChangeset {
+  const table = legacyBaseTable("table-b", "record-b", undefined);
+  return {
+    unitID: unitId,
+    type: UniverType.UNIVER_BASE,
+    baseRev: 1,
+    revision: 2,
+    sid: "legacy-base",
+    reqId: 1,
+    mutations: [
+      baseMutation(unitId, [
+        ["tableOrder", 1, { i: "table-b" }],
+        ["tables", "table-b", { i: table }],
+      ]),
+      baseMutation(unitId, [
+        "tables",
+        "table-b",
+        ["fieldOrder", 1, { i: "field-2" }],
+        ["fields", "field-2", { i: { id: "field-2", name: "Owner", type: "text", config: {} } }],
+        ["views", "view-table-b", "fieldOrder", 1, { i: "field-2" }],
+      ]),
+      baseMutation(unitId, [
+        "tables",
+        "table-b",
+        ["cellData", "0", "0", { i: { v: "new value", t: 1 } }],
+        ["records", "record-b", "values", "primary", { i: "new value" }],
+      ]),
+      {
+        id: "formula.mutation.set-super-table",
+        data: JSON.stringify({
+          unitId,
+          tableName: "Table B",
+          reference: {
+            sheetId: "table-b",
+            titleMap: {},
+            range: { startRow: 0, endRow: 0, startColumn: 0, endColumn: 1 },
+            showHeader: false,
+          },
+        }),
+      },
+    ],
+  };
+}
+
+function baseMutation(unitId: string, op: unknown): IChangeset["mutations"][number] {
+  return {
+    id: "base.mutation.apply-base-json1",
+    data: JSON.stringify({ unitId, op }),
+  };
+}
+
+function legacyBaseTable(tableId: string, recordId: string, value: string | undefined): object {
+  return {
+    id: tableId,
+    name: tableId === "table-a" ? "Table A" : "Table B",
+    primaryFieldId: "primary",
+    fieldOrder: ["primary"],
+    fields: {
+      primary: { id: "primary", name: "Name", type: "text", config: {} },
+    },
+    records: {
+      [recordId]: {
+        id: recordId,
+        values: value === undefined ? {} : { primary: value },
+        orderKey: "0001",
+        createdAt: 1,
+        updatedAt: 1,
+      },
+    },
+    recordOrder: [recordId],
+    rowIndex: { [recordId]: 0 },
+    rowId: { "0": recordId },
+    colIndex: { primary: 0 },
+    colId: { "0": "primary" },
+    cellData: { "0": value === undefined ? {} : { "0": { v: value, t: 1 } } },
+    resources: { attachmentSets: {}, attachments: {} },
+    views: {
+      [`view-${tableId}`]: {
+        id: `view-${tableId}`,
+        tableId,
+        name: "Grid",
+        type: "grid",
+        fieldOrder: ["primary"],
+        fieldSettings: {},
+        config: { frozenFieldCount: 1 },
+      },
+    },
+    viewOrder: [`view-${tableId}`],
+  };
+}
+
+function jsonBytes(value: unknown): Uint8Array {
+  return new TextEncoder().encode(JSON.stringify(value));
+}
+
+function readJsonBytes(value: unknown): Record<string, any> {
+  expect(value).toBeInstanceOf(Uint8Array);
+  return JSON.parse(new TextDecoder().decode(value as Uint8Array)) as Record<string, any>;
+}
+
+function readMutationData(changeset: IChangeset | undefined, index: number): Record<string, any> {
+  expect(changeset).toBeDefined();
+  const mutation = changeset?.mutations?.[index];
+  expect(mutation?.data).toBeTypeOf("string");
+  return JSON.parse(mutation!.data) as Record<string, any>;
 }
 
 function databasePath(): string {

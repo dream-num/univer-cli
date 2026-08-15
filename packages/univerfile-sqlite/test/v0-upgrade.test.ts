@@ -41,14 +41,22 @@ describe("legacy v0 .univer upgrade", () => {
         backupSha256: originalHash,
         omitted: ["logical-commit-history"],
       });
-      expect(univerfile.databaseAdapter.listUnits()).toEqual([
-        expect.objectContaining({
-          unitId: "trunk-sheet",
-          type: UniverType.UNIVER_SHEET,
-          name: "Budget",
-          headRev: 2,
-        }),
-      ]);
+      expect(univerfile.databaseAdapter.listUnits()).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            unitId: "trunk-sheet",
+            type: UniverType.UNIVER_SHEET,
+            name: "Budget",
+            headRev: 2,
+          }),
+          expect.objectContaining({
+            unitId: "legacy-base",
+            type: UniverType.UNIVER_BASE,
+            name: "Legacy Base",
+            headRev: 2,
+          }),
+        ]),
+      );
       const snapshot = await univerfile.databaseAdapter.getSnapshot(context(), "trunk-sheet");
       expect(snapshot).toMatchObject({ unitID: "trunk-sheet", rev: 1 });
       expect((snapshot as ISnapshot & { migrationProbe: Uint8Array }).migrationProbe).toEqual(
@@ -69,6 +77,27 @@ describe("legacy v0 .univer upgrade", () => {
           sid: "legacy-migration:core:trunk-sheet:2",
           reqId: 1,
         }),
+      ]);
+      const baseSnapshot = await univerfile.databaseAdapter.getSnapshot(context(), "legacy-base");
+      expect(readJsonBytes(baseSnapshot?.workbook?.originalMeta)).toMatchObject({
+        schemaVersion: 2,
+      });
+      expect(
+        readJsonBytes(baseSnapshot?.workbook?.sheets["base-table"]?.originalMeta),
+      ).toMatchObject({
+        fieldOrder: ["__record_id", "primary"],
+        colIndex: { __record_id: 0, primary: 1 },
+      });
+      const migratedBaseChangeset = univerfile.databaseAdapter.getChangeset("legacy-base", 2);
+      const migratedBaseParams = JSON.parse(migratedBaseChangeset!.mutations![0]!.data) as Record<
+        string,
+        any
+      >;
+      expect(migratedBaseParams.op[2]).toEqual([
+        "cellData",
+        "0",
+        "1",
+        { i: { v: "updated", t: 1 } },
       ]);
       expect(
         await univerfile.databaseAdapter.getSheetBlock(context(), "trunk-sheet", "block-1"),
@@ -207,14 +236,14 @@ describe("legacy v0 .univer upgrade", () => {
             readonly count: number;
           }
         ).count,
-      ).toBe(2);
+      ).toBe(3);
       expect(
         (
           databaseAfter.prepare("SELECT COUNT(*) AS count FROM snapshots").get() as {
             readonly count: number;
           }
         ).count,
-      ).toBe(1);
+      ).toBe(2);
       expect(
         databaseAfter
           .prepare(
@@ -297,6 +326,7 @@ async function createLegacyFixture(filename: string): Promise<void> {
     type: UniverType.UNIVER_SHEET,
     rev: 1,
   } as ISnapshot;
+  const legacyBase = legacyV0BaseSnapshot();
 
   const database = new Database(filename);
   database.exec(LEGACY_SCHEMA);
@@ -333,9 +363,26 @@ async function createLegacyFixture(filename: string): Promise<void> {
       "2026-07-01 00:02:00",
       "2026-07-01 00:02:00",
     );
+  database
+    .prepare(
+      `INSERT INTO units
+         (unit_id, type, name, baseline_rev, head_rev, created_at, updated_at, deleted_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .run(
+      "legacy-base",
+      UniverType.UNIVER_BASE,
+      "Legacy Base",
+      1,
+      2,
+      "2026-07-01 00:00:02",
+      "2026-07-01 00:02:00",
+      null,
+    );
 
   insertLegacySnapshot(database, trunkSnapshot);
   insertLegacySnapshot(database, deletedSnapshot);
+  insertLegacySnapshot(database, legacyBase);
   database
     .prepare(
       `INSERT INTO changesets
@@ -348,6 +395,32 @@ async function createLegacyFixture(filename: string): Promise<void> {
       UniverType.UNIVER_SHEET,
       JSON.stringify([mutation("trunk-sheet", 2)]),
       Date.UTC(2026, 6, 1, 0, 1),
+    );
+  database
+    .prepare(
+      `INSERT INTO changesets
+         (unit_id, revision, type, base_rev, user_id, member_id, sid, req_id, mutations,
+          mutation_size, additional_fields, create_time)
+       VALUES (?, 2, ?, 1, '', '', '', 0, ?, NULL, NULL, ?)`,
+    )
+    .run(
+      "legacy-base",
+      UniverType.UNIVER_BASE,
+      JSON.stringify([
+        {
+          id: "base.mutation.apply-base-json1",
+          data: JSON.stringify({
+            unitId: "legacy-base",
+            op: [
+              "tables",
+              "base-table",
+              ["cellData", "0", "0", { i: { v: "updated", t: 1 } }],
+              ["records", "base-record", "values", "primary", { i: "updated" }],
+            ],
+          }),
+        },
+      ]),
+      Date.UTC(2026, 6, 1, 0, 2),
     );
   database
     .prepare(
@@ -443,6 +516,85 @@ async function createLegacyFixture(filename: string): Promise<void> {
     mutation("created-sheet", 2),
   );
   database.close();
+}
+
+function legacyV0BaseSnapshot(): ISnapshot {
+  const table = {
+    id: "base-table",
+    name: "Base Table",
+    primaryFieldId: "primary",
+    fieldOrder: ["primary"],
+    fields: { primary: { id: "primary", name: "Name", type: "text", config: {} } },
+    records: {
+      "base-record": {
+        id: "base-record",
+        values: {},
+        orderKey: "0001",
+        createdAt: 1,
+        updatedAt: 1,
+      },
+    },
+    recordOrder: ["base-record"],
+    rowIndex: { "base-record": 0 },
+    rowId: { "0": "base-record" },
+    colIndex: { primary: 0 },
+    colId: { "0": "primary" },
+    cellData: { "0": {} },
+    resources: { attachmentSets: {}, attachments: {} },
+    views: {
+      view: {
+        id: "view",
+        tableId: "base-table",
+        name: "Grid",
+        type: "grid",
+        fieldOrder: ["primary"],
+        fieldSettings: {},
+        config: { frozenFieldCount: 1 },
+      },
+    },
+    viewOrder: ["view"],
+  };
+  return {
+    unitID: "legacy-base",
+    type: UniverType.UNIVER_BASE,
+    rev: 1,
+    workbook: {
+      unitID: "legacy-base",
+      rev: 1,
+      creator: "",
+      name: "Legacy Base",
+      sheetOrder: ["base-table"],
+      sheets: {
+        "base-table": {
+          id: "base-table",
+          type: 0,
+          name: "Base Table",
+          rowCount: 1,
+          columnCount: 1,
+          originalMeta: jsonBytes(table),
+        },
+      },
+      blockMeta: { "base-table": { sheetID: "base-table", blocks: [] } },
+      resources: [],
+      originalMeta: jsonBytes({
+        locale: "zhCN",
+        appVersion: "legacy",
+        schemaVersion: 1,
+        createdAt: 1,
+        updatedAt: 1,
+        resources: [],
+      }),
+    },
+  } as ISnapshot;
+}
+
+function jsonBytes(value: unknown): Uint8Array {
+  return new TextEncoder().encode(JSON.stringify(value));
+}
+
+function readJsonBytes(value: unknown): Record<string, any> {
+  expect(value).toBeInstanceOf(Uint8Array);
+  return JSON.parse(new TextDecoder().decode(value as Uint8Array)) as Record<string, any>;
 }
 
 function insertLegacySnapshot(database: Database.Database, snapshot: ISnapshot): void {
