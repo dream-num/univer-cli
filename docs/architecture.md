@@ -79,6 +79,11 @@ univer screenshot / lint / compile-svg
 daemon 只管理本地服务和 runtime lifecycle。它为 render operation 物化 UnitData、解析同文件依赖并投影本地
 图片资产；PNG 输出、layout analysis 和文本测量由 CLI SDK capability 与 browser runtime 完成。
 
+headless collaboration runtime 只拥有一个可写 Host Unit。Embed 遇到 `self` ResourceRef 时，application-owned
+Local provider 通过当前 `.univer` 与 Worktree 已限定的 Snapshot endpoint 按需物化 child Unit，并透传 Embed
+child create options；child 只作为同一 Univer instance 中的只读依赖，不进入 Host 的 changeset 状态机，也不触发
+Worktree 全量 Unit 预加载。
+
 ## Source ownership
 
 `apps/cli/src/program.ts` 是 composition root。源码按用户能力划分为 `univerfile`、`exchange`、`optimize`、
