@@ -1,38 +1,14 @@
 import Database from "libsql";
 import { UniverfileSQLiteError } from "../errors.js";
+import {
+  ASSET_V1_TABLES,
+  CORE_V1_TABLES,
+  V0_TABLES,
+  WORKTREE_COMMON_TABLES,
+  WORKTREE_V1_ONLY_TABLES,
+} from "./objects.js";
 
 export type UniverfileSQLiteFormat = "v0" | "v1" | "v2";
-
-const V0_TABLES = [
-  "units",
-  "changesets",
-  "snapshots",
-  "sheet_blocks",
-  "worktrees",
-  "worktree_commits",
-  "worktree_changesets",
-  "worktree_snapshots",
-] as const;
-
-const CORE_TABLES = [
-  "collaboration_units",
-  "collaboration_unit_tombstones",
-  "collaboration_snapshots",
-  "collaboration_changesets",
-  "collaboration_sheet_blocks",
-  "collaboration_resources",
-] as const;
-
-const WORKTREE_COMMON_TABLES = [
-  "collaboration_worktrees",
-  "collaboration_worktree_units",
-  "collaboration_worktree_changesets",
-  "collaboration_worktree_unit_seeds",
-  "collaboration_worktree_unit_merge_artifacts",
-  "collaboration_worktree_deleted_units",
-] as const;
-
-const ASSET_TABLES = ["collaboration_asset_blobs", "collaboration_assets"] as const;
 
 interface NameRow {
   readonly name: string;
@@ -58,17 +34,13 @@ export function detectUniverfileSQLiteFormat(filename: string): UniverfileSQLite
           .all() as unknown as NameRow[]
       ).map(({ name }) => name),
     );
-    const presentV0 = V0_TABLES.filter((table) => tables.has(table));
-    const collaborationTables = [...tables].filter((table) => table.startsWith("collaboration_"));
-
-    if (presentV0.length > 0) {
-      if (presentV0.length !== V0_TABLES.length || collaborationTables.length > 0) {
-        throw unsupported("legacy v0 schema is partial or mixed with component tables");
-      }
-      return "v0";
-    }
-
     if (!tables.has("collaboration_schema_versions")) {
+      const presentV0 = V0_TABLES.filter((table) => tables.has(table));
+      if (presentV0.length === V0_TABLES.length) return "v0";
+      if (presentV0.length > 0) {
+        const missing = V0_TABLES.filter((table) => !tables.has(table));
+        throw unsupported(`legacy v0 schema is incomplete: missing ${missing.join(", ")}`);
+      }
       throw unsupported("component schema versions table is missing");
     }
     const versions = new Map(
@@ -90,17 +62,17 @@ export function detectUniverfileSQLiteFormat(filename: string): UniverfileSQLite
     }
 
     const assetVersion = versions.get("assets");
-    const presentAssetTables = ASSET_TABLES.filter((table) => tables.has(table));
+    const presentAssetTables = ASSET_V1_TABLES.filter((table) => tables.has(table));
     const hasCompleteAssetSchema =
-      assetVersion === 1 && presentAssetTables.length === ASSET_TABLES.length;
+      assetVersion === 1 && presentAssetTables.length === ASSET_V1_TABLES.length;
     const hasNoAssetSchema = assetVersion === undefined && presentAssetTables.length === 0;
     if (!hasCompleteAssetSchema && !(worktreeVersion === 1 && hasNoAssetSchema)) {
       throw unsupported("assets schema must be complete, or absent on a Gateway v1 file");
     }
 
-    const required: string[] = [...CORE_TABLES, ...WORKTREE_COMMON_TABLES];
-    if (hasCompleteAssetSchema) required.push(...ASSET_TABLES);
-    if (worktreeVersion === 1) required.push("collaboration_worktree_commits");
+    const required: string[] = [...CORE_V1_TABLES, ...WORKTREE_COMMON_TABLES];
+    if (hasCompleteAssetSchema) required.push(...ASSET_V1_TABLES);
+    if (worktreeVersion === 1) required.push(...WORKTREE_V1_ONLY_TABLES);
     const missing = required.filter((table) => !tables.has(table));
     if (missing.length > 0) {
       throw unsupported(`schema is incomplete: missing ${missing.join(", ")}`);
@@ -108,12 +80,8 @@ export function detectUniverfileSQLiteFormat(filename: string): UniverfileSQLite
 
     const worktreeColumns = columns(database, "collaboration_worktrees");
     const hasHeadCommit = worktreeColumns.has("head_commit");
-    const hasCommitTable = tables.has("collaboration_worktree_commits");
-    if (worktreeVersion === 1 && (!hasHeadCommit || !hasCommitTable)) {
+    if (worktreeVersion === 1 && !hasHeadCommit) {
       throw unsupported("worktree v1 logical commit storage is incomplete");
-    }
-    if (worktreeVersion === 2 && (hasHeadCommit || hasCommitTable)) {
-      throw unsupported("worktree v2 is mixed with logical commit storage");
     }
     return worktreeVersion === 1 ? "v1" : "v2";
   } catch (error) {

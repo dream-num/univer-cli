@@ -130,6 +130,57 @@ function makeV1(filename: string): void {
       );
 
       UPDATE collaboration_schema_versions SET version = 1 WHERE component = 'worktree';
+
+      CREATE TABLE units (
+        local_unit_id TEXT PRIMARY KEY,
+        remote_unit_id TEXT UNIQUE,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL,
+        init_rev INTEGER,
+        synced_rev INTEGER,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        deleted_at TEXT
+      );
+      CREATE TABLE init_datas (
+        local_unit_id TEXT PRIMARY KEY,
+        data_json TEXT NOT NULL,
+        FOREIGN KEY (local_unit_id) REFERENCES units(local_unit_id) ON DELETE CASCADE
+      );
+      CREATE TABLE local_changesets (
+        local_unit_id TEXT NOT NULL,
+        position INTEGER NOT NULL,
+        changeset_json TEXT NOT NULL,
+        PRIMARY KEY (local_unit_id, position),
+        FOREIGN KEY (local_unit_id) REFERENCES units(local_unit_id) ON DELETE CASCADE
+      );
+      CREATE TABLE local_mutations (
+        local_unit_id TEXT NOT NULL,
+        position INTEGER NOT NULL,
+        mutation_json TEXT NOT NULL,
+        PRIMARY KEY (local_unit_id, position),
+        FOREIGN KEY (local_unit_id) REFERENCES units(local_unit_id) ON DELETE CASCADE
+      );
+      CREATE TABLE synced_changesets (
+        local_unit_id TEXT NOT NULL,
+        revision INTEGER NOT NULL,
+        changeset_json TEXT NOT NULL,
+        PRIMARY KEY (local_unit_id, revision),
+        FOREIGN KEY (local_unit_id) REFERENCES units(local_unit_id) ON DELETE CASCADE
+      );
+      CREATE TABLE sac_applied_migrations (
+        position INTEGER PRIMARY KEY,
+        pack_id TEXT NOT NULL UNIQUE,
+        entry_json TEXT NOT NULL
+      );
+      CREATE TABLE sac_mutation_locks (
+        lock_key TEXT PRIMARY KEY,
+        token TEXT NOT NULL,
+        owner_json TEXT NOT NULL,
+        revision INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
     `);
   } finally {
     database.close();

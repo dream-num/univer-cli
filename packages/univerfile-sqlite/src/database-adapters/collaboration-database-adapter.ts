@@ -559,16 +559,9 @@ export class UniverfileSQLiteDatabaseAdapter implements IDatabaseAdapter {
 
   private _initializeSchema(): void {
     this._transaction(() => {
-      const incompatibleTables = PRE_DATABASE_V1_TABLE_NAMES.filter((tableName) =>
-        this._hasTable(tableName),
-      );
-      if (incompatibleTables.length > 0) {
-        throw incompatibleSchema(
-          `Pre-database-v1 Gateway schema is not supported: ${incompatibleTables.join(", ")}`,
-        );
-      }
       const hasVersionTable = this._hasTable("collaboration_schema_versions");
       if (!hasVersionTable) {
+        this._assertNoPreDatabaseV1Tables();
         if (this._hasAnyCoreTable()) {
           throw incompatibleSchema(
             "SQLite collaboration core tables exist without a schema version",
@@ -605,6 +598,7 @@ export class UniverfileSQLiteDatabaseAdapter implements IDatabaseAdapter {
         return;
       }
 
+      this._assertNoPreDatabaseV1Tables();
       if (this._hasAnyCoreTable()) {
         throw incompatibleSchema("SQLite collaboration core tables exist without a schema version");
       }
@@ -720,6 +714,17 @@ export class UniverfileSQLiteDatabaseAdapter implements IDatabaseAdapter {
 
   private _hasAnyCoreTable(): boolean {
     return CORE_TABLE_NAMES.some((tableName) => this._hasTable(tableName));
+  }
+
+  private _assertNoPreDatabaseV1Tables(): void {
+    const incompatibleTables = PRE_DATABASE_V1_TABLE_NAMES.filter((tableName) =>
+      this._hasTable(tableName),
+    );
+    if (incompatibleTables.length > 0) {
+      throw incompatibleSchema(
+        `Pre-database-v1 Gateway schema is not supported: ${incompatibleTables.join(", ")}`,
+      );
+    }
   }
 
   private _assertGatewayColumns(): void {
