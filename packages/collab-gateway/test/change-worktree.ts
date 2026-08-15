@@ -28,7 +28,6 @@ export async function changeWorktree(
   _description: string,
   operations: WorktreeChangeOperations,
   _tag?: string,
-  unitName?: string,
 ): Promise<WorktreeChangeResult> {
   const units: Record<string, number> = {};
   const created: string[] = [];
@@ -52,7 +51,6 @@ export async function changeWorktree(
       worktreeId,
       unitId,
       mutations,
-      unitName,
     );
     modified.push(unitId);
     units[unitId] = changeset.revision;

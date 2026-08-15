@@ -53,9 +53,7 @@ describe("Worktree merge (Phase 3): OT rebase into trunk", () => {
       await changeWorktree(svc,
         worktree.worktreeId,
         "rename",
-        { modify: { [sheet.unitId]: setWorkbookName(sheet.unitId, "New name") } },
-        undefined,
-        "New name"
+        { modify: { [sheet.unitId]: setWorkbookName(sheet.unitId, "New name") } }
       );
 
       expect(svc.worktreeUnits(worktree.worktreeId)).toEqual(

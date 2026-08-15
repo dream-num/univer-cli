@@ -23,6 +23,10 @@ import {
   type UniverfileUpgradeResult,
   type UniverfileSQLiteWorktreeDatabaseAdapter,
 } from "@univer/univerfile-sqlite";
+import {
+  createTrunkUnitNameCommitMiddleware,
+  createWorktreeUnitNameCommitMiddleware,
+} from "./unit-name-middleware.js";
 
 export interface GatewayFileRuntimeOptions {
   /** `.univer` SQLite filename, or `:memory:` for tests. */
@@ -74,6 +78,8 @@ export class GatewayFileRuntime {
         },
         dbAdapter: this.worktreeAdapter,
       });
+      this.trunkService.use("commitChangeset", createTrunkUnitNameCommitMiddleware());
+      this.worktreeService.use("commitChangeset", createWorktreeUnitNameCommitMiddleware());
       this._ticketStore = new MemorySessionTicketStore();
       this._trunkEndpoint = new UniverCollabEndpoint(this.trunkService, {
         ticketStore: this._ticketStore,
