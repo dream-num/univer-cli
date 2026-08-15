@@ -54,7 +54,7 @@ node apps/cli/dist/bin.js daemon stop
 将当前 build 链接为 active Node 环境中的 `univer`：
 
 ```bash
-pnpm dev:link
+pnpm link:cli
 command -v univer
 univer --help
 ```
@@ -63,7 +63,7 @@ univer --help
 
 ```bash
 univer daemon stop
-pnpm dev:unlink
+pnpm unlink:cli
 ```
 
 `pnpm build` 生成 CLI、application daemon 与 CLI SDK runtime pool 使用的 headless worker，并构建 browser

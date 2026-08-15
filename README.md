@@ -20,7 +20,7 @@ Univer CLI 面向 Coding Agent 与本地自动化工作流，通过唯一的 `un
 
 ```bash
 pnpm install --frozen-lockfile
-pnpm dev:link
+pnpm link:cli
 univer --help
 ```
 
@@ -111,7 +111,7 @@ pnpm check       # format、lint、typecheck、build、test 和 package dry-run
 
 ```bash
 univer daemon stop
-pnpm dev:unlink
+pnpm unlink:cli
 ```
 
 发布 staging 和隔离安装验证不会修改 source manifest，也不会直接发布 package：

@@ -149,7 +149,7 @@ async function assertReleaseInstallation(packageRoot: string): Promise<void> {
   if (!(await isDevelopmentInstallation(packageRoot))) return;
   throw new UpdateError(
     "CLI_UPDATE_DEVELOPMENT_LINK",
-    "This Univer CLI checkout is linked for development and cannot update itself. Run `pnpm dev:unlink`, then install a published Univer CLI package.",
+    "This Univer CLI checkout is linked for development and cannot update itself. Run `pnpm unlink:cli`, then install a published Univer CLI package.",
   );
 }
 

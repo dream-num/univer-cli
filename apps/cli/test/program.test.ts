@@ -7,8 +7,8 @@ import { createProgram, PROGRAM_NAME } from "../src/program.js";
 
 describe("univer local CLI composition", () => {
   it("provides symmetric development link scripts", () => {
-    expect(packageMetadata.scripts["dev:link"]).toBe("pnpm build && npm link");
-    expect(packageMetadata.scripts["dev:unlink"]).toBe("npm unlink --global univer-cli");
+    expect(packageMetadata.scripts["link:cli"]).toBe("pnpm build && npm link");
+    expect(packageMetadata.scripts["unlink:cli"]).toBe("npm unlink --global univer-cli");
   });
 
   it("pins every CLI SDK package to one exact internal build", () => {

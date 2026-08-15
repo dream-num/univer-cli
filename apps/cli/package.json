@@ -20,8 +20,8 @@
   "scripts": {
     "build": "pnpm --filter @univer/collab-web build && pnpm --filter @univer/render-runtime-client build && node scripts/build.mjs && node scripts/copy-render-runtime.mjs",
     "dev": "tsx src/bin.ts",
-    "dev:link": "pnpm build && npm link",
-    "dev:unlink": "npm unlink --global univer-cli",
+    "link:cli": "pnpm build && npm link",
+    "unlink:cli": "npm unlink --global univer-cli",
     "pack:check": "npm pack --dry-run",
     "start": "node dist/bin.js",
     "test": "vitest run test/*.test.ts",
