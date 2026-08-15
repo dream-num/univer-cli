@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "build": "pnpm --filter univer-cli build",
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm --filter univer-cli pack:check",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm check:locales && pnpm test && pnpm --filter univer-cli pack:check",
+    "check:locales": "pnpm --filter @univer/render-preset check:locales && pnpm --filter @univer/collab-web check:locales",
     "dev": "pnpm --filter univer-cli dev",
     "link:cli": "pnpm --filter univer-cli link:cli",
     "unlink:cli": "pnpm --filter univer-cli unlink:cli",

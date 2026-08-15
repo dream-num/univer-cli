@@ -104,7 +104,7 @@ docs/                               # architecture、data contract 与维护约�
 ```bash
 pnpm build       # 构建 CLI、daemon、runtime worker、Viewer 和 render runtime
 pnpm test        # 运行 workspace 测试
-pnpm check       # format、lint、typecheck、build、test 和 package dry-run
+pnpm check       # format、lint、typecheck、locale freshness、build、test 和 package dry-run
 ```
 
 本地调试结束后，先停止 daemon，再解除全局链接：

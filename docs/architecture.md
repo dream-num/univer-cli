@@ -137,5 +137,5 @@ document 并以非零状态退出。
 pnpm check
 ```
 
-质量门依次验证 format、lint、typecheck、build、workspace tests、built executable、Gateway/Viewer/runtime worker、
-browser render smoke 和 package dry-run。
+质量门依次验证 format、lint、typecheck、locale freshness、build、workspace tests、built executable、
+Gateway/Viewer/runtime worker、browser render smoke 和 package dry-run。

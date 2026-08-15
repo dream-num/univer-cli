@@ -191,5 +191,5 @@ argv 已识别 `--json` 后发生失败时，stderr 输出一个 JSON document �
 pnpm check
 ```
 
-质量门覆盖 format、lint、typecheck、build、workspace tests、built executable、Gateway/Viewer/runtime worker、
-browser render smoke 与 package dry-run。
+质量门覆盖 format、lint、typecheck、locale freshness、build、workspace tests、built executable、
+Gateway/Viewer/runtime worker、browser render smoke 与 package dry-run。
