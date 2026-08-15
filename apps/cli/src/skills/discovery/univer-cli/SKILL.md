@@ -1,7 +1,6 @@
 ---
 name: univer-cli
 description: "Use when installing or operating Univer CLI for .univer files, spreadsheets, documents, slides, Base databases, Board canvases, cross-Unit embedding, worktrees, Facade authoring, inspection, verification, import/export, screenshots, or viewer handoff."
-hidden: true
 ---
 
 # Univer CLI

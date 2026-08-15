@@ -1,0 +1,138 @@
+name: Sync discovery Skill release
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      source_tag:
+        description: "Stable latest release tag to sync"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-skills-release-${{ github.event.release.tag_name || inputs.source_tag }}
+  cancel-in-progress: false
+
+jobs:
+  sync-skill:
+    name: sync-skill
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    env:
+      SOURCE_REPO: ${{ github.repository }}
+      SOURCE_TAG: ${{ github.event.release.tag_name || inputs.source_tag }}
+      TARGET_REPO: dream-num/skills
+
+    steps:
+      - name: Check stable release tag
+        id: stable-tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$SOURCE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "is_stable=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "is_stable=false" >> "$GITHUB_OUTPUT"
+          echo "Release $SOURCE_TAG is not a stable Univer CLI release; skipping Skill sync."
+
+      - name: Check latest release tag
+        if: steps.stable-tag.outputs.is_stable == 'true'
+        id: latest
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          latest_tag="$(gh api "repos/${SOURCE_REPO}/releases/latest" --jq '.tag_name')"
+          echo "latest_tag=$latest_tag" >> "$GITHUB_OUTPUT"
+
+          if [[ "$latest_tag" == "$SOURCE_TAG" ]]; then
+            echo "is_latest=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "is_latest=false" >> "$GITHUB_OUTPUT"
+          echo "Release $SOURCE_TAG is not latest; latest is $latest_tag."
+
+      - name: Checkout source release
+        if: steps.stable-tag.outputs.is_stable == 'true' && steps.latest.outputs.is_latest == 'true'
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.SOURCE_TAG }}
+
+      - name: Setup Node.js
+        if: steps.stable-tag.outputs.is_stable == 'true' && steps.latest.outputs.is_latest == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Validate discovery Skill
+        if: steps.stable-tag.outputs.is_stable == 'true' && steps.latest.outputs.is_latest == 'true'
+        run: node scripts/release/validate-skill-distribution.mjs
+
+      - name: Sync distribution mirror pull request
+        if: steps.stable-tag.outputs.is_stable == 'true' && steps.latest.outputs.is_latest == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${GH_TOKEN:-}" ]]; then
+            echo "The GH_TOKEN repository secret is required to update ${TARGET_REPO}." >&2
+            exit 1
+          fi
+
+          safe_tag="$(printf '%s' "$SOURCE_TAG" | tr -c 'A-Za-z0-9._-' '-')"
+          branch="sync/univer-cli-${safe_tag}"
+          title="Sync Univer CLI Skill from ${SOURCE_TAG}"
+          workdir="$(mktemp -d)"
+          target_dir="$workdir/skills"
+          source_skill_dir="$GITHUB_WORKSPACE/apps/cli/src/skills/discovery/univer-cli"
+          target_skill_dir="$target_dir/skills/univer-cli"
+
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/${TARGET_REPO}.git" "$target_dir"
+          git -C "$target_dir" checkout -B "$branch" origin/main
+          mkdir -p "$target_skill_dir"
+          rsync -a --delete "$source_skill_dir/" "$target_skill_dir/"
+
+          git -C "$target_dir" config user.name "github-actions[bot]"
+          git -C "$target_dir" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C "$target_dir" add -- "skills/univer-cli"
+
+          if git -C "$target_dir" diff --cached --quiet; then
+            echo "No discovery Skill changes to sync for ${SOURCE_TAG}."
+            exit 0
+          fi
+
+          git -C "$target_dir" commit -m "chore: sync Univer CLI Skill from ${SOURCE_TAG}"
+          head_sha="$(git -C "$target_dir" rev-parse HEAD)"
+          git -C "$target_dir" push --force-with-lease origin "$branch"
+
+          body="$(printf 'Syncs the source-owned discovery Skill from `%s@%s` to `skills/univer-cli`.\n\nSource commit: %s\nMirror branch: `%s`\n\nThe target repository branch rules own merge eligibility.\n' \
+            "$SOURCE_REPO" \
+            "$SOURCE_TAG" \
+            "$GITHUB_SHA" \
+            "$branch")"
+
+          pr_url="$(gh pr create \
+            --repo "$TARGET_REPO" \
+            --base main \
+            --head "$branch" \
+            --title "$title" \
+            --body "$body")"
+
+          gh pr merge "$pr_url" \
+            --repo "$TARGET_REPO" \
+            --auto \
+            --squash \
+            --delete-branch \
+            --match-head-commit "$head_sha"

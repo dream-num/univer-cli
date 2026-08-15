@@ -101,7 +101,9 @@ packages/univerfile-sqlite/         # .univer persistence 与安全升级
 ```
 
 Skill Markdown 是 application asset，保持在 `apps/cli/src/skills`；build 将其复制到 `dist/skills`，runtime 不读取
-相邻目录。
+相邻目录。`discovery/univer-cli` 同时是对外 discovery Skill 的唯一 source；正式 stable latest release
+将它自动同步到 `dream-num/skills` distribution mirror。`runtime/*` 只随 npm package 发布，确保操作指导与
+已安装 application version 匹配。
 
 ## Command composition
 

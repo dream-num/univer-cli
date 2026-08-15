@@ -21,12 +21,12 @@ describe("application Skill library", () => {
     );
   });
 
-  it("keeps the hidden discovery Skill addressable but out of runtime list and --all", async () => {
+  it("keeps the discovery Skill addressable but out of runtime list and --all", async () => {
     const library = createApplicationSkillLibrary(assetsRoot);
     const discovery = await library.read({ name: "univer-cli" });
 
     expect(library.names).not.toContain("univer-cli");
-    expect(discovery.metadata).toMatchObject({ hidden: true, name: "univer-cli" });
+    expect(discovery.metadata).toMatchObject({ hidden: false, name: "univer-cli" });
     expect(discovery.content).toContain("univer skills get core");
   });
 
