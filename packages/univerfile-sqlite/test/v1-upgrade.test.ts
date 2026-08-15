@@ -7,6 +7,7 @@ import Database from "libsql";
 import { afterEach, describe, expect, it } from "vitest";
 import { sha256 } from "../src/migration/backup.js";
 import { createUniverfileSQLite, openUniverfileSQLite } from "../src/open.js";
+import { detectUniverfileSQLiteFormat } from "../src/schema/detect.js";
 
 const directories: string[] = [];
 
@@ -169,6 +170,46 @@ describe("Gateway v1 .univer upgrade", () => {
     );
   });
 
+  it("opens v2 with retired tables and v1 logical commit storage as ignored extras", async () => {
+    const filename = databasePath();
+    const created = createUniverfileSQLite(filename);
+    await created.dispose();
+
+    const database = new Database(filename);
+    try {
+      database.exec(`
+        ALTER TABLE collaboration_worktrees
+        ADD COLUMN head_commit INTEGER NOT NULL DEFAULT 0 CHECK (head_commit >= 0);
+
+        CREATE TABLE collaboration_worktree_commits (
+          worktree_id TEXT NOT NULL,
+          seq INTEGER NOT NULL CHECK (seq >= 1),
+          message TEXT NOT NULL,
+          custom_tag_json TEXT,
+          units_json TEXT NOT NULL,
+          created_at_ms INTEGER NOT NULL,
+          PRIMARY KEY (worktree_id, seq),
+          FOREIGN KEY (worktree_id)
+            REFERENCES collaboration_worktrees(worktree_id) ON DELETE CASCADE
+        );
+      `);
+      createRetiredLocalStorageSchema(database);
+    } finally {
+      database.close();
+    }
+    const originalHash = sha256(filename);
+
+    expect(detectUniverfileSQLiteFormat(filename)).toBe("v2");
+    const opened = openUniverfileSQLite(filename);
+    expect(opened.upgrade).toEqual({ status: "unchanged", format: "v2" });
+    await opened.dispose();
+
+    expect(sha256(filename)).toBe(originalHash);
+    expect(readdirSync(dirname(filename)).filter((entry) => entry.includes(".backup-"))).toEqual(
+      [],
+    );
+  });
+
   it("does not treat an already-v2 file as a Base repair target", async () => {
     const filename = databasePath();
     const created = createUniverfileSQLite(filename);
@@ -221,7 +262,145 @@ describe("Gateway v1 .univer upgrade", () => {
       { component: "worktree", version: 2 },
     ]);
   });
+
+  it("prioritizes component versions and prunes source-only tables from a v1 candidate", async () => {
+    const filename = databasePath();
+    await createV1Fixture(filename);
+    const source = new Database(filename);
+    try {
+      source.exec(`
+        DROP TABLE collaboration_assets;
+        DROP TABLE collaboration_asset_blobs;
+        DELETE FROM collaboration_schema_versions WHERE component = 'assets';
+      `);
+      createRetiredLocalStorageSchema(source);
+      source.exec(`
+        CREATE TABLE source_only_notes (id INTEGER PRIMARY KEY, note TEXT NOT NULL);
+        CREATE INDEX source_only_notes_text ON source_only_notes(note);
+        CREATE VIEW source_only_notes_view AS SELECT id, note FROM source_only_notes;
+        CREATE TRIGGER source_only_notes_insert
+        AFTER INSERT ON source_only_notes BEGIN
+          UPDATE source_only_notes SET note = NEW.note WHERE id = NEW.id;
+        END;
+        INSERT INTO source_only_notes (id, note) VALUES (1, 'kept in backup only');
+      `);
+    } finally {
+      source.close();
+    }
+    const originalHash = sha256(filename);
+
+    expect(detectUniverfileSQLiteFormat(filename)).toBe("v1");
+    const opened = openUniverfileSQLite(filename);
+    expect(opened.upgrade).toMatchObject({
+      status: "upgraded",
+      sourceFormat: "v1",
+      targetFormat: "v2",
+      backupSha256: originalHash,
+      verification: { units: 2, worktrees: 1, assets: 0 },
+    });
+    const backupPath = opened.upgrade.status === "upgraded" ? opened.upgrade.backupPath : undefined;
+    await opened.dispose();
+
+    const upgraded = new Database(filename, { readonly: true });
+    try {
+      expect(
+        upgraded
+          .prepare(
+            `SELECT type, name
+             FROM sqlite_schema
+             WHERE name IN (${[...RETIRED_LOCAL_STORAGE_TABLES, "source_only_notes", "source_only_notes_text", "source_only_notes_view", "source_only_notes_insert"].map(() => "?").join(", ")})`,
+          )
+          .all(
+            ...RETIRED_LOCAL_STORAGE_TABLES,
+            "source_only_notes",
+            "source_only_notes_text",
+            "source_only_notes_view",
+            "source_only_notes_insert",
+          ),
+      ).toEqual([]);
+    } finally {
+      upgraded.close();
+    }
+
+    expect(backupPath).toBeDefined();
+    const backup = new Database(backupPath!, { readonly: true });
+    try {
+      expect(backup.prepare("SELECT note FROM source_only_notes WHERE id = 1").get()).toMatchObject(
+        { note: "kept in backup only" },
+      );
+      expect(backup.prepare("SELECT COUNT(*) AS count FROM units").get()).toMatchObject({
+        count: 0,
+      });
+    } finally {
+      backup.close();
+    }
+  });
 });
+
+const RETIRED_LOCAL_STORAGE_TABLES = [
+  "units",
+  "init_datas",
+  "local_changesets",
+  "local_mutations",
+  "synced_changesets",
+  "sac_applied_migrations",
+  "sac_mutation_locks",
+] as const;
+
+function createRetiredLocalStorageSchema(database: Database.Database): void {
+  database.exec(`
+    CREATE TABLE units (
+      local_unit_id TEXT PRIMARY KEY,
+      remote_unit_id TEXT UNIQUE,
+      name TEXT NOT NULL,
+      type TEXT NOT NULL,
+      init_rev INTEGER,
+      synced_rev INTEGER,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      deleted_at TEXT
+    );
+    CREATE TABLE init_datas (
+      local_unit_id TEXT PRIMARY KEY,
+      data_json TEXT NOT NULL,
+      FOREIGN KEY (local_unit_id) REFERENCES units(local_unit_id) ON DELETE CASCADE
+    );
+    CREATE TABLE local_changesets (
+      local_unit_id TEXT NOT NULL,
+      position INTEGER NOT NULL,
+      changeset_json TEXT NOT NULL,
+      PRIMARY KEY (local_unit_id, position),
+      FOREIGN KEY (local_unit_id) REFERENCES units(local_unit_id) ON DELETE CASCADE
+    );
+    CREATE TABLE local_mutations (
+      local_unit_id TEXT NOT NULL,
+      position INTEGER NOT NULL,
+      mutation_json TEXT NOT NULL,
+      PRIMARY KEY (local_unit_id, position),
+      FOREIGN KEY (local_unit_id) REFERENCES units(local_unit_id) ON DELETE CASCADE
+    );
+    CREATE TABLE synced_changesets (
+      local_unit_id TEXT NOT NULL,
+      revision INTEGER NOT NULL,
+      changeset_json TEXT NOT NULL,
+      PRIMARY KEY (local_unit_id, revision),
+      FOREIGN KEY (local_unit_id) REFERENCES units(local_unit_id) ON DELETE CASCADE
+    );
+    CREATE TABLE sac_applied_migrations (
+      position INTEGER PRIMARY KEY,
+      pack_id TEXT NOT NULL UNIQUE,
+      entry_json TEXT NOT NULL
+    );
+    CREATE TABLE sac_mutation_locks (
+      lock_key TEXT PRIMARY KEY,
+      token TEXT NOT NULL,
+      owner_json TEXT NOT NULL,
+      revision INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+}
 
 async function createV1Fixture(filename: string): Promise<void> {
   const univerfile = createUniverfileSQLite(filename);
