@@ -58,6 +58,7 @@ import locale56 from "@univerjs-pro/slides-chart-ui/locale/ko-KR";
 import locale57 from "@univerjs-pro/slides-table-ui/locale/ko-KR";
 import locale58 from "@univerjs-pro/chart-ui/locale/ko-KR";
 import locale59 from "@univerjs-pro/engine-chart/locale/ko-KR";
+import locale60 from "@univerjs-pro/sheets-print/locale/ko-KR";
 import { mergeLocalePacks } from "../merge.js";
 
 const locale = mergeLocalePacks([
@@ -120,7 +121,8 @@ const locale = mergeLocalePacks([
   locale56,
   locale57,
   locale58,
-  locale59
+  locale59,
+  locale60
 ]);
 
 export default locale;

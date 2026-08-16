@@ -58,6 +58,7 @@ import locale56 from "@univerjs-pro/slides-chart-ui/locale/en-US";
 import locale57 from "@univerjs-pro/slides-table-ui/locale/en-US";
 import locale58 from "@univerjs-pro/chart-ui/locale/en-US";
 import locale59 from "@univerjs-pro/engine-chart/locale/en-US";
+import locale60 from "@univerjs-pro/sheets-print/locale/en-US";
 import { mergeLocalePacks } from "../merge.js";
 
 const locale = mergeLocalePacks([
@@ -120,7 +121,8 @@ const locale = mergeLocalePacks([
   locale56,
   locale57,
   locale58,
-  locale59
+  locale59,
+  locale60
 ]);
 export const CONTENT_EN_US = locale;
 

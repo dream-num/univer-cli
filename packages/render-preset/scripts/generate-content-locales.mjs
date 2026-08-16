@@ -86,7 +86,8 @@ const PACKAGES = [
   "@univerjs-pro/slides-chart-ui",
   "@univerjs-pro/slides-table-ui",
   "@univerjs-pro/chart-ui",
-  "@univerjs-pro/engine-chart"
+  "@univerjs-pro/engine-chart",
+  "@univerjs-pro/sheets-print"
 ];
 
 function localeModule(locale) {

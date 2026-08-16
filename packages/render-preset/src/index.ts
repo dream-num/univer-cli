@@ -42,6 +42,10 @@ import { UniverSheetsOutlinePlugin } from "@univerjs-pro/sheets-outline";
 import { UniverSheetsOutlineUIPlugin } from "@univerjs-pro/sheets-outline-ui";
 import { UniverSheetsPivotTablePlugin } from "@univerjs-pro/sheets-pivot";
 import { UniverSheetsPivotTableUIPlugin } from "@univerjs-pro/sheets-pivot-ui";
+import {
+  SheetsPrintMenuSchema,
+  UniverSheetsPrintPlugin
+} from "@univerjs-pro/sheets-print";
 import { UniverSheetsShapePlugin } from "@univerjs-pro/sheets-shape";
 import { UniverSheetsShapeUIPlugin } from "@univerjs-pro/sheets-shape-ui";
 import { UniverSheetSparklinePlugin } from "@univerjs-pro/sheets-sparkline";
@@ -188,6 +192,15 @@ function registerSheetPlugins(univer: Univer): void {
   univer.registerPlugin(UniverSheetsNumfmtUIPlugin);
   univer.registerPlugin(UniverSheetsPlugin);
   univer.registerPlugin(UniverSheetsUIPlugin);
+  // The SDK defaults this two-action group to 2x3; keep it compact in the grid Ribbon.
+  (
+    SheetsPrintMenuSchema as {
+      "ribbon.start.others": {
+        "sheet.menu.print": { gridLayout: { row: number; column: number } };
+      };
+    }
+  )["ribbon.start.others"]["sheet.menu.print"].gridLayout = { row: 2, column: 2 };
+  univer.registerPlugin(UniverSheetsPrintPlugin);
   univer.registerPlugin(UniverSheetsOutlinePlugin);
   univer.registerPlugin(UniverSheetsOutlineUIPlugin);
   univer.registerPlugin(UniverSheetsFormulaPlugin);

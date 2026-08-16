@@ -81,6 +81,7 @@
     "@univerjs-pro/sheets-outline-ui": "1.0.0-insiders.20260813-7c9aa50",
     "@univerjs-pro/sheets-pivot": "1.0.0-insiders.20260813-7c9aa50",
     "@univerjs-pro/sheets-pivot-ui": "1.0.0-insiders.20260813-7c9aa50",
+    "@univerjs-pro/sheets-print": "1.0.0-insiders.20260813-7c9aa50",
     "@univerjs-pro/sheets-shape": "1.0.0-insiders.20260813-7c9aa50",
     "@univerjs-pro/sheets-shape-ui": "1.0.0-insiders.20260813-7c9aa50",
     "@univerjs-pro/sheets-sparkline": "1.0.0-insiders.20260813-7c9aa50",

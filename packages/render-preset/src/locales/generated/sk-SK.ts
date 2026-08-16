@@ -58,6 +58,7 @@ import locale56 from "@univerjs-pro/slides-chart-ui/locale/sk-SK";
 import locale57 from "@univerjs-pro/slides-table-ui/locale/sk-SK";
 import locale58 from "@univerjs-pro/chart-ui/locale/sk-SK";
 import locale59 from "@univerjs-pro/engine-chart/locale/sk-SK";
+import locale60 from "@univerjs-pro/sheets-print/locale/sk-SK";
 import { mergeLocalePacks } from "../merge.js";
 
 const locale = mergeLocalePacks([
@@ -120,7 +121,8 @@ const locale = mergeLocalePacks([
   locale56,
   locale57,
   locale58,
-  locale59
+  locale59,
+  locale60
 ]);
 
 export default locale;

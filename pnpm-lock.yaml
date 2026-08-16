@@ -634,6 +634,9 @@ importers:
       '@univer/importrange-formula':
         specifier: workspace:*
         version: link:../importrange-formula
+      '@univerjs-pro/sheets-print':
+        specifier: 1.0.0-insiders.20260813-7c9aa50
+        version: 1.0.0-insiders.20260813-7c9aa50(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/bases':
         specifier: 1.0.0-insiders.20260813-7c9aa50
         version: 1.0.0-insiders.20260813-7c9aa50(react@19.2.8)(rxjs@7.8.2)
