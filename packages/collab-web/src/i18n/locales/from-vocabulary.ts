@@ -37,6 +37,7 @@ export interface MessageVocabulary {
   light: string;
   dark: string;
   language: string;
+  joinDiscord: string;
   cancel: string;
   confirm: string;
   viewOnly: string;
@@ -138,6 +139,9 @@ export function messagesFromVocabulary(v: MessageVocabulary): Messages {
       language: v.language,
       loadingLanguage: `${v.loading} ${v.language}…`,
       languageLoadFailed: `${v.language} ${v.failed}`
+    },
+    community: {
+      joinDiscord: v.joinDiscord
     },
     modal: {
       cancel: v.cancel,

@@ -359,7 +359,7 @@ describe("collab-web app shell", () => {
     expect(localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY)).toBe("true");
   });
 
-  it("keeps the hover drawer mounted while its portaled Settings menu is open", async () => {
+  it("keeps the hover drawer mounted while its portaled Language submenu is open", async () => {
     localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, "true");
     const root = getRoot();
     const app = track(
@@ -385,16 +385,18 @@ describe("collab-web app shell", () => {
 
     click(root, ".sidebar-drawer .settings-row");
     await vi.waitFor(() => expect(document.querySelector(".settings-menu")).not.toBeNull());
+    document.querySelector<HTMLElement>(".settings-submenu-trigger")?.click();
+    await vi.waitFor(() => expect(document.querySelector(".settings-submenu")).not.toBeNull());
     pointer(drawer, "pointerout", "mouse", document.body);
     await delay(240);
     expect(root.querySelector(".sidebar-drawer")).not.toBeNull();
 
-    const dark = [...document.querySelectorAll<HTMLElement>(".settings-opt")].find((option) =>
-      option.textContent?.includes("深色")
-    );
-    dark?.click();
+    const english = [
+      ...document.querySelectorAll<HTMLElement>(".settings-submenu .settings-opt")
+    ].find((option) => option.textContent?.includes("English"));
+    english?.click();
     await vi.waitFor(() =>
-      expect(document.documentElement.classList.contains("gateway-dark")).toBe(true)
+      expect(root.querySelector('.discord-link[aria-label="Join the Discord community"]')).not.toBeNull()
     );
     await vi.waitFor(() => expect(root.querySelector(".sidebar-drawer")).toBeNull());
     expect(localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY)).toBe("true");

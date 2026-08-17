@@ -31,7 +31,16 @@ import {
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { ChangeTag } from "../components/ui/change-tag";
-import { MenuContent, MenuItem, MenuLabel, MenuRoot, MenuTrigger } from "../components/ui/menu";
+import {
+  MenuContent,
+  MenuItem,
+  MenuLabel,
+  MenuRoot,
+  MenuSubmenuContent,
+  MenuSubmenuRoot,
+  MenuSubmenuTrigger,
+  MenuTrigger
+} from "../components/ui/menu";
 import { Spinner } from "../components/ui/spinner";
 import { SegmentedToggle } from "../components/ui/toggle-group";
 import { LOCALE_MANIFEST, t, type Lang } from "../i18n";
@@ -41,10 +50,12 @@ import type { App, AppSnapshot } from "./app";
 import { relativeTime, summaryText } from "./format";
 import { toast } from "./modals";
 import { UnitIcon } from "./unit-icon";
+import { DiscordIcon } from "./discord-icon";
 
 const SIDEBAR_DRAWER_ID = "gateway-sidebar-hover-drawer";
 const SIDEBAR_DRAWER_OPEN_DELAY_MS = 120;
 const SIDEBAR_DRAWER_CLOSE_DELAY_MS = 200;
+const DISCORD_INVITE_URL = "https://discord.gg/nThHPupraR";
 
 interface SidebarHoverDrawerController {
   open: boolean;
@@ -348,7 +359,7 @@ function Sidebar({
           )}
         </SidebarSection>
       </div>
-      <div className="sidebar-footer flex h-9 shrink-0 items-center px-2">
+      <div className="sidebar-footer flex h-9 shrink-0 items-center gap-1 px-2">
         <SettingsMenu
           app={app}
           lang={snap.lang}
@@ -360,6 +371,16 @@ function Sidebar({
             ? {}
             : { onOpenChangeComplete: onSettingsOpenChangeComplete })}
         />
+        <a
+          className="discord-link flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors outline-none hover:bg-sidebar-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+          href={DISCORD_INVITE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={t().community.joinDiscord}
+          title={t().community.joinDiscord}
+        >
+          <DiscordIcon aria-hidden="true" className="size-4" />
+        </a>
       </div>
     </aside>
   );
@@ -576,20 +597,29 @@ function SettingsMenu({
   onOpenChange?: (open: boolean) => void;
   onOpenChangeComplete?: (open: boolean) => void;
 }): ReactElement {
+  const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
+  const activeLocaleName =
+    LOCALE_MANIFEST.find((option) => option.tag === lang)?.nativeName ?? lang;
+  const handleSettingsOpenChange = (open: boolean): void => {
+    if (!open) {
+      setLanguageMenuOpen(false);
+    }
+    onOpenChange?.(open);
+  };
   return (
     <MenuRoot
-      {...(onOpenChange === undefined ? {} : { onOpenChange })}
+      onOpenChange={handleSettingsOpenChange}
       {...(onOpenChangeComplete === undefined ? {} : { onOpenChangeComplete })}
     >
       <MenuTrigger
         className={cn(
-          "settings-row row flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[13px] text-muted-foreground transition-colors outline-none hover:bg-sidebar-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 data-[popup-open]:bg-sidebar-accent data-[popup-open]:text-foreground"
+          "settings-row row flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[13px] text-muted-foreground transition-colors outline-none hover:bg-sidebar-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 data-[popup-open]:bg-sidebar-accent data-[popup-open]:text-foreground"
         )}
       >
         <Settings className="size-4 shrink-0" />
         <span className="min-w-0 flex-1 truncate">{t().settings.title}</span>
       </MenuTrigger>
-      <MenuContent>
+      <MenuContent className="min-w-52">
         <MenuLabel>{t().settings.appearance}</MenuLabel>
         {(["light", "dark"] as const).map((option) => {
           const AppearanceIcon = option === "light" ? Sun : Moon;
@@ -607,31 +637,44 @@ function SettingsMenu({
             </MenuItem>
           );
         })}
-        <MenuLabel>{t().settings.language}</MenuLabel>
-        {LOCALE_MANIFEST.map((opt) => (
-          <MenuItem
-            key={opt.tag}
-            onClick={() => void app.chooseLang(opt.tag)}
-            className={cn(opt.tag === lang && "active font-medium")}
-          >
-            <span>{opt.nativeName}</span>
-            {opt.tag === languageLoading ? (
-              <Spinner className="size-3.5 shrink-0" />
-            ) : (
-              opt.tag === lang && <Check className="size-3.5 shrink-0" />
+        <MenuSubmenuRoot
+          open={languageMenuOpen}
+          onOpenChange={(open) => setLanguageMenuOpen(open)}
+        >
+          <MenuSubmenuTrigger onClick={() => setLanguageMenuOpen(true)}>
+            <span>{t().settings.language}</span>
+            <span className="flex min-w-0 items-center gap-1 text-muted-foreground">
+              <span className="max-w-28 truncate">{activeLocaleName}</span>
+              <ChevronRight className="size-3.5 shrink-0" />
+            </span>
+          </MenuSubmenuTrigger>
+          <MenuSubmenuContent>
+            {LOCALE_MANIFEST.map((opt) => (
+              <MenuItem
+                key={opt.tag}
+                onClick={() => void app.chooseLang(opt.tag)}
+                className={cn(opt.tag === lang && "active font-medium")}
+              >
+                <span>{opt.nativeName}</span>
+                {opt.tag === languageLoading ? (
+                  <Spinner className="size-3.5 shrink-0" />
+                ) : (
+                  opt.tag === lang && <Check className="size-3.5 shrink-0" />
+                )}
+              </MenuItem>
+            ))}
+            {languageLoading !== undefined && (
+              <div className="px-2 py-1 text-xs text-muted-foreground">
+                {t().settings.loadingLanguage}
+              </div>
             )}
-          </MenuItem>
-        ))}
-        {languageLoading !== undefined && (
-          <div className="px-2 py-1 text-xs text-muted-foreground">
-            {t().settings.loadingLanguage}
-          </div>
-        )}
-        {languageError && (
-          <div className="px-2 py-1 text-xs text-destructive">
-            {t().settings.languageLoadFailed}
-          </div>
-        )}
+            {languageError && (
+              <div className="px-2 py-1 text-xs text-destructive">
+                {t().settings.languageLoadFailed}
+              </div>
+            )}
+          </MenuSubmenuContent>
+        </MenuSubmenuRoot>
       </MenuContent>
     </MenuRoot>
   );
