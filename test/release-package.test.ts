@@ -1,30 +1,15 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import {
-  createInsidersVersion,
-  createLocalVersion,
-  createReleaseManifest,
-  INSIDERS_REGISTRY,
-} from "../scripts/release/release-package.mjs";
+import { createReleaseManifest } from "../scripts/release/release-package.mjs";
+import { RELEASE_REGISTRY } from "../scripts/release/policy.mjs";
 
-describe("insiders release package", () => {
-  it("derives the channel version without mutating the development manifest", () => {
-    expect(createInsidersVersion("0.5.0", "20260813", "374ec99")).toBe(
-      "0.5.0-insiders.20260813-374ec99",
-    );
-  });
-
-  it("marks local consumer tarballs when the worktree is dirty", () => {
-    expect(createLocalVersion("0.5.0", "374ec99", false)).toBe("0.5.0-local.374ec99");
-    expect(createLocalVersion("0.5.0", "374ec99", true)).toBe("0.5.0-local.374ec99.dirty");
-  });
-
+describe("release package", () => {
   it("publishes only audited runtime dependencies without workspace protocols", () => {
     const manifest = createReleaseManifest(
       {
         name: "univer-cli",
-        version: "0.5.0",
+        version: "0.0.0",
         private: true,
         description: "CLI",
         keywords: ["univer"],
@@ -35,8 +20,9 @@ describe("insiders release package", () => {
           external: "1.2.3",
         },
       },
-      "0.5.0-insiders.20260813-374ec99",
+      "0.5.0-insider.20260817-374ec99",
       ["external"],
+      { registry: RELEASE_REGISTRY, tag: "insiders" },
     );
 
     expect(manifest).toMatchObject({
@@ -44,7 +30,8 @@ describe("insiders release package", () => {
       name: "univer-cli",
       private: false,
       dependencies: { external: "1.2.3" },
-      publishConfig: { registry: INSIDERS_REGISTRY, tag: "insiders" },
+      publishConfig: { registry: RELEASE_REGISTRY, tag: "insiders" },
+      version: "0.5.0-insider.20260817-374ec99",
     });
     expect(JSON.stringify(manifest)).not.toContain("workspace:");
   });
@@ -57,10 +44,12 @@ describe("insiders release package", () => {
     );
     const manifest = createReleaseManifest(
       source,
-      "0.5.0-insiders.20260813-374ec99",
+      "0.5.0-insider.20260817-374ec99",
       audit.required,
+      { registry: RELEASE_REGISTRY, tag: "insiders" },
     );
 
+    expect(source).toMatchObject({ private: true, version: "0.0.0" });
     expect(Object.keys(manifest.dependencies)).toEqual(audit.required);
     expect(audit.required).toEqual([
       "@univer-cli/doc-typst-facade",

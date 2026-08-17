@@ -24,31 +24,37 @@ afterEach(async () => {
 });
 
 describe("channel-aware CLI update", () => {
-  it("maps stable and insiders versions to one package on separate registry channels", () => {
-    expect(resolveUpdateTarget("1.0.0")).toEqual({
-      channel: "stable",
-      distTag: "latest",
+  it("maps 0.5.x alpha and insiders versions to separate insider-npm tags", () => {
+    expect(resolveUpdateTarget("0.5.0-alpha.1")).toEqual({
+      channel: "alpha",
+      distTag: "alpha",
       packageName: "univer-cli",
-      registryUrl: "https://registry.npmjs.org/",
+      registryUrl: "https://insider-npm-registry.univer.work/",
     });
-    expect(resolveUpdateTarget("1.0.0-insiders.20260813-deadbee")).toEqual({
+    expect(resolveUpdateTarget("0.5.0-insider.20260813-deadbee")).toEqual({
       channel: "insiders",
       distTag: "insiders",
       packageName: "univer-cli",
       registryUrl: "https://insider-npm-registry.univer.work/",
     });
-    expect(() => resolveUpdateTarget("1.0.0-beta.1")).toThrowError(
+    expect(() => resolveUpdateTarget("0.5.0")).toThrowError(
+      expect.objectContaining({ code: "CLI_UPDATE_CHANNEL_UNSUPPORTED" }),
+    );
+    expect(() => resolveUpdateTarget("0.5.0-beta.1")).toThrowError(
+      expect.objectContaining({ code: "CLI_UPDATE_CHANNEL_UNSUPPORTED" }),
+    );
+    expect(() => resolveUpdateTarget("0.4.9-insider.1")).toThrowError(
       expect.objectContaining({ code: "CLI_UPDATE_CHANNEL_UNSUPPORTED" }),
     );
   });
 
   it("uses semver ordering within the selected channel", () => {
-    expect(isNewerVersion("1.0.0-insiders.20260813-a", "1.0.0-insiders.20260814-b")).toBe(true);
-    expect(isNewerVersion("1.0.0-insiders.20260814-b", "1.0.0-insiders.20260813-a")).toBe(false);
-    expect(isNewerVersion("0.5.0", "1.0.0")).toBe(true);
-    expect(
-      isNewerVersion("1.0.0-insiders.20260813-fffffff", "1.0.0-insiders.20260813-0000000"),
-    ).toBe(true);
+    expect(isNewerVersion("1.0.0-insider.20260813-a", "1.0.0-insider.20260814-b")).toBe(true);
+    expect(isNewerVersion("1.0.0-insider.20260814-b", "1.0.0-insider.20260813-a")).toBe(false);
+    expect(isNewerVersion("0.5.0-alpha.1", "0.5.0-alpha.2")).toBe(true);
+    expect(isNewerVersion("1.0.0-insider.20260813-fffffff", "1.0.0-insider.20260813-0000000")).toBe(
+      true,
+    );
   });
 
   it("checks insiders metadata and installs the exact verified version", async () => {
@@ -67,7 +73,7 @@ describe("channel-aware CLI update", () => {
       }),
       fetchRegistry: async (url) => {
         expect(url).toBe("https://insider-npm-registry.univer.work/univer-cli");
-        return registryMetadata("insiders", "0.5.0-insiders.20260814-next");
+        return registryMetadata("insiders", "0.5.0-insider.20260814-next");
       },
       homeDir,
       now: () => new Date("2026-08-13T00:00:00.000Z"),
@@ -76,7 +82,7 @@ describe("channel-aware CLI update", () => {
         invocations.push(invocation);
         return { exitCode: 0 };
       },
-      version: "0.5.0-insiders.20260813-current",
+      version: "0.5.0-insider.20260813-current",
     });
 
     await expect(
@@ -86,19 +92,19 @@ describe("channel-aware CLI update", () => {
 
     expect(result).toMatchObject({
       channel: "insiders",
-      latestVersion: "0.5.0-insiders.20260814-next",
+      latestVersion: "0.5.0-insider.20260814-next",
       status: "updated",
     });
     expect(stopped).toBe(1);
     expect(invocations).toEqual([
       {
-        packageSpec: "univer-cli@0.5.0-insiders.20260814-next",
+        packageSpec: "univer-cli@0.5.0-insider.20260814-next",
         registryUrl: "https://insider-npm-registry.univer.work/",
       },
     ]);
     await expect(readUpdateCache(homeDir)).resolves.toMatchObject({
       distTag: "insiders",
-      latestVersion: "0.5.0-insiders.20260814-next",
+      latestVersion: "0.5.0-insider.20260814-next",
     });
   });
 
@@ -112,12 +118,12 @@ describe("channel-aware CLI update", () => {
           },
           async update() {
             return {
-              channel: "stable",
+              channel: "alpha",
               checkedAt: "2026-08-13T00:00:00.000Z",
-              currentVersion: "0.5.0",
-              latestVersion: "0.5.0",
+              currentVersion: "0.5.0-alpha.1",
+              latestVersion: "0.5.0-alpha.1",
               status: "up-to-date",
-              target: resolveUpdateTarget("0.5.0"),
+              target: resolveUpdateTarget("0.5.0-alpha.1"),
               updateAvailable: false,
             };
           },
@@ -128,7 +134,7 @@ describe("channel-aware CLI update", () => {
 
     expect(exitCode).toBe(0);
     expect(JSON.parse(stdout.join(""))).toMatchObject({
-      channel: "stable",
+      channel: "alpha",
       status: "up-to-date",
       updateAvailable: false,
     });
@@ -152,7 +158,7 @@ describe("channel-aware CLI update", () => {
       }),
       fetchRegistry: async () => {
         registryReads += 1;
-        return registryMetadata("latest", "0.6.0");
+        return registryMetadata("alpha", "0.5.0-alpha.2");
       },
       homeDir: await temporaryRoot(),
       packageRoot,
@@ -207,10 +213,10 @@ describe("channel-aware CLI update", () => {
     const now = new Date("2026-08-13T12:00:00.000Z");
     await writeCache(homeDir, {
       checkedAt: now.toISOString(),
-      distTag: "latest",
-      latestVersion: "0.6.0",
+      distTag: "alpha",
+      latestVersion: "0.5.0-alpha.2",
       packageName: "univer-cli",
-      registryUrl: "https://registry.npmjs.org/",
+      registryUrl: "https://insider-npm-registry.univer.work/",
       schemaVersion: 1,
     });
     const messages: string[] = [];
@@ -227,7 +233,7 @@ describe("channel-aware CLI update", () => {
 
     expect(spawns).toBe(0);
     expect(messages).toEqual([
-      "Newer Univer CLI v0.6.0 is available on the stable channel; run `univer update`.\n",
+      "Newer Univer CLI v0.5.0-alpha.2 is available on the alpha channel; run `univer update`.\n",
     ]);
   });
 
@@ -235,10 +241,10 @@ describe("channel-aware CLI update", () => {
     const homeDir = await temporaryRoot();
     await writeCache(homeDir, {
       checkedAt: new Date().toISOString(),
-      distTag: "latest",
-      latestVersion: "0.6.0",
+      distTag: "alpha",
+      latestVersion: "0.5.0-alpha.2",
       packageName: "univer-cli",
-      registryUrl: "https://registry.npmjs.org/",
+      registryUrl: "https://insider-npm-registry.univer.work/",
       schemaVersion: 1,
     });
     const stdout: string[] = [];
@@ -257,6 +263,7 @@ describe("channel-aware CLI update", () => {
         env: { UNIVER_HOME: homeDir },
         interactive: true,
         packageRoot: homeDir,
+        version: "0.5.0-alpha.1",
       },
       streams: {
         writeErr: (text) => stderr.push(text),
@@ -267,7 +274,7 @@ describe("channel-aware CLI update", () => {
     expect(exitCode).toBe(0);
     expect(stdout.join("")).toContain("Doctor: ready");
     expect(stderr.join("")).toBe(
-      "Newer Univer CLI v0.6.0 is available on the stable channel; run `univer update`.\n",
+      "Newer Univer CLI v0.5.0-alpha.2 is available on the alpha channel; run `univer update`.\n",
     );
   });
 
@@ -344,7 +351,7 @@ function startupOptions(
     json: false,
     now,
     packageRoot: homeDir,
-    version: "0.5.0",
+    version: "0.5.0-alpha.1",
     writeErr: () => undefined,
     ...overrides,
   };
@@ -356,7 +363,7 @@ async function writeCache(homeDir: string, value: unknown): Promise<void> {
   await writeFile(join(directory, "latest.json"), `${JSON.stringify(value)}\n`, "utf8");
 }
 
-function registryMetadata(tag: "insiders" | "latest", version: string): unknown {
+function registryMetadata(tag: "alpha" | "insiders", version: string): unknown {
   return {
     "dist-tags": { [tag]: version },
     versions: { [version]: { dist: { tarball: `https://example.test/${version}.tgz` } } },

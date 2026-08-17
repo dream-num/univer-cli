@@ -113,6 +113,7 @@ export interface UniverLocalProgramOptions {
   readonly unitContentApplication?: LocalUnitContentApplication;
   readonly univerfileApplication?: LocalUniverfileApplication;
   readonly updateApplication?: UpdateApplication;
+  readonly version?: string;
   readonly interactive?: boolean;
   readonly worktreeApplication?: LocalWorktreeApplication;
 }
@@ -120,16 +121,17 @@ export interface UniverLocalProgramOptions {
 /** The application composition root. Target-specific adapters are added here as they become real. */
 export function createProgram(options: UniverLocalProgramOptions = {}): Command {
   const env = options.env ?? process.env;
+  const version = options.version ?? packageMetadata.version;
   const output = options.output ?? {
     writeErr: (text: string): boolean => process.stderr.write(text),
     writeOut: (text: string): boolean => process.stdout.write(text),
   };
   const program = new Command(PROGRAM_NAME)
     .description("Agent-friendly authoring and verification for office content")
-    .version(packageMetadata.version)
+    .version(version)
     .configureOutput(output);
 
-  const identity = applicationDaemonIdentity(env);
+  const identity = { ...applicationDaemonIdentity(env), version };
   const paths = resolveApplicationPaths(env);
   const packageRoot = options.packageRoot ?? defaultApplicationPackageRoot();
   const config = createApplicationConfig(paths);
@@ -184,7 +186,7 @@ export function createProgram(options: UniverLocalProgramOptions = {}): Command 
       config,
       control,
       paths,
-      version: packageMetadata.version,
+      version,
     });
   const skillLibrary =
     options.skillLibrary ?? createApplicationSkillLibrary(defaultSkillAssetRoot());
@@ -194,7 +196,7 @@ export function createProgram(options: UniverLocalProgramOptions = {}): Command 
       control,
       homeDir: paths.homeDir,
       packageRoot,
-      version: packageMetadata.version,
+      version,
     });
 
   program.hook("preAction", async (_root, actionCommand) => {
@@ -208,7 +210,7 @@ export function createProgram(options: UniverLocalProgramOptions = {}): Command 
         options.interactive ?? (process.stdin.isTTY === true && process.stderr.isTTY === true),
       json: actionCommand.optsWithGlobals<{ readonly json?: boolean }>().json === true,
       packageRoot,
-      version: packageMetadata.version,
+      version,
       writeErr: (text) => {
         output.writeErr?.(text);
       },
