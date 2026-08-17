@@ -104,6 +104,7 @@ jobs:
       - name: Build and gate exact tarball
         shell: bash
         env:
+          NODE_OPTIONS: --max-old-space-size=4096
           RELEASE_CHANNEL: ${{ steps.release.outputs.channel }}
           RELEASE_VERSION: ${{ steps.release.outputs.version }}
           DRY_RUN: ${{ steps.release.outputs.dry_run }}
