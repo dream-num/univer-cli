@@ -12,6 +12,7 @@ describe("collab-web ready copy", () => {
         expect(messages.modal.readyConfirm).not.toContain(" · ");
         expect(messages.toast.readyFailed("boom")).toContain("boom");
         expect(messages.toast.readyChanged.length).toBeGreaterThan(20);
+        expect(messages.community.joinDiscord).toContain("Discord");
         expect(body).toContain("Demo");
         expect(body).toContain("<strong>");
         return `${messages.topbar.submitForReview}\n${messages.modal.readyTitle}\n${body}`;

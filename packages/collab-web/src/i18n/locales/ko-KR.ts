@@ -38,6 +38,7 @@ const vocabulary = {
   light: "라이트",
   dark: "다크",
   language: "언어",
+  joinDiscord: "Discord 커뮤니티 참여",
   cancel: "취소",
   confirm: "확인",
   viewOnly: "보기 전용",

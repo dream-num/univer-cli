@@ -38,6 +38,7 @@ const vocabulary = {
   light: "淺色",
   dark: "深色",
   language: "語言",
+  joinDiscord: "加入 Discord 社群",
   cancel: "取消",
   confirm: "確認",
   viewOnly: "僅檢視",

@@ -39,6 +39,7 @@ const vocabulary = {
   light: "Svetlý",
   dark: "Tmavý",
   language: "Jazyk",
+  joinDiscord: "Pripojiť sa ku komunite Discord",
   cancel: "Zrušiť",
   confirm: "Potvrdiť",
   viewOnly: "Iba na čítanie",

@@ -92,6 +92,9 @@ export const ZH_CN_MESSAGES: Messages = {
     loadingLanguage: "正在加载语言…",
     languageLoadFailed: "无法加载该语言"
   },
+  community: {
+    joinDiscord: "加入 Discord 社区"
+  },
   modal: {
     cancel: "取消",
     gotIt: "知道了",

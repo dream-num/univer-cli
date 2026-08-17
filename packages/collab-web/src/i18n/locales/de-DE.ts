@@ -39,6 +39,7 @@ const vocabulary = {
   light: "Hell",
   dark: "Dunkel",
   language: "Sprache",
+  joinDiscord: "Der Discord-Community beitreten",
   cancel: "Abbrechen",
   confirm: "Bestätigen",
   viewOnly: "Nur ansehen",

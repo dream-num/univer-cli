@@ -97,6 +97,21 @@ function newApp(mode: "standalone" | "embedded"): App {
   return app;
 }
 
+async function openSettings(): Promise<void> {
+  (document.querySelector(".settings-row") as HTMLElement).click();
+  await vi.waitFor(() =>
+    expect(document.querySelectorAll(".settings-menu .settings-opt")).toHaveLength(3)
+  );
+}
+
+async function openLanguageSubmenu(): Promise<void> {
+  await openSettings();
+  (document.querySelector(".settings-submenu-trigger") as HTMLElement).click();
+  await vi.waitFor(() =>
+    expect(document.querySelectorAll(".settings-submenu .settings-opt")).toHaveLength(17)
+  );
+}
+
 const apps: App[] = [];
 
 describe("collab-web shell i18n", () => {
@@ -143,49 +158,70 @@ describe("collab-web shell i18n", () => {
     expect(document.querySelector(".sidebar")?.textContent).toContain("文件");
   });
 
-  it("shows the bottom-left settings entry in standalone mode only", async () => {
+  it("shows localized Settings and Discord entries in standalone mode only", async () => {
     await setLang("zh-CN");
     await newApp("standalone").start();
     expect(document.querySelector(".sidebar .settings-row")).not.toBeNull();
+    const discord = document.querySelector<HTMLAnchorElement>(".sidebar .discord-link");
+    expect(discord?.href).toBe("https://discord.gg/nThHPupraR");
+    expect(discord?.target).toBe("_blank");
+    expect(discord?.rel).toBe("noopener noreferrer");
+    expect(discord?.getAttribute("aria-label")).toBe("加入 Discord 社区");
+    expect(discord?.title).toBe("加入 Discord 社区");
+    expect(discord?.querySelector("svg")).not.toBeNull();
 
     document.body.innerHTML = '<main id="root"></main>';
     await newApp("embedded").start();
     expect(document.querySelector(".settings-row")).toBeNull();
+    expect(document.querySelector(".discord-link")).toBeNull();
   });
 
-  it("opens a language menu from settings, current language checked", async () => {
+  it("opens Language as a second-level menu with the current language checked", async () => {
     await setLang("zh-CN");
     await newApp("standalone").start();
     expect(document.querySelector(".settings-menu")).toBeNull();
 
-    (document.querySelector(".settings-row") as HTMLElement).click();
+    await openSettings();
+    expect(document.querySelector(".settings-submenu")).toBeNull();
+    expect(document.querySelector(".settings-submenu-trigger")?.textContent).toContain("语言");
+    expect(document.querySelector(".settings-submenu-trigger")?.textContent).toContain("简体中文");
 
-    // Base UI opens the menu on the next animation frame.
+    (document.querySelector(".settings-submenu-trigger") as HTMLElement).click();
     await vi.waitFor(() =>
-      expect(document.querySelectorAll(".settings-menu .settings-opt")).toHaveLength(19)
+      expect(document.querySelectorAll(".settings-submenu .settings-opt")).toHaveLength(17)
     );
-    const active = [...document.querySelectorAll(".settings-opt.active")].find((option) =>
-      option.textContent?.includes("中文")
-    );
+    const active = document.querySelector(".settings-submenu .settings-opt.active");
     expect(active?.textContent).toContain("中文");
-    const light = [...document.querySelectorAll(".settings-opt")].find((option) =>
+    const light = [...document.querySelectorAll(".settings-menu > .settings-opt")].find((option) =>
       option.textContent?.includes("浅色")
     );
-    const dark = [...document.querySelectorAll(".settings-opt")].find((option) =>
+    const dark = [...document.querySelectorAll(".settings-menu > .settings-opt")].find((option) =>
       option.textContent?.includes("深色")
     );
     expect(light?.querySelector(".lucide-sun")).not.toBeNull();
     expect(dark?.querySelector(".lucide-moon")).not.toBeNull();
   });
 
+  it("opens the Language submenu with the keyboard", async () => {
+    await setLang("en-US");
+    await newApp("standalone").start();
+    await openSettings();
+
+    const trigger = document.querySelector<HTMLElement>(".settings-submenu-trigger");
+    trigger?.focus();
+    trigger?.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+
+    await vi.waitFor(() =>
+      expect(document.querySelectorAll(".settings-submenu .settings-opt")).toHaveLength(17)
+    );
+    expect(document.activeElement?.textContent).toContain("English");
+  });
+
   it("localizes appearance settings in English", async () => {
     await setLang("en-US");
     await newApp("standalone").start();
 
-    (document.querySelector(".settings-row") as HTMLElement).click();
-    await vi.waitFor(() =>
-      expect(document.querySelectorAll(".settings-menu .settings-opt")).toHaveLength(19)
-    );
+    await openSettings();
     const menu = document.querySelector(".settings-menu");
     expect(menu?.textContent).toContain("Appearance");
     expect(menu?.textContent).toContain("Light");
@@ -197,10 +233,7 @@ describe("collab-web shell i18n", () => {
     await newApp("standalone").start();
     expect(createViewerCalls).toEqual([{ locale: "zhCN", darkMode: false }]);
 
-    (document.querySelector(".settings-row") as HTMLElement).click();
-    await vi.waitFor(() =>
-      expect(document.querySelector(".settings-menu .settings-opt")).not.toBeNull()
-    );
+    await openSettings();
     const dark = [...document.querySelectorAll(".settings-opt")].find((option) =>
       option.textContent?.includes("深色")
     ) as HTMLElement;
@@ -219,11 +252,8 @@ describe("collab-web shell i18n", () => {
     await newApp("standalone").start();
     expect(createViewerCalls.map((c) => c.locale)).toEqual(["zhCN"]);
 
-    (document.querySelector(".settings-row") as HTMLElement).click();
-    await vi.waitFor(() =>
-      expect(document.querySelector(".settings-menu .settings-opt")).not.toBeNull()
-    );
-    const english = [...document.querySelectorAll(".settings-opt")].find((o) =>
+    await openLanguageSubmenu();
+    const english = [...document.querySelectorAll(".settings-submenu .settings-opt")].find((o) =>
       o.textContent?.includes("English")
     ) as HTMLElement;
     english.click();
@@ -241,12 +271,9 @@ describe("collab-web shell i18n", () => {
   it("picks a language from the menu: re-renders, persists, and mirrors to the URL", async () => {
     await setLang("zh-CN");
     await newApp("standalone").start();
-    (document.querySelector(".settings-row") as HTMLElement).click();
-    await vi.waitFor(() =>
-      expect(document.querySelector(".settings-menu .settings-opt")).not.toBeNull()
-    );
+    await openLanguageSubmenu();
 
-    const english = [...document.querySelectorAll(".settings-opt")].find((o) =>
+    const english = [...document.querySelectorAll(".settings-submenu .settings-opt")].find((o) =>
       o.textContent?.includes("English")
     ) as HTMLElement;
     english.click();

@@ -39,6 +39,7 @@ const vocabulary = {
   light: "Chiaro",
   dark: "Scuro",
   language: "Lingua",
+  joinDiscord: "Unisciti alla community Discord",
   cancel: "Annulla",
   confirm: "Conferma",
   viewOnly: "Sola lettura",

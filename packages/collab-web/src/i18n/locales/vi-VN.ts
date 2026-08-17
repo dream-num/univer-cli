@@ -39,6 +39,7 @@ const vocabulary = {
   light: "Sáng",
   dark: "Tối",
   language: "Ngôn ngữ",
+  joinDiscord: "Tham gia cộng đồng Discord",
   cancel: "Hủy",
   confirm: "Xác nhận",
   viewOnly: "Chỉ xem",

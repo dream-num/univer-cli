@@ -39,6 +39,7 @@ const vocabulary = {
   light: "Terang",
   dark: "Gelap",
   language: "Bahasa",
+  joinDiscord: "Bergabung dengan komunitas Discord",
   cancel: "Batal",
   confirm: "Konfirmasi",
   viewOnly: "Hanya lihat",

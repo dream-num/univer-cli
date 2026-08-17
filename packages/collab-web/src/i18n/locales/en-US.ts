@@ -91,6 +91,9 @@ export const EN_US_MESSAGES = {
     loadingLanguage: "Loading language…",
     languageLoadFailed: "Could not load that language"
   },
+  community: {
+    joinDiscord: "Join the Discord community"
+  },
   modal: {
     cancel: "Cancel",
     gotIt: "Got it",

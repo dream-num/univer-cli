@@ -39,6 +39,7 @@ const vocabulary = {
   light: "ライト",
   dark: "ダーク",
   language: "言語",
+  joinDiscord: "Discord コミュニティに参加",
   cancel: "キャンセル",
   confirm: "確認",
   viewOnly: "閲覧のみ",
