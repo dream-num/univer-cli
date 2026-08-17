@@ -1,31 +1,12 @@
 import { cp, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 
-export const INSIDERS_REGISTRY = "https://insider-npm-registry.univer.work/";
-export const INSIDERS_TAG = "insiders";
-
-export function createInsidersVersion(baseVersion, date, commit) {
-  if (!/^\d+\.\d+\.\d+$/u.test(baseVersion)) {
-    throw new Error(`Expected a stable base version, received ${baseVersion}`);
-  }
-  if (!/^\d{8}$/u.test(date)) throw new Error(`Expected a YYYYMMDD date, received ${date}`);
-  if (!/^[0-9a-f]{7,40}$/u.test(commit)) {
-    throw new Error(`Expected a Git commit hash, received ${commit}`);
-  }
-  return `${baseVersion}-insiders.${date}-${commit}`;
-}
-
-export function createLocalVersion(baseVersion, commit, dirty) {
-  if (!/^\d+\.\d+\.\d+$/u.test(baseVersion)) {
-    throw new Error(`Expected a stable base version, received ${baseVersion}`);
-  }
-  if (!/^[0-9a-f]{7,40}$/u.test(commit)) {
-    throw new Error(`Expected a Git commit hash, received ${commit}`);
-  }
-  return `${baseVersion}-local.${commit}${dirty ? ".dirty" : ""}`;
-}
-
-export function createReleaseManifest(sourceManifest, version, externalPackageNames) {
+export function createReleaseManifest(
+  sourceManifest,
+  version,
+  externalPackageNames,
+  publishConfig,
+) {
   if (sourceManifest.name !== "univer-cli") {
     throw new Error(`Expected package name univer-cli, received ${String(sourceManifest.name)}`);
   }
@@ -52,10 +33,7 @@ export function createReleaseManifest(sourceManifest, version, externalPackageNa
     type: "module",
     dependencies,
     engines: sourceManifest.engines,
-    publishConfig: {
-      registry: INSIDERS_REGISTRY,
-      tag: INSIDERS_TAG,
-    },
+    publishConfig,
   };
   if (JSON.stringify(manifest).includes("workspace:")) {
     throw new Error("Release manifest contains a workspace protocol");
@@ -76,6 +54,7 @@ export async function stageReleasePackage(input) {
     sourceManifest,
     input.version,
     externalDependencyAudit.required,
+    input.publishConfig,
   );
   const stagingRoot = join(input.outputRoot, "staging");
   const stagingDirectory = join(stagingRoot, `univer-cli-${input.version}`);

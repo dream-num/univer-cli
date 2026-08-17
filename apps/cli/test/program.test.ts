@@ -40,7 +40,7 @@ describe("univer local CLI composition", () => {
     expect(program.description()).toBe(
       "Agent-friendly authoring and verification for office content",
     );
-    expect(program.version()).toBe("0.5.0");
+    expect(program.version()).toBe("0.0.0");
     expect(program.commands.map((command) => command.name())).toEqual([
       "new",
       "open",

@@ -114,14 +114,21 @@ univer daemon stop
 pnpm unlink:cli
 ```
 
-发布 staging 和隔离安装验证不会修改 source manifest，也不会直接发布 package：
+源码 manifest 保持 `0.0.0` 哨兵版本。新 Univer CLI 固定在 `0.5.x` 版本线，只发布
+`alpha`、`insiders` 和 `dev`：`alpha` 是唯一可进入后续对外流程的版本，由匹配
+`v0.5.x-alpha.<suffix>` 的 tag push 触发；`insiders` 由默认分支手动触发。三者都只发布到
+insider-npm；本仓库不提供 public npm promotion workflow。
 
 ```bash
-pnpm release:pack
-pnpm release:verify
+pnpm release:cli -- --channel=insiders --version=0.5.0-insider.example --dry-run
 ```
 
-需要让本地下游消费者（例如评测镜像）安装当前工作树时，使用 `pnpm release:pack-local`；
-它不要求工作树干净，并在 dirty 产物版本中显式标记 `dirty`。
+`dev` 是本地触发的研发自测发布，允许 dirty worktree，不执行 SDK cohort 检查：
 
-生成物写入 `.release/`，不进入 repository history。
+```bash
+pnpm release:cli -- --channel=dev --version=0.5.0-dev.example --publish
+```
+
+三个 channel 都生成 release manifest、package audit、隔离安装验证报告和 tarball 到 `.release/`，
+不进入 repository history。应用代码从 `0.5.x` 起按开源制品发布，不执行混淆；SDK 仍通过闭源 package
+边界提供。
