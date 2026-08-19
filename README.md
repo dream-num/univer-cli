@@ -74,12 +74,12 @@ Univer runtime development license 是 application 运行凭据，按 90 天周�
 
 Univer CLI 基于 Univer CLI SDK 构建。标准命令和通用能力由 CLI SDK package 提供并随 application 安装；本仓库负责显式装配，并实现文件、路径、进程、Gateway 和数据升级等本地产品能力。
 
-| 依赖边界          | 职责                                                                                                                    |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Univer CLI SDK    | command preset、daemon、execution、inspection、exchange、render、lint、authoring helper、configuration 和 API reference |
-| Univer SDK        | Unit model、Facade、formula、Sheet、Doc、Slide、Base、Board 和 render engine                                            |
-| Collaboration SDK | Snapshot、changeset、Worktree、service、transport、client 和 persistence contract                                       |
-| 本仓库            | `.univer` persistence、本地 adapter、Gateway、Viewer、runtime composition、数据升级和诊断                               |
+| 依赖边界          | 职责                                                                                                          |
+| ----------------- | ------------------------------------------------------------------------------------------------------------- |
+| Univer CLI SDK    | command preset、daemon、execution、inspection、render、lint、authoring helper、configuration 和 API reference |
+| Univer SDK        | Unit model、Facade、formula、Sheet、Doc、Slide、Base、Board、Office exchange 和 render engine                 |
+| Collaboration SDK | Snapshot、changeset、Worktree、service、transport、client 和 persistence contract                             |
+| 本仓库            | `.univer` persistence、本地 adapter、Gateway、Viewer、runtime composition、数据升级和诊断                     |
 
 `apps/cli/src/program.ts` 是唯一 composition root，通过 Commander `addCommand()` 显式装配命令。详细 ownership、runtime topology 和 dependency rule 见 [`docs/architecture.md`](docs/architecture.md)。
 

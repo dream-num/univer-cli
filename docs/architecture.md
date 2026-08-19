@@ -27,9 +27,9 @@ univer process
 
 ### Univer SDK
 
-Univer SDK 提供 Unit 数据模型、Facade、formula、render engine、Sheet、Doc、Slide、Base、Board 及其 UI/runtime
-plugin。application 和 browser composition 只通过已发布 package 与 API 使用这些能力，不读取其他 checkout
-或复制 SDK 源码。
+Univer SDK 提供 Unit 数据模型、Facade、formula、render engine、Office exchange、Sheet、Doc、Slide、Base、Board
+及其 UI/runtime plugin。application 和 browser composition 只通过已发布 package 与 API 使用这些能力，不读取
+其他 checkout 或复制 SDK 源码。
 
 ### Collaboration SDK
 
@@ -39,7 +39,7 @@ browser client 和 runtime integration。`packages/collab-gateway` 与
 
 ### Univer CLI SDK
 
-Univer CLI SDK 提供标准 capability、Commander preset、daemon control、content execution、content inspection、unit exchange、layout lint、screenshot、SVG/Typst facade、resource library、configuration、API reference，以及 collaboration runtime/pool。这些 package 随 application 安装，`apps/cli` 在 composition root 中显式装配，并按需提供 application-specific adapter。
+Univer CLI SDK 提供标准 capability、Commander preset、daemon control、content execution、content inspection、layout lint、screenshot、SVG/Typst facade、resource library、configuration、API reference，以及 collaboration runtime/pool。这些 package 随 application 安装，`apps/cli` 在 composition root 中显式装配，并按需提供 application-specific adapter。
 
 ### Application-owned capability
 
@@ -49,6 +49,7 @@ Univer CLI SDK 提供标准 capability、Commander preset、daemon control、con
 - `${UNIVER_HOME:-~/.univer}`、config path、browser cache 与 daemon socket；
 - daemon identity、Gateway address mapping、runtime worker 和本地进程生命周期；
 - HTTP(S) import 下载、临时文件与 credential-safe error；
+- Exchange Node 的格式、公式、selector、错误与本地 Unit persistence 映射；
 - browser runtime 的构建、复制和本地图片投影；
 - application Skill assets、诊断信息与脱敏规则。
 

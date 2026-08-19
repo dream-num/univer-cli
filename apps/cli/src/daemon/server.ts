@@ -1,6 +1,5 @@
 import { createDaemonServer, type DaemonServer, type JsonValue } from "@univer-cli/daemon";
 import { createStandardHeadlessUniverFactory } from "@univer-cli/headless-univer";
-import { createUnitExchange, type UnitExchange } from "@univer-cli/unit-exchange";
 import { startServer, type StartedServer } from "@univer/collab-gateway";
 import {
   createApplicationConfig,
@@ -30,7 +29,6 @@ export interface ApplicationDaemon {
 
 export interface StartApplicationDaemonOptions {
   readonly env?: NodeJS.ProcessEnv;
-  readonly exchange?: UnitExchange;
   readonly gatewayPort?: number;
   readonly runtimePool?: LocalCollaborationRuntimePool;
   readonly runtimeWorkerEntry?: string | URL;
@@ -61,7 +59,6 @@ export async function startApplicationDaemon(
       },
       origin,
     });
-  const exchange = options.exchange ?? createUnitExchange();
   const createHeadlessUniver = createStandardHeadlessUniverFactory({ license });
   const daemon = createDaemonServer({
     identity: applicationDaemonIdentity(env),
@@ -72,7 +69,7 @@ export async function startApplicationDaemon(
   });
 
   registerUniverfileHandlers({ daemon, gateway, info });
-  registerExchangeHandlers({ daemon, exchange, gateway, runtimes });
+  registerExchangeHandlers({ daemon, gateway, runtimes });
   registerOptimizeHandlers(daemon);
   registerRenderHandlers({ daemon, gateway, runtimes });
   registerTypstHandlers({ createHeadlessUniver, daemon, gateway });

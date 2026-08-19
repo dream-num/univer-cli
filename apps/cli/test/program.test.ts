@@ -25,11 +25,16 @@ describe("univer local CLI composition", () => {
     expect(packageMetadata.dependencies).not.toHaveProperty("@univer-cli/skills-command");
   });
 
-  it("declares the dynamically loaded formula binding as a runtime dependency", () => {
+  it("declares dynamically loaded native bindings as runtime dependencies", () => {
     expect(packageMetadata.dependencies["@univerjs-pro/engine-formula-rust-binding"]).toBe(
       "1.0.0-insiders.20260811-001a0e5",
     );
-    expect(packageMetadata.dependencies["@univerjs-pro/uexcli"]).toBe("0.3.2");
+    expect(packageMetadata.dependencies["@univerjs-pro/exchange-node-binding"]).toBe("0.1.0");
+    expect(packageMetadata.dependencies["@univerjs-pro/exchange-node"]).toBe(
+      "1.0.0-insiders.20260819-8595af2",
+    );
+    expect(packageMetadata.dependencies).not.toHaveProperty("@univer-cli/unit-exchange");
+    expect(packageMetadata.dependencies).not.toHaveProperty("@univerjs-pro/uexcli");
   });
 
   it("keeps the production program name and exposes only the Lite composition", () => {

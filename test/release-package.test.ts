@@ -58,7 +58,7 @@ describe("release package", () => {
       "@univer-cli/univer-collaboration-runtime-pool",
       "@univerjs-pro/cli-assets",
       "@univerjs-pro/engine-formula-rust-binding",
-      "@univerjs-pro/uexcli",
+      "@univerjs-pro/exchange-node-binding",
       "@univerjs/core",
       "busboy",
       "libsql",

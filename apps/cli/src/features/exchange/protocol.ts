@@ -1,5 +1,4 @@
 import type { JsonValue } from "@univer-cli/daemon";
-import type { FormulaCalculationMode } from "@univer-cli/unit-exchange";
 import {
   codedError,
   optionalString,
@@ -12,6 +11,7 @@ export const CONTENT_IMPORT_METHOD = "univer.content.import";
 export const CONTENT_EXPORT_METHOD = "univer.content.export";
 
 export type ExchangeUnitKind = Exclude<UnitKind, "board">;
+export type FormulaCalculationMode = "forced" | "when_empty" | "no";
 
 export interface ContentImportResult {
   readonly filePath: string;

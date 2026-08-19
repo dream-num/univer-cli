@@ -95,13 +95,14 @@ SDK content-execution prelude，执行前 pull，捕获 mutation 后自动提交
 
 ## Import and export
 
-`import` 使用 CLI SDK unit-exchange 导入本地或 HTTP(S) XLS/XLSX/XLSM/CSV/TSV、DOC/DOCX 与 PPT/PPTX。
+`import` 使用 Univer SDK Exchange Node 导入本地或 HTTP(S) XLS/XLSX/XLSM/CSV/TSV、DOC/DOCX 与 PPT/PPTX。
 HTTP(S) source 由 Local adapter 流式写入保留原后缀的临时文件，完成或失败后清理；error message 会移除 URL
 credential、query 和 fragment。
 
 未指定 `--worktree` 时，import 只创建新的 Univerfile；指定 Worktree 时写入 draft。`export` 支持
 Sheet/Base → XLSX/CSV/TSV、Doc → DOCX、Slide → PPTX。CSV/TSV 使用 `--sheet` 或 `--table` 选择一个输出
-对象。`--formula-calculation forced|when_empty|no` 控制 converter 的公式计算策略。
+对象。`--formula-calculation forced|when_empty|no` 控制 Sheet converter 的公式计算策略；未指定时保持
+`forced` 兼容默认值。
 
 `optimize` 是 copy-only operation；除 `--dry-run` 外必须提供 `--out`，不会覆盖 source。
 
