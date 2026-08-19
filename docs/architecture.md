@@ -73,7 +73,8 @@ univer open
 univer screenshot / lint / compile-svg
   -> CLI SDK browser orchestration
        -> packaged render-runtime-client
-            -> Univer SDK render composition
+            -> CLI SDK univer-render-page
+                 -> standard Univer SDK render composition
 ```
 
 daemon 只管理本地服务和 runtime lifecycle。它为 render operation 物化 UnitData、解析同文件依赖并投影本地
@@ -101,7 +102,7 @@ packages/collab-gateway-contract/   # Gateway/Viewer control-plane contract
 packages/collab-web/                # Collaboration browser application
 packages/importrange-formula/       # cross-unit formula plugin
 packages/render-preset/             # shared browser Univer composition
-packages/render-runtime-client/     # machine browser runtime
+packages/render-runtime-client/     # CLI SDK Render Page bundle entry
 packages/univerfile-sqlite/         # .univer persistence 与安全升级
 ```
 

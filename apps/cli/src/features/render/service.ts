@@ -141,7 +141,7 @@ export function createLocalRenderApplication(
     options.runtimeFactory ??
     (async (input) =>
       await createUniverRenderRuntime({
-        browserRuntimeRoot: input.browserRuntimeRoot,
+        renderPageRoot: input.browserRuntimeRoot,
         env: input.env,
         license: input.license,
       }));

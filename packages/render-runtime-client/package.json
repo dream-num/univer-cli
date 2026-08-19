@@ -7,57 +7,13 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite",
-    "typecheck": "tsc -p tsconfig.test.json --noEmit --pretty false",
-    "test": "vitest run"
+    "typecheck": "tsc -p tsconfig.json --noEmit --pretty false"
   },
   "dependencies": {
-    "@univer/render-preset": "workspace:*",
-    "@univerjs-pro/docs-callout-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs-pro/docs-code-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs-pro/docs-list-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs-pro/docs-quote-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs-pro/docs-shape-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs-pro/docs-table-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs-pro/embed": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs-pro/embed-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs-pro/engine-shape": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs-pro/shape-editor": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs-pro/sheets-chart-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs-pro/sheets-outline-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs-pro/sheets-pivot-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs-pro/sheets-shape-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs-pro/sheets-sparkline-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs-pro/slides": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs-pro/slides-chart-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs-pro/slides-table-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs-pro/slides-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs/core": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs/design": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs/docs-drawing-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs/docs-hyper-link-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs/docs-thread-comment-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs/docs-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs/drawing-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs/engine-render": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs/sheets": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs/sheets-conditional-formatting-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs/sheets-crosshair-highlight": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs/sheets-data-validation-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs/sheets-drawing-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs/sheets-filter-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs/sheets-formula-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs/sheets-hyper-link-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs/sheets-note-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs/sheets-numfmt-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs/sheets-sort-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs/sheets-table-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs/sheets-thread-comment-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs/sheets-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs/thread-comment-ui": "1.0.0-insiders.20260813-7c9aa50",
-    "@univerjs/ui": "1.0.0-insiders.20260813-7c9aa50"
+    "@univer-cli/univer-render-page": "1.0.0-insiders.20260819-8595af2",
+    "@univer-cli/univer-render-runtime": "1.0.0-insiders.20260819-8595af2"
   },
   "devDependencies": {
-    "vite": "^7.0.0",
-    "vitest": "^4.1.6"
+    "vite": "^7.0.0"
   }
 }

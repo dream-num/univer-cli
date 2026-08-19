@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { validateSdkDependencyGraph } from "../scripts/release/sdk-graph.mjs";
 
 describe("release SDK graph", () => {
-  const cohort = "1.0.0-insiders.20260813-7c9aa50";
+  const cohort = "1.0.0-insiders.20260819-8595af2";
 
   it("accepts one exact SDK cohort and exact independent chains", () => {
     expect(

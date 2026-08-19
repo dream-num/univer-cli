@@ -92,7 +92,7 @@ packages/collab-gateway-contract/   # Gateway 与 Viewer control-plane contract
 packages/collab-web/                # browser Viewer
 packages/importrange-formula/       # cross-unit formula plugin
 packages/render-preset/             # shared Univer browser composition
-packages/render-runtime-client/     # machine browser runtime
+packages/render-runtime-client/     # CLI SDK Render Page bundle entry
 packages/univerfile-sqlite/         # .univer persistence 与安全升级
 docs/                               # architecture、data contract 与维护约束
 ```
