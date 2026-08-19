@@ -16,13 +16,13 @@ Query exact signatures and enum values with `univer api show <symbol>` and `univ
 
 ## Presentation structure
 
-A slide unit is one presentation: the presentation holds slides ("Deck and pages"), a slide holds elements in stacking order ("Stacking order"), and an element is a shape, an image, or a group — a text box is a shape ("Elements"). Tables and charts are elements too, and both are editable ("Tables", "Charts"). Native charts are available through `slide.charts` ("Native charts"). Imported decks can carry further element kinds (placeholders, connectors, media); address those through the generic element surface and verify their dedicated facade before editing. Master/layout pages render underneath a slide but are not edited here. A transition is a per-slide page-enter effect ("Transitions"). The facade mirrors this shape — `FPresentation` → `FSlide` → `FShape` / `FImage` / `FGroup` — and `univer api show` gives signatures.
+A slide unit is one presentation: the presentation holds slides ("Deck and pages"), a slide holds elements in stacking order ("Stacking order"), and an element is a shape, an image, or a group — a text box is a shape ("Elements"). Tables and charts are elements too, and both are editable ("Tables", "Charts"). Native charts use the direct `FSlide` chart methods ("Native charts"). Imported decks can carry further element kinds (placeholders, connectors, media); address those through the generic element surface and verify their dedicated facade before editing. Master/layout pages render underneath a slide but are not edited here. A transition is a per-slide page-enter effect ("Transitions"). The facade mirrors this shape — `FPresentation` → `FSlide` → `FShape` / `FImage` / `FGroup` — and `univer api show` gives signatures.
 
 ## Task routing
 
 - Create or redesign pages: run the four-stage workflow below — author SVG and compile it ("SVG is the generation path"); do not hand-write facade drawing code for new content.
 - Edit existing content: facade through `execute` — element CRUD in "Elements", content rules in "Text", "Shapes, fill, and stroke", and "Images and textures"; block-level rework in "Editing existing pages"; tables and charts in "Tables" and "Charts".
-- Insert or update data-driven charts: reserve the chart rectangle in the page SVG, then use the native `slide.charts` facade through `execute` ("Native charts").
+- Insert or update data-driven charts: reserve the chart rectangle in the page SVG, then use the direct `FSlide` chart methods through `execute` ("Native charts").
 - Restack or add page-enter effects: "Stacking order", "Transitions".
 - Verify: "Visual verification" — structured `inspect slide`, browser-backed `lint`, then screenshots
   of every page at final review.
@@ -113,7 +113,7 @@ artifact path together with the viewer link.
 
 ## SVG is the generation path
 
-For new pages or generated elements, author SVG and compile it. Do not hand-write individual shape and text calls or paste generated Facade code into `execute`. The compiler owns geometry conversion, baseline conversion, page selection, and common Facade workarounds, including `textWrap=None + NoAutoFit + padding=0` for measured SVG text. **Native charts are the deliberate exception**: use SVG to establish the page layout and leave the chart rectangle empty, then insert the chart through `slide.charts` in a follow-up `execute`. Reapplying the full page SVG clears every page element, including the chart, so finish page rework before inserting it or reinsert it afterward.
+For new pages or generated elements, author SVG and compile it. Do not hand-write individual shape and text calls or paste generated Facade code into `execute`. The compiler owns geometry conversion, baseline conversion, page selection, and common Facade workarounds, including `textWrap=None + NoAutoFit + padding=0` for measured SVG text. **Native charts are the deliberate exception**: use SVG to establish the page layout and leave the chart rectangle empty, then insert the chart through `slide.newChart()` and `slide.insertChart()` in a follow-up `execute`. Reapplying the full page SVG clears every page element, including the chart, so finish page rework before inserting it or reinsert it afterward.
 
 `--page` is one-based and declarative: an existing page is cleared and replaced, `pageCount + 1` appends, and a larger number fails. Add `--add` only when an SVG contains genuinely new elements to overlay onto a finished page. **`--add` is never the way to fix something**: it keeps the old element and stacks the corrected one on top, leaving both. Rework always means editing the page's SVG and reapplying it with `--page N`, which clears the page first and is idempotent. Without `--apply`, compilation is a read-only preview; `--out` writes the generated script. Reapplying the same replacement is idempotent.
 
@@ -337,22 +337,20 @@ Two traps, both verified against the real runtime:
 
 ## Native charts
 
-Slide chart support is registered in the runtime. Create and manage native data-driven charts through
-the host-owned `slide.charts` collection (`FSlideCharts`). Query `univer api show
-FSlideCharts.insert FSlideCharts.remove FChartBase.commit FChartBuilderBase.setType
-FChartBuilderBase.setTitle ChartTypeString` when the exact builder surface matters.
+Slide chart support is registered in the runtime. Create detached chart information directly from
+the slide, then insert it to obtain a live `FSlideChart`. Query `univer api show FSlide.newChart
+FSlide.insertChart FSlide.getCharts FSlide.getChart FSlideChart FChart FChartBuilderBase
+FSlideChartBuilderOf ISlideChartMethods ChartTypeString` when the exact surface matters.
 
-Build charts detached, configure them, then `await charts.insert(builder)`. The first data row is the header row; use field indexes to declare category and value columns:
+Build charts detached, configure them, call `.build()`, then await `slide.insertChart(info)`. The
+first data row is the header row; use field indexes to declare category and value columns:
 
 ```js
 const slide = presentation.getSlideByIndex(2);
-const charts = slide.charts;
-const chart = charts
-  .create()
-  .setType(univerAPI.Enum.ChartTypeString.Donut)
-  .setTitle({ text: "Design Elements" });
-chart
-  .setData([
+const info = slide
+  .newChart(univerAPI.Enum.ChartTypeString.Donut)
+  .setTitle({ text: "Design Elements" })
+  .setSource([
     ["Design element", "Share"],
     ["Color", 30],
     ["Composition", 22],
@@ -365,33 +363,37 @@ chart
   .setDoughnutHole(0.46)
   .setLegend(true)
   .setAbsolutePosition(390, 160)
-  .setSize(260, 220);
-const inserted = await charts.insert(chart);
-return { chartId: inserted.getId(), chart: inserted.describe() };
+  .setSize(260, 220)
+  .build();
+const inserted = await slide.insertChart(info);
+return { chartId: inserted.getId(), info: inserted.getInfo(), resource: inserted.getChartData() };
 ```
 
-An existing chart is already a builder bound to its host. Set the pending data and call `commit()`
-to update that chart in place; its host ID, type, title, position, and chart count stay unchanged:
+`slide.getCharts()` and `slide.getChart(id)` return live charts. Await data-source updates; the
+chart ID and chart count remain unchanged:
 
 ```js
 const slide = presentation.getSlideByIndex(2);
-const chart = slide.charts.list()[0];
+const chart = slide.getCharts()[0];
 if (!chart) throw new Error("Expected an existing chart");
-chart.setData(values).commit();
-return { chartId: chart.getId(), chart: chart.describe() };
+await chart.setDataSource(values);
+chart.setTitle({ text: "Updated Design Elements" });
+return { chartId: chart.getId(), type: chart.getType(), info: chart.getInfo() };
 ```
 
-The collection has two persistence paths: `await charts.insert(builder)` adds a detached builder from
-`charts.create()`, while `commit()` persists pending changes on a host-bound builder returned by
-`charts.list()` or `charts.get(id)`. `getData()` and `describe()` expose pending values before the
-commit. Remove a chart with `await charts.remove(chartOrId)` and check the returned boolean. In a
-later `execute`, read the collection again: after an update, confirm the chart ID, count, type,
-title, and data; after a removal, confirm the chart is absent.
+Common setters such as `setTitle()`, `setAbsolutePosition()`, and `setSize()` update the live chart.
+For one complete replacement, use `chart.toBuilder()`, call `.build()`, then
+`await chart.update(info)`. `getInfo()` returns the complete insertion snapshot and
+`getChartData()` returns the Slide chart resource. Remove it with `await chart.remove()` and check
+the returned boolean. In a later `execute`, read the slide again: after an update, confirm the chart
+ID, count, type, title, position, size, and data; after a removal, confirm the chart is absent.
 
-`insert` is asynchronous; await it before `execute` returns. Verify persistence with a fresh
-`slide.charts.list().map((item) => item.describe())` read, confirm `inspect slide index:N` reports a
-chart element, then screenshot the page and test the exported PPTX. Insert charts after the final
-full-page SVG replacement, which replaces every page element.
+Await `insertChart`, `setDataSource`, `update`, and `remove` before `execute` returns. Verify
+persistence with a fresh
+`slide.getCharts().map((item) => ({ id: item.getId(), type: item.getType(), info: item.getInfo(), resource: item.getChartData() }))`
+read, confirm `inspect slide index:N` reports a chart element, then screenshot the page and test the
+exported PPTX. Insert charts after the final full-page SVG replacement, which replaces every page
+element.
 
 Use model readback as structural proof and the rendered series as visual proof. If `univer screenshot`
 captures the generic blue loading placeholder, open the same worktree in the Viewer, wait for the
