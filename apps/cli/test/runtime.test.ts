@@ -107,4 +107,101 @@ describe("Local collaboration runtime worker", () => {
       await rm(root, { recursive: true, force: true });
     }
   }, 120_000);
+
+  it("persists Facade renames in the Worktree catalog for every supported Unit type", async () => {
+    const root = await realpath(await mkdtemp(join(tmpdir(), "univer-cli-runtime-rename-")));
+    const filename = join(root, "runtime-rename.univer");
+    await createV2Fixture(filename);
+    const gateway = await startServer({
+      port: 0,
+      viewAssetsRoot: join(projectRoot, "..", "..", "packages", "collab-web", "dist"),
+    });
+    const univerfile = gateway.manager.openByPath(filename);
+    const worktree = univerfile.collab.createWorktree("", "Rename regression");
+    const cases = [
+      {
+        accessor: "getActiveDocument",
+        expectedMutation: "doc.mutation.rename-doc",
+        label: "Doc",
+        type: UniverInstanceType.UNIVER_DOC,
+      },
+      {
+        accessor: "getActiveWorkbook",
+        expectedMutation: "sheet.mutation.set-workbook-name",
+        label: "Sheet",
+        type: UniverInstanceType.UNIVER_SHEET,
+      },
+      {
+        accessor: "getActivePresentation",
+        expectedMutation: "slide.mutation.set-name",
+        label: "Slide",
+        type: UniverInstanceType.UNIVER_SLIDE,
+      },
+      {
+        accessor: "getActiveBase",
+        expectedMutation: "base.mutation.apply-base-json1",
+        label: "Base",
+        type: UniverInstanceType.UNIVER_BASE,
+      },
+      {
+        accessor: "getActiveBoard",
+        expectedMutation: "board.mutation.set-name",
+        label: "Board",
+        type: UniverInstanceType.UNIVER_BOARD,
+      },
+    ] as const;
+    const units = await Promise.all(
+      cases.map(async (entry) => ({
+        ...entry,
+        ...(await univerfile.collab.createWorktreeUnit(
+          worktree.worktreeId,
+          entry.type,
+          `${entry.label} old`,
+        )),
+      })),
+    );
+    const runtimes = createLocalCollaborationRuntimePool({
+      entry: pathToFileURL(join(projectRoot, "dist", "runtime-worker.js")),
+      origin: `http://127.0.0.1:${String(gateway.port)}`,
+    });
+
+    try {
+      for (const unit of units) {
+        const lease = await runtimes.acquire({
+          filePath: filename,
+          unitId: unit.unitId,
+          unitType: unit.type,
+          worktreeId: worktree.worktreeId,
+        });
+        try {
+          const name = `${unit.label} new`;
+          const result = await lease.execute({
+            code: `
+              const unit = univerAPI[${JSON.stringify(unit.accessor)}]();
+              if (!unit) throw new Error(${JSON.stringify(`${unit.label} is not active`)});
+              unit.setName(${JSON.stringify(name)});
+            `,
+            mode: "write",
+          });
+          expect(result.mutations.map((mutation) => mutation.id)).toContain(unit.expectedMutation);
+          await expect(lease.commit()).resolves.toMatchObject({ status: "confirmed" });
+        } finally {
+          await lease.release();
+        }
+      }
+
+      expect(
+        Object.fromEntries(
+          univerfile.collab
+            .worktreeUnits(worktree.worktreeId)
+            .filter((unit) => units.some((candidate) => candidate.unitId === unit.unitId))
+            .map((unit) => [unit.unitId, unit.name]),
+        ),
+      ).toEqual(Object.fromEntries(units.map((unit) => [unit.unitId, `${unit.label} new`])));
+    } finally {
+      await runtimes.close();
+      await gateway.close();
+      await rm(root, { recursive: true, force: true });
+    }
+  }, 120_000);
 });

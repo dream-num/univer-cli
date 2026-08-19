@@ -216,7 +216,6 @@ export class CollabService {
     worktreeId: string,
     unitId: string,
     mutations: readonly IMutation[],
-    unitName?: string,
   ): Promise<IProtocolChangeset> {
     const unit = this._requireWorktreeUnit(worktreeId, unitId);
     const worktree = requireWorktree(this.runtime, worktreeId);
@@ -240,7 +239,6 @@ export class CollabService {
       { worktreeID: worktreeId, changeset },
       callOptions(worktree.agentId || "local", {
         [UNIVERFILE_WORKTREE_CHANGE_METADATA_KEY]: {
-          ...(unitName === undefined ? {} : { unitName }),
           createdAtMs: Date.now(),
         },
       }),
