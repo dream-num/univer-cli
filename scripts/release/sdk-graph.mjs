@@ -13,7 +13,7 @@ const INDEPENDENT_PACKAGES = new Set([
   "@univerjs/icons",
   "@univerjs-pro/cli-assets",
   "@univerjs-pro/engine-formula-rust-binding",
-  "@univerjs-pro/uexcli",
+  "@univerjs-pro/exchange-node-binding",
 ]);
 
 export async function validateWorkspaceSdkDependencies(repoRoot) {

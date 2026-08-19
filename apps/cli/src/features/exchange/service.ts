@@ -1,5 +1,4 @@
 import type { DaemonClient } from "@univer-cli/daemon";
-import type { FormulaCalculationMode } from "@univer-cli/unit-exchange";
 import { createWriteStream } from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -15,6 +14,7 @@ import {
   type ContentExportResult,
   type ContentImportResult,
   type ExchangeUnitKind,
+  type FormulaCalculationMode,
 } from "./protocol.js";
 import { resolveLocalUniverfile } from "../../environment/univerfile-path.js";
 

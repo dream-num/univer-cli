@@ -1,12 +1,7 @@
 import type { DaemonServer, JsonValue } from "@univer-cli/daemon";
-import {
-  UnitExchangeFormat,
-  type FormulaCalculationMode,
-  type UnitDataByType,
-  type UnitExchange,
-} from "@univer-cli/unit-exchange";
 import type { CollaborationUnitData } from "@univer-cli/univer-collaboration-runtime";
 import type { StartedServer } from "@univer/collab-gateway";
+import { ExchangeFormat } from "@univerjs-pro/exchange-node";
 import { UniverInstanceType } from "@univerjs/core";
 import { extname } from "node:path";
 import {
@@ -19,6 +14,7 @@ import {
 } from "../../daemon/collaboration-access.js";
 import type { LocalCollaborationRuntimePool } from "../../daemon/collaboration-runtime-pool.js";
 import { unitKindFromType, unitTypeFromKind } from "../unit/protocol.js";
+import { exportOfficeFile, importOfficeFile, type ExchangeUnitType } from "./exchange-node.js";
 import {
   CONTENT_EXPORT_METHOD,
   CONTENT_IMPORT_METHOD,
@@ -28,25 +24,18 @@ import {
   type ExchangeUnitKind,
 } from "./protocol.js";
 
-type ExchangeImportUnitType =
-  | UniverInstanceType.UNIVER_SHEET
-  | UniverInstanceType.UNIVER_BASE
-  | UniverInstanceType.UNIVER_DOC
-  | UniverInstanceType.UNIVER_SLIDE;
-
 export function registerExchangeHandlers(input: {
   readonly daemon: DaemonServer;
-  readonly exchange: UnitExchange;
   readonly gateway: StartedServer;
   readonly runtimes: LocalCollaborationRuntimePool;
 }): void {
   input.daemon.handle(CONTENT_IMPORT_METHOD, async (payload) => {
     const request = parseContentImportRequest(payload);
-    const unitType = unitTypeFromKind(request.kind) as ExchangeImportUnitType;
+    const unitType = unitTypeFromKind(request.kind) as ExchangeUnitType;
     if (request.worktreeId === undefined) {
       input.gateway.manager.prepareNewUniverfilePath(request.path);
     }
-    const imported = await input.exchange.importFile({
+    const imported = await importOfficeFile({
       sourcePath: request.sourcePath,
       unitType,
       ...(request.formulaCalculationMode === undefined
@@ -60,7 +49,7 @@ export function registerExchangeHandlers(input: {
     const created =
       request.worktreeId === undefined
         ? await univerfile.collab.createUnit(unitType, {
-            data: imported.data,
+            data: imported,
             name: request.name,
           })
         : await createImportedWorktreeUnit(
@@ -68,7 +57,7 @@ export function registerExchangeHandlers(input: {
             request.worktreeId,
             unitType,
             request.name,
-            imported.data,
+            imported,
           );
     return {
       filePath: univerfile.path,
@@ -103,7 +92,7 @@ export function registerExchangeHandlers(input: {
     try {
       await pullCurrent(lease);
       const unitData = await lease.exportUnitData();
-      await exportUnit(input.exchange, unit.type, unitData, request);
+      await exportUnit(unit.type, unitData, request);
       reusable = true;
       return {
         filePath: univerfile.path,
@@ -124,7 +113,7 @@ export function registerExchangeHandlers(input: {
 async function createImportedWorktreeUnit(
   collab: LocalCollaboration,
   worktreeId: string,
-  unitType: ExchangeImportUnitType,
+  unitType: ExchangeUnitType,
   name: string,
   data: object,
 ): Promise<{ readonly unitId: string }> {
@@ -156,17 +145,12 @@ function exportKind(type: number): ExchangeUnitKind {
 }
 
 async function exportUnit(
-  exchange: UnitExchange,
   type: number,
   unitData: CollaborationUnitData,
   request: ContentExportRequest,
 ): Promise<void> {
   const extension = extname(request.outputPath).toLowerCase();
-  const options: {
-    readonly formulaCalculationMode?: FormulaCalculationMode;
-    readonly sheetName?: string;
-    readonly tableName?: string;
-  } = {
+  const options = {
     ...(request.formulaCalculationMode === undefined
       ? {}
       : { formulaCalculationMode: request.formulaCalculationMode }),
@@ -175,49 +159,41 @@ async function exportUnit(
   };
   switch (type) {
     case UniverInstanceType.UNIVER_SHEET:
-      await exchange.exportFile({
+      await exportOfficeFile({
         ...options,
         format: requireSheetLikeExportFormat(extension, "Sheet"),
         outputPath: request.outputPath,
-        unit: {
-          data: unitData as UnitDataByType[UniverInstanceType.UNIVER_SHEET],
-          type: UniverInstanceType.UNIVER_SHEET,
-        },
+        data: unitData,
+        unitType: UniverInstanceType.UNIVER_SHEET,
       });
       return;
     case UniverInstanceType.UNIVER_BASE:
-      await exchange.exportFile({
+      await exportOfficeFile({
         ...options,
         format: requireSheetLikeExportFormat(extension, "Base"),
         outputPath: request.outputPath,
-        unit: {
-          data: unitData as UnitDataByType[UniverInstanceType.UNIVER_BASE],
-          type: UniverInstanceType.UNIVER_BASE,
-        },
+        data: unitData,
+        unitType: UniverInstanceType.UNIVER_BASE,
       });
       return;
     case UniverInstanceType.UNIVER_DOC:
       requireExportExtension(extension, ".docx", "Doc");
-      await exchange.exportFile({
+      await exportOfficeFile({
         ...options,
-        format: UnitExchangeFormat.DOCX,
+        format: ExchangeFormat.DOCX,
         outputPath: request.outputPath,
-        unit: {
-          data: unitData as UnitDataByType[UniverInstanceType.UNIVER_DOC],
-          type: UniverInstanceType.UNIVER_DOC,
-        },
+        data: unitData,
+        unitType: UniverInstanceType.UNIVER_DOC,
       });
       return;
     case UniverInstanceType.UNIVER_SLIDE:
       requireExportExtension(extension, ".pptx", "Slide");
-      await exchange.exportFile({
+      await exportOfficeFile({
         ...options,
-        format: UnitExchangeFormat.PPTX,
+        format: ExchangeFormat.PPTX,
         outputPath: request.outputPath,
-        unit: {
-          data: unitData as UnitDataByType[UniverInstanceType.UNIVER_SLIDE],
-          type: UniverInstanceType.UNIVER_SLIDE,
-        },
+        data: unitData,
+        unitType: UniverInstanceType.UNIVER_SLIDE,
       });
       return;
     default:
@@ -231,10 +207,10 @@ async function exportUnit(
 function requireSheetLikeExportFormat(
   extension: string,
   kind: "Sheet" | "Base",
-): UnitExchangeFormat.XLSX | UnitExchangeFormat.CSV | UnitExchangeFormat.TSV {
-  if (extension === ".xlsx") return UnitExchangeFormat.XLSX;
-  if (extension === ".csv") return UnitExchangeFormat.CSV;
-  if (extension === ".tsv") return UnitExchangeFormat.TSV;
+): ExchangeFormat.XLSX | ExchangeFormat.CSV | ExchangeFormat.TSV {
+  if (extension === ".xlsx") return ExchangeFormat.XLSX;
+  if (extension === ".csv") return ExchangeFormat.CSV;
+  if (extension === ".tsv") return ExchangeFormat.TSV;
   throw codedError(
     "EXPORT_FORMAT_MISMATCH",
     `${kind} Units must be exported to .xlsx, .csv, or .tsv files`,

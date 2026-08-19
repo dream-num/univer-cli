@@ -110,7 +110,7 @@ function externalDependencyAudit(metafiles) {
   const required = new Set([
     "@univerjs-pro/cli-assets",
     "@univerjs-pro/engine-formula-rust-binding",
-    "@univerjs-pro/uexcli",
+    "@univerjs-pro/exchange-node-binding",
   ]);
   const conditional = new Set();
   for (const metafile of metafiles) {

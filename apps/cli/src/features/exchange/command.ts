@@ -1,8 +1,7 @@
 import { basename, extname } from "node:path";
 import { Command, Option } from "commander";
 import type { LocalExchangeApplication } from "./service.js";
-import type { ExchangeUnitKind } from "./protocol.js";
-import type { FormulaCalculationMode } from "@univer-cli/unit-exchange";
+import type { ExchangeUnitKind, FormulaCalculationMode } from "./protocol.js";
 
 const IMPORT_KINDS = ["sheet", "base", "doc", "slide"] as const;
 const FORMULA_CALCULATION_MODES = ["forced", "when_empty", "no"] as const;
@@ -42,7 +41,7 @@ function createImportCommand(application: LocalExchangeApplication): Command {
     .addOption(
       new Option(
         "--formula-calculation <mode>",
-        "formula calculation policy used by the exchange converter",
+        "formula calculation policy used for Sheet conversion",
       ).choices(FORMULA_CALCULATION_MODES),
     )
     .addOption(
@@ -94,7 +93,7 @@ function createExportCommand(application: LocalExchangeApplication): Command {
     .addOption(
       new Option(
         "--formula-calculation <mode>",
-        "formula calculation policy used by the exchange converter",
+        "formula calculation policy used for Sheet conversion",
       ).choices(FORMULA_CALCULATION_MODES),
     )
     .option("--json", "write structured JSON")

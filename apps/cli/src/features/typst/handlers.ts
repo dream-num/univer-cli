@@ -3,9 +3,8 @@ import {
   createStandardHeadlessUniverFacade,
   type HeadlessUniverFactory,
 } from "@univer-cli/headless-univer";
-import type { UnitDataByType } from "@univer-cli/unit-exchange";
 import type { StartedServer } from "@univer/collab-gateway";
-import { UniverInstanceType } from "@univerjs/core";
+import { UniverInstanceType, type IDocumentData } from "@univerjs/core";
 import {
   codedError,
   requireDraftWorktree,
@@ -61,7 +60,7 @@ async function materializeDocument(
   createUniver: HeadlessUniverFactory,
   unitId: string,
   code: string,
-): Promise<UnitDataByType[UniverInstanceType.UNIVER_DOC]> {
+): Promise<IDocumentData> {
   const univer = await createUniver({ unitId, unitType: UniverInstanceType.UNIVER_DOC });
   try {
     const univerAPI = createStandardHeadlessUniverFacade(univer);
