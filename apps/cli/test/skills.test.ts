@@ -30,6 +30,49 @@ describe("application Skill library", () => {
     expect(discovery.content).toContain("univer skills get core");
   });
 
+  it("keeps native Chart guidance on the direct host and live Chart contract", async () => {
+    const library = createApplicationSkillLibrary(assetsRoot);
+    const contracts = [
+      {
+        insertion: "await board.insertChart(info)",
+        name: "board",
+        owner: "FBoard.newChart",
+        readback: "board.getCharts()",
+        stale: ["board.charts", "FBoardCharts", "chart.setData(values).commit()"],
+      },
+      {
+        insertion: "await doc.insertChart(info)",
+        name: "doc",
+        owner: "FDocument.newChart",
+        readback: "doc.getCharts()",
+        stale: [
+          "doc.charts",
+          "FDocumentCharts",
+          "univerAPI.Enum.DocChartInsertAnchorKind",
+          "chart.setData(values).commit()",
+        ],
+      },
+      {
+        insertion: "await slide.insertChart(info)",
+        name: "slide",
+        owner: "FSlide.newChart",
+        readback: "slide.getCharts()",
+        stale: ["slide.charts", "FSlideCharts", "FChartBase.commit", "commit()"],
+      },
+    ] as const;
+
+    for (const contract of contracts) {
+      const skill = await library.read({ name: contract.name });
+
+      for (const staleApi of contract.stale) expect(skill.content).not.toContain(staleApi);
+      expect(skill.content).toContain(contract.owner);
+      expect(skill.content).toContain(contract.insertion);
+      expect(skill.content).toContain(contract.readback);
+      expect(skill.content).toContain("chart.setDataSource(values)");
+      expect(skill.content).toContain("await chart.remove()");
+    }
+  });
+
   it("keeps the current Skill corpus aligned with the CLI contract", async () => {
     const library = createApplicationSkillLibrary(assetsRoot);
     const snapshots = await Promise.all(

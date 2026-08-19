@@ -33,7 +33,7 @@ inspect it with an available browser tool.
 Resolve additional Board methods and types from the version-matched Facade index:
 
 ```bash
-univer api show FUniver.createBoard FUniver.getBoard FBoard.insertShape FBoard.insertShapes FShape FBoardCharts
+univer api show FUniver.createBoard FUniver.getBoard FBoard.insertShape FBoard.insertShapes FShape FBoard.newChart FBoard.insertChart FBoard.getCharts FBoard.getChart FBoardChart FChart
 univer api find board shape element
 ```
 
@@ -142,16 +142,14 @@ the exported SVG as a data URI to `board.insertImage()` with
 
 ## Native charts
 
-Native Board charts are available through `board.charts` (`FBoardCharts`). Build a detached chart,
-configure its data and canvas geometry, then await insertion:
+Native Board charts are owned directly by `FBoard`. Build detached chart information, then await
+insertion to obtain a live `FBoardChart`:
 
 ```js
-const charts = board.charts;
-const chart = charts
-  .create()
-  .setType(univerAPI.Enum.ChartTypeString.Column)
+const info = board
+  .newChart(univerAPI.Enum.ChartTypeString.Column)
   .setTitle({ text: "Quarterly Revenue" })
-  .setData([
+  .setSource([
     ["Quarter", "Revenue"],
     ["Q1", 12],
     ["Q2", 18],
@@ -159,19 +157,24 @@ const chart = charts
   ])
   .setCategoryField(0)
   .setValueFields([1])
-  .setPosition(80, 80)
-  .setSize(640, 360);
-const inserted = await charts.insert(chart);
-return { chartId: inserted.getId(), chart: inserted.describe() };
+  .setAbsolutePosition(80, 80)
+  .setSize(640, 360)
+  .build();
+const inserted = await board.insertChart(info);
+return { chartId: inserted.getId(), info: inserted.getInfo(), data: inserted.getDataSource() };
 ```
 
-Builders returned by `charts.list()` or `charts.get(id)` are bound to the Board. Update one in place
-with `chart.setData(values).commit()`. Remove one with `await charts.remove(chartOrId)` and check the
-returned boolean. `insert` and `remove` are asynchronous; await them before `execute` returns.
+`board.getCharts()` and `board.getChart(id)` return live charts. Common setters such as
+`setTitle()`, `setAbsolutePosition()`, and `setSize()` update the live chart; await
+`chart.setDataSource(values)` for data changes. For one complete replacement, build a detached copy
+with `chart.toBuilder()`, call `.build()`, then `await chart.update(info)`. Remove it with
+`await chart.remove()` and check the returned boolean. Await `insertChart`, `setDataSource`,
+`update`, and `remove` before `execute` returns.
 
 Verify each operation in a fresh no-write `execute` with
-`board.charts.list().map((item) => item.describe())`. For an update, confirm the chart ID, count,
-type, title, position, size, and data. For a removal, confirm the chart is absent. Use
+`board.getCharts().map((item) => ({ id: item.getId(), type: item.getType(), info: item.getInfo(), data: item.getDataSource() }))`.
+For an update, confirm the chart ID, count, type, title, position, size, and data. For a removal,
+confirm the chart is absent. Use
 `board.describeElements()` or `board.save()` for element readback and the viewer link for visual
 confirmation.
 
