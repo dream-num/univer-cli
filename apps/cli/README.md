@@ -104,6 +104,8 @@ Sheet/Base → XLSX/CSV/TSV、Doc → DOCX、Slide → PPTX。CSV/TSV 使用 `--
 对象。`--formula-calculation forced|when_empty|no` 控制 Sheet converter 的公式计算策略；未指定时保持
 `forced` 兼容默认值。
 
+`univer open` 的 trunk Viewer 也使用同一 Universer exchange 协议提供 Ribbon 导入与导出：导入会在当前 `.univer` trunk 新建 Unit。Worktree 与 merge preview 不注册 exchange，但所有 Viewer scope 都注册对应 print plugin；Board 仅支持打印。
+
 `optimize` 是 copy-only operation；除 `--dry-run` 外必须提供 `--out`，不会覆盖 source。
 
 ## Rendering and authoring helpers

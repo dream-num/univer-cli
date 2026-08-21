@@ -30,6 +30,7 @@
     "@univerjs-pro/collaboration-worktree-endpoint": "1.0.0-insiders.20260821-c2f0ba5",
     "@univerjs-pro/collaboration-worktree-service": "1.0.0-insiders.20260821-c2f0ba5",
     "@univerjs-pro/embed": "1.0.0-insiders.20260821-c2f0ba5",
+    "@univerjs-pro/exchange-node": "1.0.0-insiders.20260821-c2f0ba5",
     "@univerjs-pro/slides": "1.0.0-insiders.20260821-c2f0ba5",
     "@univerjs/core": "1.0.0-insiders.20260821-c2f0ba5",
     "@univerjs/docs": "1.0.0-insiders.20260821-c2f0ba5",

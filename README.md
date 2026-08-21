@@ -32,6 +32,8 @@ univer status ./sales.univer --json
 univer open ./sales.univer
 ```
 
+Viewer 的 trunk Ribbon 同样支持把 Office 文件导入为当前 `.univer` 的新 Unit、导出 Sheet/Doc/Slide/Base，以及打印受支持的 Unit；Worktree 和 merge preview 只保留打印，Board 仅提供打印。
+
 对内容的写操作在 draft Worktree 中完成：
 
 ```bash

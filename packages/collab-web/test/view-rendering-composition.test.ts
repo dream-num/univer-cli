@@ -33,6 +33,7 @@ describe("authoritative Browser View rendering composition", () => {
       "registerBaseUnitPlugins(univer, collaborationOwnsAssetIo);",
       "registerBoardPlugins(univer);",
       "options.registerBeforeEmbedCore?.();",
+      "registerOutputPlugins(univer, options.unitType, options.exchangeClientConfig);",
       "registerEmbedCorePlugin(univer, options.resourceRefDataProviderRegistrations ?? []);",
       "options.registerAfterEmbedCore?.();",
       "registerEmbedUIPlugin(univer);"
@@ -56,6 +57,7 @@ describe("authoritative Browser View rendering composition", () => {
       "registerBeforeEmbedCore: () => {",
       "univer.registerPlugin(UniverCollaborationPlugin)",
       "univer.registerPlugin(UniverCollaborationClientPlugin",
+      "univer.registerPlugin(UniverCollaborationClientUIPlugin,",
       "registerAfterEmbedCore: () => {",
       "univer.registerPlugin(UniverCollaborationEmbedPlugin)"
     ]);
@@ -64,6 +66,7 @@ describe("authoritative Browser View rendering composition", () => {
     expect(occurrences(human, "enableAuthServer: true")).toBe(1);
     expect(occurrences(human, 'loginUrlKey: "/login"')).toBe(1);
     expect(occurrences(human, 'ribbonType: "grid"')).toBe(2);
+    expect(occurrences(human, "unitType: toUniverInstanceType(opts.unitType)")).toBe(2);
     expect(occurrences(human, "darkMode: opts.darkMode")).toBe(2);
     expect(occurrences(human, "api.toggleDarkMode(isDarkMode)")).toBe(2);
   });
@@ -114,6 +117,70 @@ describe("authoritative Browser View rendering composition", () => {
     ]) {
       expect(styles).toContain(requiredStyle);
     }
+  });
+
+  it("aligns trunk exchange and all-scope print output plugins with Workspace", async () => {
+    const preset = await read("render-preset/src/index.ts");
+    const human = await read("collab-web/src/core/viewer.ts");
+    const styles = await read("render-preset/src/styles.css");
+    const facades = await read("render-preset/src/facades.ts");
+    const locale = await read("render-preset/src/locales/generated/en-US.ts");
+
+    expectInOrder(preset, [
+      "case UniverInstanceType.UNIVER_SHEET:",
+      "univer.registerPlugin(UniverSheetsPrintPlugin)",
+      "registerExchange();",
+      "univer.registerPlugin(UniverSheetsExchangeClientPlugin)",
+      "case UniverInstanceType.UNIVER_DOC:",
+      "univer.registerPlugin(UniverDocsExchangeClientPlugin)",
+      "univer.registerPlugin(UniverDocsPrintPlugin)",
+      "case UniverInstanceType.UNIVER_SLIDE:",
+      "univer.registerPlugin(UniverSlidesExchangeClientPlugin)",
+      "univer.registerPlugin(UniverSlidesPrintPlugin)",
+      "case UniverInstanceType.UNIVER_BASE:",
+      "univer.registerPlugin(UniverBasesExchangeClientPlugin)",
+      "case UniverInstanceType.UNIVER_BOARD:",
+      "univer.registerPlugin(UniverBoardsPrintPlugin)"
+    ]);
+    expect(human).toContain(
+      "opts.worktreeId === undefined && opts.unitType !== UNIT_TYPE_BOARD"
+    );
+    expect(human).toContain("getTaskServerUrl: urls.getTaskServerUrl");
+    expect(human).toContain("importServerUrl: urls.importServerUrl");
+    expect(human).toContain("exportServerUrl: urls.exportServerUrl");
+    for (const packageName of [
+      "bases-exchange-client",
+      "boards-print",
+      "docs-exchange-client",
+      "docs-print",
+      "sheets-exchange-client",
+      "sheets-print",
+      "slides-exchange-client",
+      "slides-print"
+    ]) {
+      expect(`${styles}\n${facades}\n${locale}`).toContain(`@univerjs-pro/${packageName}`);
+    }
+    expectInOrder(styles, [
+      "@univerjs-pro/chart-ui/lib/index.css",
+      "@univerjs-pro/shape-editor-ui/lib/index.css",
+      "@univerjs-pro/docs-callout-ui/lib/index.css",
+      "@univerjs-pro/docs-chart-ui/lib/index.css",
+      "@univerjs-pro/docs-code-ui/lib/index.css",
+      "@univerjs-pro/docs-latex-ui/lib/index.css",
+      "@univerjs-pro/docs-print/lib/index.css",
+      "@univerjs-pro/docs-shape-ui/lib/index.css",
+      "@univerjs-pro/docs-table-ui/lib/index.css"
+    ]);
+    expectInOrder(styles, [
+      "@univerjs-pro/slides-ui/lib/index.css",
+      "@univerjs-pro/slides-chart-ui/lib/index.css",
+      "@univerjs-pro/slides-print/lib/index.css",
+      "@univerjs-pro/slides-table-ui/lib/index.css"
+    ]);
+    expectInOrder(styles, [
+      "@univerjs-pro/bases-ui/lib/index.css",
+      "@univerjs-pro/bases-exchange-client/lib/index.css"
+    ]);
   });
 
   it("locks document scrolling around the Human viewer shell", async () => {

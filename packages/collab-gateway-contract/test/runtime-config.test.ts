@@ -16,6 +16,9 @@ describe("buildRuntimeConfig", () => {
     expect(c.downloadEndpointUrl).toBe(`${origin}/uf/${enc}/universer-api/`);
     expect(c.uploadFileServerUrl).toBe(`${origin}/uf/${enc}/universer-api/stream/file/upload`);
     expect(c.signUrlServerUrl).toBe(`${origin}/uf/${enc}/universer-api/file/{fileID}/sign-url`);
+    expect(c.getTaskServerUrl).toBe(`${origin}/uf/${enc}/universer-api/exchange/task/{taskID}`);
+    expect(c.importServerUrl).toBe(`${origin}/uf/${enc}/universer-api/exchange/{type}/import`);
+    expect(c.exportServerUrl).toBe(`${origin}/uf/${enc}/universer-api/exchange/{type}/export`);
   });
 
   it("inserts /worktrees/<worktreeId> when worktreeId is given", () => {
@@ -26,6 +29,9 @@ describe("buildRuntimeConfig", () => {
     );
     expect(c.signUrlServerUrl).toBe(
       `${origin}/uf/${enc}/worktrees/fk_123/universer-api/file/{fileID}/sign-url`,
+    );
+    expect(c.getTaskServerUrl).toBe(
+      `${origin}/uf/${enc}/worktrees/fk_123/universer-api/exchange/task/{taskID}`,
     );
   });
 

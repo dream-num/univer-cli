@@ -150,6 +150,19 @@ export async function createViewer(opts: ViewerOptions): Promise<ViewerHandle> {
     license: TEST_LICENSE,
     workbenchChrome: opts.unitType === UNIT_TYPE_BOARD ? "hidden" : "visible",
     ribbonType: "grid",
+    unitType: toUniverInstanceType(opts.unitType),
+    ...(opts.worktreeId === undefined && opts.unitType !== UNIT_TYPE_BOARD
+      ? {
+          exchangeClientConfig: {
+            uploadFileServerUrl: urls.uploadFileServerUrl,
+            getTaskServerUrl: urls.getTaskServerUrl,
+            signUrlServerUrl: urls.signUrlServerUrl,
+            importServerUrl: urls.importServerUrl,
+            exportServerUrl: urls.exportServerUrl,
+            downloadEndpointUrl: urls.downloadEndpointUrl
+          }
+        }
+      : {}),
     resourceRefDataProviderRegistrations: [sheetResourceRefDataProvider.registration],
     // Collaboration must start before Embed core, whose command service consumes collaborative
     // undo/redo. Collaboration Embed itself depends on Embed core and belongs before Embed UI.
@@ -167,9 +180,9 @@ export async function createViewer(opts: ViewerOptions): Promise<ViewerHandle> {
         sendChangesetTimeout: 200,
         ...urls
       });
-      if (opts.unitType === UNIT_TYPE_BOARD) {
-        univer.registerPlugin(UniverCollaborationClientUIPlugin);
-      }
+      univer.registerPlugin(UniverCollaborationClientUIPlugin, {
+        ...(opts.unitType === UNIT_TYPE_BASE ? { enableDocumentCollaborationUI: false } : {})
+      });
     },
     registerAfterEmbedCore: () => {
       univer.registerPlugin(UniverCollaborationEmbedPlugin);
@@ -285,7 +298,8 @@ export async function createPreviewViewer(opts: PreviewViewerOptions): Promise<V
     assetIoOwner: ViewAssetIoOwner.Local,
     license: TEST_LICENSE,
     workbenchChrome: opts.unitType === UNIT_TYPE_BOARD ? "hidden" : "visible",
-    ribbonType: "grid"
+    ribbonType: "grid",
+    unitType: toUniverInstanceType(opts.unitType)
   });
 
   const snapshot = decodeSnapshotFromWire(opts.snapshot) as ISnapshot;
@@ -484,4 +498,19 @@ function base64ToBytes(b64: string): Uint8Array {
     bytes[i] = bin.charCodeAt(i);
   }
   return bytes;
+}
+
+function toUniverInstanceType(unitType: UnitType): UniverInstanceType {
+  switch (unitType) {
+    case UNIT_TYPE_DOC:
+      return UniverInstanceType.UNIVER_DOC;
+    case UNIT_TYPE_SHEET:
+      return UniverInstanceType.UNIVER_SHEET;
+    case UNIT_TYPE_SLIDE:
+      return UniverInstanceType.UNIVER_SLIDE;
+    case UNIT_TYPE_BASE:
+      return UniverInstanceType.UNIVER_BASE;
+    case UNIT_TYPE_BOARD:
+      return UniverInstanceType.UNIVER_BOARD;
+  }
 }
