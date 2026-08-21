@@ -62,9 +62,9 @@ describe("version-matched Board composition", () => {
     expect(shapeEditorUIEnUS["shape-editor-ui"].textEditor.placeholder).toBe("Enter text");
     expect(`${viewer}\n${preset}`).not.toMatch(/packages-experimental|UniverDebuggerPlugin/u);
     expect(viewer).not.toContain("univer.registerPlugin(UniverNetworkPlugin");
-    expect(viewer).toMatch(
-      /if \(opts\.unitType !== UNIT_TYPE_BOARD\) \{\s+univer\.__getInjector\(\)\.add\(\[ISocketService/u
-    );
+    expect(viewer).not.toContain("ISocketService");
+    expect(viewer).not.toContain("WebSocketService");
+    expect(viewer).not.toContain("univer.__getInjector().add(");
     expect(viewer).toContain("univer.registerPlugin(UniverCollaborationClientUIPlugin, {");
     expect(viewer).not.toMatch(
       /if \(opts\.unitType === UNIT_TYPE_BOARD\) \{\s+univer\.registerPlugin\(UniverCollaborationClientUIPlugin\);/u
