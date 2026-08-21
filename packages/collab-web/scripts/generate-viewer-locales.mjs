@@ -26,7 +26,7 @@ const LOCALES = [
 ];
 
 function localeModule(tag) {
-  return `import collaborationClient from "@univerjs-pro/collaboration-client/locale/${tag}";\nimport collaborationClientUI from "@univerjs-pro/collaboration-client-ui/locale/${tag}";\nimport exchangeClient from "@univerjs-pro/exchange-client/locale/${tag}";\nimport { loadContentLocale, mergeLocalePacks } from "@univer/render-preset";\nimport type { ILanguagePack } from "@univerjs/core";\n\nexport default async function loadLocale(): Promise<ILanguagePack> {\n  const content = await loadContentLocale("${tag}");\n  return mergeLocalePacks([content, collaborationClient, collaborationClientUI, exchangeClient]);\n}\n`;
+  return `import collaborationClient from "@univerjs-pro/collaboration-client/locale/${tag}";\nimport collaborationClientUI from "@univerjs-pro/collaboration-client-ui/locale/${tag}";\nimport editHistoryLoader from "@univerjs-pro/edit-history-loader/locale/${tag}";\nimport editHistoryViewer from "@univerjs-pro/edit-history-viewer/locale/${tag}";\nimport exchangeClient from "@univerjs-pro/exchange-client/locale/${tag}";\nimport { loadContentLocale, mergeLocalePacks } from "@univer/render-preset";\nimport type { ILanguagePack } from "@univerjs/core";\n\nexport default async function loadLocale(): Promise<ILanguagePack> {\n  const content = await loadContentLocale("${tag}");\n  return mergeLocalePacks([content, collaborationClient, collaborationClientUI, editHistoryLoader, editHistoryViewer, exchangeClient]);\n}\n`;
 }
 
 function loaderModule() {

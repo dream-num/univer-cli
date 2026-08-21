@@ -259,6 +259,7 @@ describe("Gateway v1 .univer upgrade", () => {
     expect(detectFormat(filename)).toEqual([
       { component: "assets", version: 1 },
       { component: "core", version: 1 },
+      { component: "history", version: 1 },
       { component: "worktree", version: 2 },
     ]);
   });

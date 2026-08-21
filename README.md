@@ -32,7 +32,7 @@ univer status ./sales.univer --json
 univer open ./sales.univer
 ```
 
-Viewer 的 trunk Ribbon 同样支持把 Office 文件导入为当前 `.univer` 的新 Unit、导出 Sheet/Doc/Slide/Base，以及打印受支持的 Unit；Worktree 和 merge preview 只保留打印，Board 仅提供打印。
+Viewer 的 trunk Ribbon 同样支持把 Office 文件导入为当前 `.univer` 的新 Unit、导出 Sheet/Doc/Slide/Base，以及打印受支持的 Unit。trunk Sheet 还可查看按提交时间聚合的版本历史；只读 Viewer 只能查看，可编辑 Viewer 可以显式恢复为某个历史版本。Worktree 和 merge preview 不提供版本历史或导入导出，只保留打印；Board 仅提供打印。
 
 对内容的写操作在 draft Worktree 中完成：
 
@@ -68,7 +68,7 @@ univer <command> --help
 
 ## 数据与安全
 
-`.univer` 是包含内容 Unit、revision、Worktree 和本地资源的 SQLite container。新文件使用 v2 格式；受支持的 v0 和 v1 输入会通过只读识别、完整备份、独立 candidate 验证和原子替换升级，失败时不会覆盖源文件。完整合同见 [`docs/data-compatibility.md`](docs/data-compatibility.md)。
+`.univer` 是包含内容 Unit、revision、Worktree、本地资源和可重建 History 索引的 SQLite container。新文件使用 v2 格式；受支持的 v0 和 v1 输入会通过只读识别、完整备份、独立 candidate 验证和原子替换升级，失败时不会覆盖源文件。完整合同见 [`docs/data-compatibility.md`](docs/data-compatibility.md)。
 
 Univer runtime development license 是 application 运行凭据，按 90 天周期更新，与 repository software license 分离。可以通过 `UNIVER_LICENSE` 或 `univerRuntime.license` 配置覆盖内置凭据。
 

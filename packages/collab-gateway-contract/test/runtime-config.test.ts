@@ -9,6 +9,7 @@ const enc = encodeUniverfile(univerfile);
 describe("buildRuntimeConfig", () => {
   it("builds trunk base URLs under /uf/<enc> (no worktree segment)", () => {
     const c = buildRuntimeConfig({ origin, univerfile });
+    expect(c.historyListServerUrl).toBe(`${origin}/uf/${enc}/universer-api/history`);
     expect(c.snapshotServerUrl).toBe(`${origin}/uf/${enc}/universer-api/snapshot`);
     expect(c.collabSubmitChangesetUrl).toBe(`${origin}/uf/${enc}/universer-api/comb`);
     expect(c.wsSessionTicketUrl).toBe(`${origin}/uf/${enc}/universer-api/user/session-ticket`);
@@ -23,6 +24,7 @@ describe("buildRuntimeConfig", () => {
 
   it("inserts /worktrees/<worktreeId> when worktreeId is given", () => {
     const c = buildRuntimeConfig({ origin, univerfile, worktreeId: "fk_123" });
+    expect(c.historyListServerUrl).toBe(`${origin}/uf/${enc}/universer-api/history`);
     expect(c.snapshotServerUrl).toBe(`${origin}/uf/${enc}/worktrees/fk_123/universer-api/snapshot`);
     expect(c.uploadFileServerUrl).toBe(
       `${origin}/uf/${enc}/worktrees/fk_123/universer-api/stream/file/upload`,
@@ -55,6 +57,8 @@ describe("buildRuntimeConfig", () => {
   it("builds same-origin URLs from a gateway file key", () => {
     const gatewayFileKey = "L3RtcC91bml2ZXItZ2F0ZXdheS1zbW9rZS9idWRnZXQudW5pdmVy";
     const c = buildRuntimeConfig({ origin, gatewayFileKey, worktreeId: "wt-1" });
+
+    expect(c.historyListServerUrl).toBe(`${origin}/uf/${gatewayFileKey}/universer-api/history`);
 
     expect(c.snapshotServerUrl).toBe(
       `${origin}/uf/${gatewayFileKey}/worktrees/wt-1/universer-api/snapshot`,
