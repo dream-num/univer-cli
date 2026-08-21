@@ -55,7 +55,7 @@
     "@univer/collab-gateway-contract": "workspace:*",
     "@univer/univerfile-sqlite": "workspace:*",
     "@univerjs-pro/cli-assets": "0.1.0",
-    "@univerjs-pro/engine-formula-rust-binding": "1.0.0-insiders.20260811-001a0e5",
+    "@univerjs-pro/engine-formula-rust-binding": "1.0.0-insiders.20260819-8209aa8",
     "@univerjs-pro/exchange-node": "1.0.0-insiders.20260821-c2f0ba5",
     "@univerjs-pro/exchange-node-binding": "0.1.0",
     "@univerjs/core": "1.0.0-insiders.20260821-c2f0ba5",

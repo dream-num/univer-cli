@@ -27,7 +27,7 @@ describe("univer local CLI composition", () => {
 
   it("declares dynamically loaded native bindings as runtime dependencies", () => {
     expect(packageMetadata.dependencies["@univerjs-pro/engine-formula-rust-binding"]).toBe(
-      "1.0.0-insiders.20260811-001a0e5",
+      "1.0.0-insiders.20260819-8209aa8",
     );
     expect(packageMetadata.dependencies["@univerjs-pro/exchange-node-binding"]).toBe("0.1.0");
     expect(packageMetadata.dependencies["@univerjs-pro/exchange-node"]).toBe(

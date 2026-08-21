@@ -108,8 +108,8 @@ importers:
         specifier: 0.1.0
         version: 0.1.0
       '@univerjs-pro/engine-formula-rust-binding':
-        specifier: 1.0.0-insiders.20260811-001a0e5
-        version: 1.0.0-insiders.20260811-001a0e5
+        specifier: 1.0.0-insiders.20260819-8209aa8
+        version: 1.0.0-insiders.20260819-8209aa8
       '@univerjs-pro/exchange-node':
         specifier: 1.0.0-insiders.20260821-c2f0ba5
         version: 1.0.0-insiders.20260821-c2f0ba5(react@19.2.8)(rxjs@7.8.2)
@@ -3137,31 +3137,14 @@ packages:
     peerDependencies:
       rxjs: '>=7.0.0'
 
-  '@univerjs-pro/engine-formula-rust-binding-darwin-arm64@1.0.0-insiders.20260811-001a0e5':
-    resolution: {integrity: sha512-JIcavAxzfUmnLpK6oAeWZ34TXaR5kEzK2236P/R4Z7mJCCrlSOaHvvVjED26pb/iB1ls0YRpnHPKsADTzSZDZA==, tarball: https://registry.npmjs.org/@univerjs-pro/engine-formula-rust-binding-darwin-arm64/-/engine-formula-rust-binding-darwin-arm64-1.0.0-insiders.20260811-001a0e5.tgz}
-    cpu: [arm64]
-    os: [darwin]
-
   '@univerjs-pro/engine-formula-rust-binding-darwin-arm64@1.0.0-insiders.20260819-8209aa8':
     resolution: {integrity: sha512-VdR/QlBfvXPQ+0BcHYhtZhIAQgEssfSV0v76WvbJbJbUvYQ2y6XXBlfB6PBFr1qwvv8djF1EaCoy9A/FCYCp8A==, tarball: https://insider-npm.oss-cn-shenzhen.aliyuncs.com/insider-npm-registry/v1/packages/@univerjs-pro/engine-formula-rust-binding-darwin-arm64/versions/1.0.0-insiders.20260819-8209aa8/package.tgz}
     cpu: [arm64]
     os: [darwin]
 
-  '@univerjs-pro/engine-formula-rust-binding-linux-arm64-gnu@1.0.0-insiders.20260811-001a0e5':
-    resolution: {integrity: sha512-3GnsBF2AuX8l+yddiqInn9IX8K+h98N+E0aiO79HAiFQVkZ+F80LAPJwA5/Ql/kTWDd8zzdc2kuxexBiWeDBNw==, tarball: https://registry.npmjs.org/@univerjs-pro/engine-formula-rust-binding-linux-arm64-gnu/-/engine-formula-rust-binding-linux-arm64-gnu-1.0.0-insiders.20260811-001a0e5.tgz}
-    cpu: [arm64]
-    os: [linux]
-    libc: [glibc]
-
   '@univerjs-pro/engine-formula-rust-binding-linux-arm64-gnu@1.0.0-insiders.20260819-8209aa8':
     resolution: {integrity: sha512-hfgkeHmoMUGql8qfTkUFTC447BBxubHUsRmOI1HHcXAjDDXsTufTrq2XJjmQRbgXjJ0IDHAH9zdJGoDDKNJwMA==, tarball: https://insider-npm.oss-cn-shenzhen.aliyuncs.com/insider-npm-registry/v1/packages/@univerjs-pro/engine-formula-rust-binding-linux-arm64-gnu/versions/1.0.0-insiders.20260819-8209aa8/package.tgz}
     cpu: [arm64]
-    os: [linux]
-    libc: [glibc]
-
-  '@univerjs-pro/engine-formula-rust-binding-linux-x64-gnu@1.0.0-insiders.20260811-001a0e5':
-    resolution: {integrity: sha512-ax1st/qNv4DR1AgJg/6Y0Y3C7/k7tJ831Na25J/DZOowei1tt5yNS9LK+W/QJH4YpYXH5hz2MVbK1E7LbcFk3g==, tarball: https://registry.npmjs.org/@univerjs-pro/engine-formula-rust-binding-linux-x64-gnu/-/engine-formula-rust-binding-linux-x64-gnu-1.0.0-insiders.20260811-001a0e5.tgz}
-    cpu: [x64]
     os: [linux]
     libc: [glibc]
 
@@ -3171,21 +3154,13 @@ packages:
     os: [linux]
     libc: [glibc]
 
-  '@univerjs-pro/engine-formula-rust-binding-win32-x64-msvc@1.0.0-insiders.20260811-001a0e5':
-    resolution: {integrity: sha512-XNGn9FxfjDm6if74rZtM+kBs1mGiC0lXeZbQCc1GtG3SeAoqFptBFGtJ/DYq0NVstj2zalurXBVJHhBc9niH2Q==, tarball: https://registry.npmjs.org/@univerjs-pro/engine-formula-rust-binding-win32-x64-msvc/-/engine-formula-rust-binding-win32-x64-msvc-1.0.0-insiders.20260811-001a0e5.tgz}
-    cpu: [x64]
-    os: [win32]
-
   '@univerjs-pro/engine-formula-rust-binding-win32-x64-msvc@1.0.0-insiders.20260819-8209aa8':
     resolution: {integrity: sha512-kvveICZOiFnvBmkKh769e6E912+q82kWC1bdxZL2GtSYUcROY1MKv4ZQ8bwed4WX9d4ei4hYdtPUDxzVjPyGjA==, tarball: https://insider-npm.oss-cn-shenzhen.aliyuncs.com/insider-npm-registry/v1/packages/@univerjs-pro/engine-formula-rust-binding-win32-x64-msvc/versions/1.0.0-insiders.20260819-8209aa8/package.tgz}
     cpu: [x64]
     os: [win32]
 
-  '@univerjs-pro/engine-formula-rust-binding@1.0.0-insiders.20260811-001a0e5':
-    resolution: {integrity: sha512-R4kbmQTThpejph0FUM8zCXJ9tHh1beZhxNSDK+OsBZeLKsQqKAAEaBbCM5iCktKWK2T7fwKYDKlvMiMjzRQ2Rw==, tarball: https://registry.npmjs.org/@univerjs-pro/engine-formula-rust-binding/-/engine-formula-rust-binding-1.0.0-insiders.20260811-001a0e5.tgz}
-
   '@univerjs-pro/engine-formula-rust-binding@1.0.0-insiders.20260819-8209aa8':
-    resolution: {integrity: sha512-ZYEgg21fgW0XvCjAZgyvzquZk1jZtKXnk5Aa7N0WgV73iLIhwOtfqhsnrG+J8RKh/ps9V2BXnDDHR/9x52W6UA==, tarball: https://registry.npmjs.org/@univerjs-pro/engine-formula-rust-binding/-/engine-formula-rust-binding-1.0.0-insiders.20260819-8209aa8.tgz}
+    resolution: {integrity: sha512-ZYEgg21fgW0XvCjAZgyvzquZk1jZtKXnk5Aa7N0WgV73iLIhwOtfqhsnrG+J8RKh/ps9V2BXnDDHR/9x52W6UA==, tarball: https://insider-npm.oss-cn-shenzhen.aliyuncs.com/insider-npm-registry/v1/packages/@univerjs-pro/engine-formula-rust-binding/versions/1.0.0-insiders.20260819-8209aa8/package.tgz}
 
   '@univerjs-pro/engine-formula-rust@1.0.0-insiders.20260821-c2f0ba5':
     resolution: {integrity: sha512-DZroDmRXcY2XFholmoA00W5LrtDlBc9SATa42zWrAHc2r92HRKp4YvtOp4ZA3XR2uEe58naPD3Ugb+13pWwB/w==}
@@ -7155,36 +7130,17 @@ snapshots:
     transitivePeerDependencies:
       - react
 
-  '@univerjs-pro/engine-formula-rust-binding-darwin-arm64@1.0.0-insiders.20260811-001a0e5':
-    optional: true
-
   '@univerjs-pro/engine-formula-rust-binding-darwin-arm64@1.0.0-insiders.20260819-8209aa8':
-    optional: true
-
-  '@univerjs-pro/engine-formula-rust-binding-linux-arm64-gnu@1.0.0-insiders.20260811-001a0e5':
     optional: true
 
   '@univerjs-pro/engine-formula-rust-binding-linux-arm64-gnu@1.0.0-insiders.20260819-8209aa8':
     optional: true
 
-  '@univerjs-pro/engine-formula-rust-binding-linux-x64-gnu@1.0.0-insiders.20260811-001a0e5':
-    optional: true
-
   '@univerjs-pro/engine-formula-rust-binding-linux-x64-gnu@1.0.0-insiders.20260819-8209aa8':
-    optional: true
-
-  '@univerjs-pro/engine-formula-rust-binding-win32-x64-msvc@1.0.0-insiders.20260811-001a0e5':
     optional: true
 
   '@univerjs-pro/engine-formula-rust-binding-win32-x64-msvc@1.0.0-insiders.20260819-8209aa8':
     optional: true
-
-  '@univerjs-pro/engine-formula-rust-binding@1.0.0-insiders.20260811-001a0e5':
-    optionalDependencies:
-      '@univerjs-pro/engine-formula-rust-binding-darwin-arm64': 1.0.0-insiders.20260811-001a0e5
-      '@univerjs-pro/engine-formula-rust-binding-linux-arm64-gnu': 1.0.0-insiders.20260811-001a0e5
-      '@univerjs-pro/engine-formula-rust-binding-linux-x64-gnu': 1.0.0-insiders.20260811-001a0e5
-      '@univerjs-pro/engine-formula-rust-binding-win32-x64-msvc': 1.0.0-insiders.20260811-001a0e5
 
   '@univerjs-pro/engine-formula-rust-binding@1.0.0-insiders.20260819-8209aa8':
     optionalDependencies:
