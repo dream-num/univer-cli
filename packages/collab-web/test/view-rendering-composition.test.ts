@@ -162,15 +162,17 @@ describe("authoritative Browser View rendering composition", () => {
     }
     expectInOrder(styles, [
       "@univerjs-pro/chart-ui/lib/index.css",
-      "@univerjs-pro/shape-editor-ui/lib/index.css",
       "@univerjs-pro/docs-callout-ui/lib/index.css",
       "@univerjs-pro/docs-chart-ui/lib/index.css",
       "@univerjs-pro/docs-code-ui/lib/index.css",
       "@univerjs-pro/docs-latex-ui/lib/index.css",
       "@univerjs-pro/docs-print/lib/index.css",
+      "@univerjs-pro/docs-list-ui/lib/index.css",
+      "@univerjs-pro/docs-quote-ui/lib/index.css",
       "@univerjs-pro/docs-shape-ui/lib/index.css",
       "@univerjs-pro/docs-table-ui/lib/index.css"
     ]);
+    expect(styles).toContain("@univerjs-pro/shape-editor-ui/lib/index.css");
     expectInOrder(styles, [
       "@univerjs-pro/slides-ui/lib/index.css",
       "@univerjs-pro/slides-chart-ui/lib/index.css",

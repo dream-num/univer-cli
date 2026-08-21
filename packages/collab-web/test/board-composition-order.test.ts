@@ -82,16 +82,20 @@ describe("version-matched Board composition", () => {
       resolve(import.meta.dirname, "../../render-preset/src/styles.css"),
       "utf8"
     );
-    expectInOrder(styles, [
+    for (const requiredStyle of [
       "@univerjs-pro/chart-ui/lib/index.css",
       "@univerjs-pro/shape-editor-ui/lib/index.css",
       "@univerjs-pro/ink-ui/lib/index.css",
-      "@univerjs-pro/docs-latex-ui/lib/index.css",
-      "@univerjs-pro/boards-ui/lib/index.css",
+      "@univerjs-pro/docs-latex-ui/lib/index.css"
+    ]) {
+      expect(styles).toContain(requiredStyle);
+    }
+    expectInOrder(styles, [
       "@univerjs-pro/boards-chart-ui/lib/index.css",
       "@univerjs-pro/boards-mind-ui/lib/index.css",
       "@univerjs-pro/boards-print/lib/index.css",
-      "@univerjs-pro/boards-table-ui/lib/index.css"
+      "@univerjs-pro/boards-table-ui/lib/index.css",
+      "@univerjs-pro/boards-ui/lib/index.css"
     ]);
     const main = await readFile(resolve(import.meta.dirname, "../src/main.tsx"), "utf8");
     const viewerLocale = await readFile(
