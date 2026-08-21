@@ -34,6 +34,9 @@ export interface RuntimeConfigUrls {
   downloadEndpointUrl: string;
   uploadFileServerUrl: string;
   signUrlServerUrl: string;
+  getTaskServerUrl: string;
+  importServerUrl: string;
+  exportServerUrl: string;
 }
 
 function toWsOrigin(origin: string): string {
@@ -46,11 +49,12 @@ function toWsOrigin(origin: string): string {
  * worktree:   ${origin}/uf/<enc>/worktrees/<worktreeId>
  */
 export function buildRuntimeConfig(input: RuntimeConfigInput): RuntimeConfigUrls {
+  const origin = input.origin.replace(/\/+$/u, "");
   const worktreeSeg = input.worktreeId !== undefined ? `/worktrees/${input.worktreeId}` : "";
   const fileKey =
     "gatewayFileKey" in input ? input.gatewayFileKey : encodeUniverfile(input.univerfile);
-  const baseRoot = `${input.origin}/uf/${fileKey}`;
-  const wsRoot = `${input.wsOrigin ?? toWsOrigin(input.origin)}/uf/${fileKey}`;
+  const baseRoot = `${origin}/uf/${fileKey}`;
+  const wsRoot = `${input.wsOrigin ?? toWsOrigin(origin)}/uf/${fileKey}`;
   const base = `${baseRoot}${worktreeSeg}`;
   const wsBase = `${wsRoot}${worktreeSeg}`;
   return {
@@ -59,8 +63,13 @@ export function buildRuntimeConfig(input: RuntimeConfigInput): RuntimeConfigUrls
     collabWebSocketUrl: `${wsBase}/universer-api/comb/connect`,
     wsSessionTicketUrl: `${base}/universer-api/user/session-ticket`,
     authzUrl: `${base}/universer-api/authz`,
-    downloadEndpointUrl: `${base}/universer-api/`,
+    // Signed exchange URLs are Gateway-root-relative (`/uf/<key>/...`). Univer resolves
+    // them against this base path, so using the file-scoped API path would duplicate it.
+    downloadEndpointUrl: `${origin}/`,
     uploadFileServerUrl: `${base}/universer-api/stream/file/upload`,
     signUrlServerUrl: `${base}/universer-api/file/{fileID}/sign-url`,
+    getTaskServerUrl: `${base}/universer-api/exchange/task/{taskID}`,
+    importServerUrl: `${base}/universer-api/exchange/{type}/import`,
+    exportServerUrl: `${base}/universer-api/exchange/{type}/export`,
   };
 }

@@ -70,6 +70,7 @@ univer command
 univer open
   -> Gateway-hosted Viewer
        -> Collaboration SDK browser client
+       -> trunk-only Universer exchange tasks + all-scope print plugins
 
 univer screenshot / lint / compile-svg
   -> CLI SDK browser orchestration
@@ -80,6 +81,8 @@ univer screenshot / lint / compile-svg
 
 daemon 只管理本地服务和 runtime lifecycle。它为 render operation 物化 UnitData、解析同文件依赖并投影本地
 图片资产；PNG 输出、layout analysis 和文本测量由 CLI SDK capability 与 browser runtime 完成。
+
+Gateway 按 `.univer` runtime 隔离 Viewer Ribbon 使用的 `source=1` exchange 上传、异步 import/export task 与临时 artifact；导入在当前 trunk 创建新 Unit，导出物化 trunk head。Worktree 路径不暴露 exchange。嵌入资源继续使用按 Unit/worktree 授权的 `source=3` 文件协议，不能与 exchange artifact 混用。
 
 headless collaboration runtime 只拥有一个可写 Host Unit。Embed 遇到 `self` ResourceRef 时，application-owned
 Local provider 通过当前 `.univer` 与 Worktree 已限定的 Snapshot endpoint 按需物化 child Unit，并透传 Embed

@@ -40,7 +40,6 @@ describe("version-matched Board composition", () => {
     expect(viewer).toContain('import "@univer/render-preset/facades";');
     expect(viewer).toContain('import "@univerjs-pro/collaboration-client/facade";');
     expectInOrder(preset, [
-      "univer.registerPlugin(UniverExchangeClientPlugin)",
       "univer.registerPlugin(UniverBoardsPlugin)",
       "univer.registerPlugin(UniverInkPlugin)",
       "univer.registerPlugin(UniverInkUIPlugin)",
@@ -63,10 +62,11 @@ describe("version-matched Board composition", () => {
     expect(shapeEditorUIEnUS["shape-editor-ui"].textEditor.placeholder).toBe("Enter text");
     expect(`${viewer}\n${preset}`).not.toMatch(/packages-experimental|UniverDebuggerPlugin/u);
     expect(viewer).not.toContain("univer.registerPlugin(UniverNetworkPlugin");
-    expect(viewer).toMatch(
-      /if \(opts\.unitType !== UNIT_TYPE_BOARD\) \{\s+univer\.__getInjector\(\)\.add\(\[ISocketService/u
-    );
-    expect(viewer).toMatch(
+    expect(viewer).not.toContain("ISocketService");
+    expect(viewer).not.toContain("WebSocketService");
+    expect(viewer).not.toContain("univer.__getInjector().add(");
+    expect(viewer).toContain("univer.registerPlugin(UniverCollaborationClientUIPlugin, {");
+    expect(viewer).not.toMatch(
       /if \(opts\.unitType === UNIT_TYPE_BOARD\) \{\s+univer\.registerPlugin\(UniverCollaborationClientUIPlugin\);/u
     );
     expect(viewer).toContain("assetIoOwner: ViewAssetIoOwner.CollaborationClient");
@@ -82,12 +82,18 @@ describe("version-matched Board composition", () => {
       resolve(import.meta.dirname, "../../render-preset/src/styles.css"),
       "utf8"
     );
-    expectInOrder(styles, [
-      "@univerjs-pro/exchange-client/lib/index.css",
+    for (const requiredStyle of [
+      "@univerjs-pro/chart-ui/lib/index.css",
       "@univerjs-pro/shape-editor-ui/lib/index.css",
       "@univerjs-pro/ink-ui/lib/index.css",
+      "@univerjs-pro/docs-latex-ui/lib/index.css"
+    ]) {
+      expect(styles).toContain(requiredStyle);
+    }
+    expectInOrder(styles, [
       "@univerjs-pro/boards-chart-ui/lib/index.css",
       "@univerjs-pro/boards-mind-ui/lib/index.css",
+      "@univerjs-pro/boards-print/lib/index.css",
       "@univerjs-pro/boards-table-ui/lib/index.css",
       "@univerjs-pro/boards-ui/lib/index.css"
     ]);

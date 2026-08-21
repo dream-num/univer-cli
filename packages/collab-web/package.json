@@ -5,7 +5,7 @@
   "description": "Browser application for the collab-gateway worktree server: official collaboration-client for content editing plus a WorktreeControlClient shell and lifecycle WebSocket.",
   "type": "module",
   "scripts": {
-    "build": "vite build",
+    "build": "vite build && node scripts/check-viewer-css.mjs",
     "dev": "vite",
     "generate:locales": "node scripts/generate-viewer-locales.mjs",
     "check:locales": "node scripts/generate-viewer-locales.mjs --check && node scripts/check-sdk-locales.mjs",
