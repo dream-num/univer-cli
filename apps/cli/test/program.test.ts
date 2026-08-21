@@ -12,7 +12,7 @@ describe("univer local CLI composition", () => {
   });
 
   it("pins every CLI SDK package to one exact internal build", () => {
-    const baseline = "1.0.0-insiders.20260819-8595af2";
+    const baseline = "1.0.0-insiders.20260821-c2f0ba5";
     const versions = Object.entries(packageMetadata.dependencies)
       .filter(([name]) => name.startsWith("@univer-cli/"))
       .map(([, version]) => version);
@@ -27,11 +27,11 @@ describe("univer local CLI composition", () => {
 
   it("declares dynamically loaded native bindings as runtime dependencies", () => {
     expect(packageMetadata.dependencies["@univerjs-pro/engine-formula-rust-binding"]).toBe(
-      "1.0.0-insiders.20260811-001a0e5",
+      "1.0.0-insiders.20260819-8209aa8",
     );
     expect(packageMetadata.dependencies["@univerjs-pro/exchange-node-binding"]).toBe("0.1.0");
     expect(packageMetadata.dependencies["@univerjs-pro/exchange-node"]).toBe(
-      "1.0.0-insiders.20260819-8595af2",
+      "1.0.0-insiders.20260821-c2f0ba5",
     );
     expect(packageMetadata.dependencies).not.toHaveProperty("@univer-cli/unit-exchange");
     expect(packageMetadata.dependencies).not.toHaveProperty("@univerjs-pro/uexcli");

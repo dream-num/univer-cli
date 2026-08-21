@@ -16,9 +16,9 @@
     "typecheck": "tsc -p tsconfig.test.json --noEmit --pretty false"
   },
   "dependencies": {
-    "@univerjs-pro/collaboration-service": "1.0.0-insiders.20260819-8595af2",
-    "@univerjs-pro/collaboration-worktree-service": "1.0.0-insiders.20260819-8595af2",
-    "@univerjs/protocol": "1.0.0-insiders.20260819-8595af2",
+    "@univerjs-pro/collaboration-service": "1.0.0-insiders.20260821-c2f0ba5",
+    "@univerjs-pro/collaboration-worktree-service": "1.0.0-insiders.20260821-c2f0ba5",
+    "@univerjs/protocol": "1.0.0-insiders.20260821-c2f0ba5",
     "libsql": "^0.5.29"
   }
 }
