@@ -3185,7 +3185,7 @@ packages:
     resolution: {integrity: sha512-R4kbmQTThpejph0FUM8zCXJ9tHh1beZhxNSDK+OsBZeLKsQqKAAEaBbCM5iCktKWK2T7fwKYDKlvMiMjzRQ2Rw==, tarball: https://registry.npmjs.org/@univerjs-pro/engine-formula-rust-binding/-/engine-formula-rust-binding-1.0.0-insiders.20260811-001a0e5.tgz}
 
   '@univerjs-pro/engine-formula-rust-binding@1.0.0-insiders.20260819-8209aa8':
-    resolution: {integrity: sha512-ZYEgg21fgW0XvCjAZgyvzquZk1jZtKXnk5Aa7N0WgV73iLIhwOtfqhsnrG+J8RKh/ps9V2BXnDDHR/9x52W6UA==, tarball: https://insider-npm.oss-cn-shenzhen.aliyuncs.com/insider-npm-registry/v1/packages/@univerjs-pro/engine-formula-rust-binding/versions/1.0.0-insiders.20260819-8209aa8/package.tgz}
+    resolution: {integrity: sha512-ZYEgg21fgW0XvCjAZgyvzquZk1jZtKXnk5Aa7N0WgV73iLIhwOtfqhsnrG+J8RKh/ps9V2BXnDDHR/9x52W6UA==, tarball: https://registry.npmjs.org/@univerjs-pro/engine-formula-rust-binding/-/engine-formula-rust-binding-1.0.0-insiders.20260819-8209aa8.tgz}
 
   '@univerjs-pro/engine-formula-rust@1.0.0-insiders.20260821-c2f0ba5':
     resolution: {integrity: sha512-DZroDmRXcY2XFholmoA00W5LrtDlBc9SATa42zWrAHc2r92HRKp4YvtOp4ZA3XR2uEe58naPD3Ugb+13pWwB/w==}
@@ -3230,7 +3230,7 @@ packages:
     os: [win32]
 
   '@univerjs-pro/exchange-node-binding@0.1.0':
-    resolution: {integrity: sha512-opsPVyI2WFafWzvFSdRvy2Fz5leMS6edwqc4o8GYqzIRSu36DkpWaydvFRGcXLN+CxhB6EkpHDQaFIRextey8w==, tarball: https://insider-npm.oss-cn-shenzhen.aliyuncs.com/insider-npm-registry/v1/packages/@univerjs-pro/exchange-node-binding/versions/0.1.0/package.tgz}
+    resolution: {integrity: sha512-opsPVyI2WFafWzvFSdRvy2Fz5leMS6edwqc4o8GYqzIRSu36DkpWaydvFRGcXLN+CxhB6EkpHDQaFIRextey8w==, tarball: https://registry.npmjs.org/@univerjs-pro/exchange-node-binding/-/exchange-node-binding-0.1.0.tgz}
 
   '@univerjs-pro/exchange-node@1.0.0-insiders.20260821-c2f0ba5':
     resolution: {integrity: sha512-uJPpMjY68sRa1k92y8uHC1EfHKWqpCQTl56Q/dVcWEAOQVfNvXxvH4sF4WBzf1VR3zjRuIyWXIhXk8ukKZmeOQ==}
