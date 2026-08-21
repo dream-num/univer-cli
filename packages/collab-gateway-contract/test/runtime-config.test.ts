@@ -13,7 +13,7 @@ describe("buildRuntimeConfig", () => {
     expect(c.collabSubmitChangesetUrl).toBe(`${origin}/uf/${enc}/universer-api/comb`);
     expect(c.wsSessionTicketUrl).toBe(`${origin}/uf/${enc}/universer-api/user/session-ticket`);
     expect(c.authzUrl).toBe(`${origin}/uf/${enc}/universer-api/authz`);
-    expect(c.downloadEndpointUrl).toBe(`${origin}/uf/${enc}/universer-api/`);
+    expect(c.downloadEndpointUrl).toBe(`${origin}/`);
     expect(c.uploadFileServerUrl).toBe(`${origin}/uf/${enc}/universer-api/stream/file/upload`);
     expect(c.signUrlServerUrl).toBe(`${origin}/uf/${enc}/universer-api/file/{fileID}/sign-url`);
     expect(c.getTaskServerUrl).toBe(`${origin}/uf/${enc}/universer-api/exchange/task/{taskID}`);
