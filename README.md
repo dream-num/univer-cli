@@ -32,7 +32,7 @@ univer status ./sales.univer --json
 univer open ./sales.univer
 ```
 
-Viewer 的 trunk Ribbon 同样支持把 Office 文件导入为当前 `.univer` 的新 Unit、导出 Sheet/Doc/Slide/Base，以及打印受支持的 Unit。trunk Sheet 还可查看按提交时间聚合的版本历史；只读 Viewer 只能查看，可编辑 Viewer 可以显式恢复为某个历史版本。Worktree 和 merge preview 不提供版本历史或导入导出，只保留打印；Board 仅提供打印。
+Viewer 的 trunk Ribbon 同样支持把 Office 文件导入为当前 `.univer` 的新 Unit、导出 Sheet/Doc/Slide/Base，以及打印受支持的 Unit。trunk Sheet 还可查看按提交时间聚合的版本历史；只读 Viewer 只能查看，可编辑 Viewer 可以显式恢复为某个历史版本。只读 Sheet 中不提供保护和打印。Worktree 和 merge preview 不提供版本历史或导入导出；其他受支持的 Unit 仍可打印，Board 仅提供打印。
 
 对内容的写操作在 draft Worktree 中完成：
 
