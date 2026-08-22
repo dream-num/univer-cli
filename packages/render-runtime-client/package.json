@@ -10,8 +10,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit --pretty false"
   },
   "dependencies": {
-    "@univer-cli/univer-render-page": "1.0.0-insiders.20260821-c2f0ba5",
-    "@univer-cli/univer-render-runtime": "1.0.0-insiders.20260821-c2f0ba5"
+    "@univer-cli/univer-render-page": "1.0.0-insiders.20260822-0c0c0dd",
+    "@univer-cli/univer-render-runtime": "1.0.0-insiders.20260822-0c0c0dd"
   },
   "devDependencies": {
     "vite": "^7.0.0"
