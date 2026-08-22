@@ -15,6 +15,7 @@ import {
   UNIVERFILE_UNIT_METADATA_KEY,
   UniverfileSQLiteDatabaseAdapter,
 } from "../src/database-adapters/collaboration-database-adapter.js";
+import { UniverfileSQLiteHistoryDatabaseAdapter } from "../src/database-adapters/history-database-adapter.js";
 import {
   UNIVERFILE_WORKTREE_CHANGE_METADATA_KEY,
   UNIVERFILE_WORKTREE_METADATA_KEY,
@@ -110,6 +111,69 @@ describe("Univerfile SQLite database adapters", () => {
 
     connection.dispose();
     expect(disposeConnection).toHaveBeenCalledOnce();
+  });
+
+  it("persists a rebuildable History index on the shared file connection", async () => {
+    const filename = databasePath();
+    const connection = new UniverfileSQLiteConnection({ filename });
+    const disposeConnection = vi.spyOn(connection, "dispose");
+    new UniverfileSQLiteDatabaseAdapter({ filename, connection });
+    const history = new UniverfileSQLiteHistoryDatabaseAdapter({ connection });
+
+    expect(
+      await history.appendRevision(
+        {
+          unitID: "unit-1",
+          type: UniverType.UNIVER_SHEET,
+          revision: 1,
+          userID: "user-1",
+          commands: ["univer.mutation.create-unit"],
+          committedAt: 1_000,
+          origin: 1,
+          historyRevision: 1,
+          forceNextHistory: false,
+        },
+        { expectedLatestRevision: 0 },
+      ),
+    ).toEqual({ status: "appended" });
+    expect(
+      await history.appendRevision(
+        {
+          unitID: "unit-1",
+          type: UniverType.UNIVER_SHEET,
+          revision: 2,
+          userID: "user-2",
+          commands: ["sheet.mutation.set-range-values"],
+          committedAt: 1_500,
+          origin: 1,
+          historyRevision: 1,
+          forceNextHistory: false,
+        },
+        { expectedLatestRevision: 1 },
+      ),
+    ).toEqual({ status: "appended" });
+
+    expect(await history.getIndexState("unit-1")).toMatchObject({
+      latestRevision: 2,
+      currentHistoryRevision: 1,
+    });
+    expect((await history.listRecords("unit-1", { length: 10 })).records).toEqual([
+      expect.objectContaining({
+        startRevision: 1,
+        endRevision: 2,
+        userIDs: ["user-1", "user-2"],
+      }),
+    ]);
+    expect(await history.listCreators("unit-1")).toEqual([
+      { userID: "user-1", origins: [1] },
+      { userID: "user-2", origins: [1] },
+    ]);
+
+    history.resetUnit("unit-1");
+    expect(await history.getIndexState("unit-1")).toBeNull();
+    await history.dispose();
+    expect(disposeConnection).not.toHaveBeenCalled();
+    connection.dispose();
   });
 
   it("persists Unit catalog metadata in the SDK create transaction", async () => {

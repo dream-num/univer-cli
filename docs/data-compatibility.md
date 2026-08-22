@@ -23,7 +23,9 @@
 ## 当前格式
 
 `@univer/univerfile-sqlite` 拥有 v2 schema、格式识别、v0/v1 reader、升级协调和验证逻辑。调用方通过统一的
-`openUniverfileSQLite()` seam 获得共享 connection 的 Collaboration SDK database adapters 与 Asset store。
+`openUniverfileSQLite()` seam 获得共享 connection 的 Collaboration SDK database adapters、History adapter
+与 Asset store。`history@1` 是可选输入组件：打开没有该组件的 v2 文件时创建派生索引，Gateway 随后从权威
+trunk Unit/changeset 回填；索引缺失、落后或超前时可以按 Unit 删除并重建，不改变 core revision。
 
 升级结果包含 source/target format、backup path/hash、Unit/Worktree/Asset verification count、无法带入当前
 模型的 logical history，以及 Worktree 状态规范化数量。Gateway、daemon 和 command handler 不直接操作

@@ -25,6 +25,8 @@
     "@univerjs-pro/boards": "1.0.0-insiders.20260821-c2f0ba5",
     "@univerjs-pro/collaboration": "1.0.0-insiders.20260821-c2f0ba5",
     "@univerjs-pro/collaboration-endpoint": "1.0.0-insiders.20260821-c2f0ba5",
+    "@univerjs-pro/collaboration-history-endpoint": "1.0.0-insiders.20260821-c2f0ba5",
+    "@univerjs-pro/collaboration-history-service": "1.0.0-insiders.20260821-c2f0ba5",
     "@univerjs-pro/collaboration-service": "1.0.0-insiders.20260821-c2f0ba5",
     "@univerjs-pro/collaboration-transport-node": "1.0.0-insiders.20260821-c2f0ba5",
     "@univerjs-pro/collaboration-worktree-endpoint": "1.0.0-insiders.20260821-c2f0ba5",
