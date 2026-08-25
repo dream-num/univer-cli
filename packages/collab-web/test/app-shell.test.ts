@@ -238,7 +238,7 @@ describe("collab-web app shell", () => {
     await app.start();
     click(root, 'button[aria-label="收起侧边栏"]');
 
-    await vi.waitFor(() => expect(root.querySelector(".sidebar")).toBeNull());
+    await waitForUi(() => expect(root.querySelector(".sidebar")).toBeNull());
     const expand = root.querySelector<HTMLButtonElement>('button[aria-label="展开侧边栏"]');
     expect(expand?.classList.contains("absolute")).toBe(true);
     expect(expand?.classList.contains("left-4")).toBe(true);
@@ -246,7 +246,7 @@ describe("collab-web app shell", () => {
     expect(localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY)).toBe("true");
 
     click(root, 'button[aria-label="展开侧边栏"]');
-    await vi.waitFor(() => expect(root.querySelector(".sidebar")).not.toBeNull());
+    await waitForUi(() => expect(root.querySelector(".sidebar")).not.toBeNull());
     expect(localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY)).toBe("false");
   });
 
@@ -271,7 +271,7 @@ describe("collab-web app shell", () => {
     expect(root.querySelector('button[aria-label="展开侧边栏"]')).not.toBeNull();
 
     await app.chooseLang("en-US");
-    await vi.waitFor(() =>
+    await waitForUi(() =>
       expect(root.querySelector('button[aria-label="Expand sidebar"]')).not.toBeNull()
     );
   });
@@ -293,7 +293,7 @@ describe("collab-web app shell", () => {
 
     await app.start();
     click(root, 'button[aria-label="收起侧边栏"]');
-    await vi.waitFor(() =>
+    await waitForUi(() =>
       expect(root.querySelector('button[aria-label="展开侧边栏"]')).not.toBeNull()
     );
     const trigger = root.querySelector<HTMLButtonElement>('button[aria-label="展开侧边栏"]');
@@ -301,7 +301,7 @@ describe("collab-web app shell", () => {
     expect(trigger?.getAttribute("aria-controls")).toBe("gateway-sidebar-hover-drawer");
 
     pointer(trigger, "pointerover", "mouse");
-    await vi.waitFor(() => expect(root.querySelector(".sidebar-drawer")).not.toBeNull());
+    await waitForUi(() => expect(root.querySelector(".sidebar-drawer")).not.toBeNull());
 
     const drawer = root.querySelector<HTMLElement>(".sidebar-drawer");
     expect(root.querySelector('button[aria-label="展开侧边栏"]')).toBe(trigger);
@@ -319,7 +319,7 @@ describe("collab-web app shell", () => {
     expect(root.querySelector(".sidebar-drawer")).not.toBeNull();
 
     pointer(drawer, "pointerout", "mouse", document.body);
-    await vi.waitFor(() => expect(root.querySelector(".sidebar-drawer")).toBeNull());
+    await waitForUi(() => expect(root.querySelector(".sidebar-drawer")).toBeNull());
     expect(trigger?.getAttribute("aria-expanded")).toBe("false");
     expect(localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY)).toBe("true");
   });
@@ -343,7 +343,7 @@ describe("collab-web app shell", () => {
     await app.start();
     const trigger = root.querySelector<HTMLButtonElement>('button[aria-label="展开侧边栏"]');
     pointer(trigger, "pointerover", "mouse");
-    await vi.waitFor(() => expect(root.querySelector(".sidebar-drawer")).not.toBeNull());
+    await waitForUi(() => expect(root.querySelector(".sidebar-drawer")).not.toBeNull());
     const drawer = root.querySelector<HTMLElement>(".sidebar-drawer");
 
     pointer(trigger, "pointerout", "mouse", drawer);
@@ -355,7 +355,7 @@ describe("collab-web app shell", () => {
     expect(root.querySelector(".sidebar-drawer")).not.toBeNull();
 
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
-    await vi.waitFor(() => expect(root.querySelector(".sidebar-drawer")).toBeNull());
+    await waitForUi(() => expect(root.querySelector(".sidebar-drawer")).toBeNull());
     expect(localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY)).toBe("true");
   });
 
@@ -378,15 +378,15 @@ describe("collab-web app shell", () => {
     await app.start();
     const trigger = root.querySelector<HTMLButtonElement>('button[aria-label="展开侧边栏"]');
     pointer(trigger, "pointerover", "mouse");
-    await vi.waitFor(() => expect(root.querySelector(".sidebar-drawer")).not.toBeNull());
+    await waitForUi(() => expect(root.querySelector(".sidebar-drawer")).not.toBeNull());
     const drawer = root.querySelector<HTMLElement>(".sidebar-drawer");
     pointer(trigger, "pointerout", "mouse", drawer);
     pointer(drawer, "pointerover", "mouse", trigger);
 
     click(root, ".sidebar-drawer .settings-row");
-    await vi.waitFor(() => expect(document.querySelector(".settings-menu")).not.toBeNull());
+    await waitForUi(() => expect(document.querySelector(".settings-menu")).not.toBeNull());
     document.querySelector<HTMLElement>(".settings-submenu-trigger")?.click();
-    await vi.waitFor(() => expect(document.querySelector(".settings-submenu")).not.toBeNull());
+    await waitForUi(() => expect(document.querySelector(".settings-submenu")).not.toBeNull());
     pointer(drawer, "pointerout", "mouse", document.body);
     await delay(240);
     expect(root.querySelector(".sidebar-drawer")).not.toBeNull();
@@ -395,10 +395,10 @@ describe("collab-web app shell", () => {
       ...document.querySelectorAll<HTMLElement>(".settings-submenu .settings-opt")
     ].find((option) => option.textContent?.includes("English"));
     english?.click();
-    await vi.waitFor(() =>
+    await waitForUi(() =>
       expect(root.querySelector('.discord-link[aria-label="Join the Discord community"]')).not.toBeNull()
     );
-    await vi.waitFor(() => expect(root.querySelector(".sidebar-drawer")).toBeNull());
+    await waitForUi(() => expect(root.querySelector(".sidebar-drawer")).toBeNull());
     expect(localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY)).toBe("true");
   });
 
@@ -425,7 +425,7 @@ describe("collab-web app shell", () => {
     expect(root.querySelector(".sidebar-drawer")).toBeNull();
 
     trigger?.click();
-    await vi.waitFor(() =>
+    await waitForUi(() =>
       expect(root.querySelector(".sidebar:not(.sidebar-drawer)")).not.toBeNull()
     );
     expect(localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY)).toBe("false");
@@ -469,7 +469,7 @@ describe("collab-web app shell", () => {
     expect(mockState.viewerOptions).toHaveLength(1);
 
     mockState.univerfileOpen?.();
-    await vi.waitFor(() => expect(mockState.viewerResolvers).toHaveLength(1));
+    await waitForUi(() => expect(mockState.viewerResolvers).toHaveLength(1));
     expect(mockState.viewerOptions).toHaveLength(1);
 
     mockState.viewerResolvers[0]?.();
@@ -499,13 +499,13 @@ describe("collab-web app shell", () => {
     );
 
     await app.start();
-    await vi.waitFor(() => expect(mockState.viewerOptions).toHaveLength(1));
+    await waitForUi(() => expect(mockState.viewerOptions).toHaveLength(1));
 
     mockState.univerfileWorktree?.({
       worktree: { ...worktree, status: "ready" }
     });
 
-    await vi.waitFor(() => expect(mockState.viewerOptions).toHaveLength(2));
+    await waitForUi(() => expect(mockState.viewerOptions).toHaveLength(2));
     expect(mockState.viewerOptions[1]).toMatchObject({
       worktreeId: worktree.worktreeId,
       unitId: "unit_1",
@@ -537,7 +537,7 @@ describe("collab-web app shell", () => {
     expect(mockState.viewerDarkModeCalls).toEqual([]);
 
     mockState.viewerResolvers[0]?.();
-    await vi.waitFor(() => expect(mockState.viewerDarkModeCalls.at(-1)).toBe(true));
+    await waitForUi(() => expect(mockState.viewerDarkModeCalls.at(-1)).toBe(true));
     expect(mockState.viewerOptions).toHaveLength(1);
   });
 });
@@ -574,4 +574,8 @@ function pointer(
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+async function waitForUi(check: () => void): Promise<void> {
+  await vi.waitFor(check, { timeout: 5_000 });
 }
