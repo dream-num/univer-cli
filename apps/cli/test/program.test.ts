@@ -11,6 +11,19 @@ describe("univer local CLI composition", () => {
     expect(packageMetadata.scripts["unlink:cli"]).toBe("npm unlink --global univer-cli");
   });
 
+  it("does not depend on retired SDK feature packages", () => {
+    for (const name of [
+      "@univer-cli/doctor",
+      "@univer-cli/doctor-command",
+      "@univer-cli/skills",
+      "@univer-cli/skills-command",
+      "@univer-cli/unit-exchange",
+      "@univerjs-pro/uexcli",
+    ]) {
+      expect(packageMetadata.dependencies, name).not.toHaveProperty(name);
+    }
+  });
+
   it("keeps the production program name and exposes only the Lite composition", () => {
     const program = createProgram();
 
