@@ -10,6 +10,7 @@
   再原子替换。
 - README 与 docs 只描述当前 architecture、contract 和维护约束；不记录仓库搬迁、实现阶段、baseline、
   commit 来源或已完成项目日志。
+- `README.md` 与 `README.zh-CN.md` 必须同步维护，章节结构与产品语义保持一致。
 
 ## Architecture
 

@@ -1,137 +1,148 @@
 # Univer CLI
 
-[简体中文](README.zh-CN.md)
+> Give agents a local command-line workspace for creating, editing, inspecting, and delivering spreadsheets, documents, presentations, multidimensional tables, and canvases.
 
-Create, edit, inspect, convert, and render office content from the command line.
+English · [简体中文](README.zh-CN.md)
 
-Univer CLI is designed for coding agents and local automation. Its single `univer` command works with Sheet, Doc, Slide, Base, and Board content stored in local `.univer` files. Changes can be developed, reviewed, and merged in isolated worktrees, while interactive commands also provide stable JSON output for programs.
+[![Agent Skill](https://img.shields.io/badge/Agent%20Skill-univer--cli-0a7ea4)](https://github.com/dream-num/skills/tree/main/skills/univer-cli)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D22.12-339933?logo=node.js&logoColor=white)](apps/cli/package.json)
+[![CI](https://github.com/dream-num/univer-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/dream-num/univer-cli/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
-## Highlights
+Univer CLI is a local-first Office CLI for agents. Install the official `univer-cli` Skill, describe the result you want, and let the agent create or edit Sheet, Doc, Slide, Base, and Board content. It can also work with existing Excel, Word, and PowerPoint files.
 
-- **Create and edit** — create Univerfiles and Units, execute trusted Univer Facade code, and commit changes.
-- **Structured inspection** — read workbooks, worksheets, ranges, documents, paragraphs, presentations, and slides instead of scraping UI text.
-- **Office exchange** — import XLS, XLSX, XLSM, CSV, TSV, DOC, DOCX, PPT, and PPTX; export XLSX, CSV, TSV, DOCX, and PPTX.
-- **Reviewable collaboration** — isolate changes in worktrees with `draft`, `ready`, `reopen`, `merge`, and `discard` lifecycle states.
-- **Real rendering** — capture content in a browser runtime and lint Slide layouts using actual glyph geometry.
-- **Agent interface** — consume stable `--json` output, offline API reference, and version-matched operational Skills.
-- **Local first** — Univerfiles, the Gateway, Viewer, daemon, and browser cache stay on the local machine.
+Changes stay in an isolated Worktree while the agent inspects the content, edits it through the Univer Facade, and verifies the stored model and rendered result. When the task is ready, the agent returns a local Viewer URL so you can review the result and decide whether to merge, revise, or discard it.
 
 ## Quick start
 
-Univer CLI requires Node.js 22.12 or later and the pnpm version declared by this repository.
+Copy the entire prompt below into the agent you use:
 
-```bash
-pnpm install --frozen-lockfile
-pnpm link:cli
-univer --help
+```text
+Install the Univer CLI Skill:
+npx skills add dream-num/skills -s univer-cli -g
+
+Download the official sample to ./hello.univer:
+https://univer.ai/cli-assets/hello.univer
+
+Open ./hello.univer with Univer CLI, then show me the local Viewer link and
+what I can explore.
+
+If you need help, visit:
+https://discord.gg/nThHPupraR
 ```
 
-Import an existing Office document, inspect its status, and open it in the Viewer:
+## What can it do?
 
-```bash
-univer import ./sales.univer --file ./sales.xlsx --json
-univer status ./sales.univer --json
-univer open ./sales.univer
+- **Analyze and build spreadsheets** — read or create data, clean fields, write formulas, apply formatting and validation, and add tables, charts, pivots, filters, sparklines, conditional formatting, and images.
+- **Write and lay out documents** — create paragraphs, rich text, lists, tasks, tables, images, charts, headers, footers, pagination, and page layouts.
+- **Create and revise presentations** — build a deck from an outline, edit selected pages, add text, shapes, images, tables, charts, and transitions, and detect off-page, overflowing, or overlapping text.
+- **Build multidimensional tables** — create Base tables, fields, records, views, formulas, filters, sorting, grouping, and Sheet-backed references.
+- **Draw editable canvases** — create Board shapes, text, connectors, images, native charts, and diagrams, with connector and layout analysis.
+- **Compose several content types** — keep Sheet, Doc, Slide, Base, and Board Units in one `.univer` file and reference content across Units.
+- **Work with Office files** — import Excel, CSV, TSV, Word, and PowerPoint files, then export supported content to standard Office formats.
+- **Review agent changes safely** — keep every write in an isolated draft until the user explicitly decides to merge or discard it.
+
+### Example requests
+
+```text
+Use univer-cli to create a payroll spreadsheet with formulas, totals, validation,
+conditional formatting, and a summary chart. Return a Viewer URL for review.
+
+Use univer-cli to turn brief.md into a six-slide lesson deck about bubble sort.
+Check every page for overflow and overlap before marking the Worktree ready.
+
+Use univer-cli to create a formal weekly project report with an executive summary,
+a risk table, next week's plan, headers, and footers, then export it as DOCX.
+
+Use univer-cli to create a customer-tracking Base with company, contact, stage,
+expected value, and next action fields, plus a view grouped by stage.
+
+Use univer-cli to create a sales Sheet and a summary Slide in the same .univer file,
+with the Slide chart reading data from the Sheet.
 ```
 
-The editable trunk Viewer can also import an Office file as a new Unit, export Sheet, Doc, Slide, and Base Units, and print supported Units from the Ribbon. A trunk Sheet exposes time-grouped version history. Read-only viewers can inspect history, while editable viewers can explicitly restore a version. Worktree and merge-preview views do not expose history or import/export. Other supported Units remain printable; Board supports printing only.
+## Capabilities
 
-All content writes happen in a draft worktree:
+| Content | Create and edit                                                                               | Verify and review                                                     | Import                               | Export                |
+| ------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------ | --------------------- |
+| Sheet   | Cells, formulas, styles, tables, charts, pivots, filters, validation, images, and more        | Structured workbook/range inspection and screenshots                  | `.xls` `.xlsx` `.xlsm` `.csv` `.tsv` | `.xlsx` `.csv` `.tsv` |
+| Doc     | Paragraphs, rich text, lists, tasks, tables, images, charts, headers, footers, and pagination | Document/paragraph readback and page screenshots                      | `.doc` `.docx`                       | `.docx`               |
+| Slide   | Pages, text, shapes, images, tables, charts, SVG layouts, and transitions                     | Structure inspection, layout lint, and page/contact-sheet screenshots | `.ppt` `.pptx`                       | `.pptx`               |
+| Base    | Tables, fields, records, views, formulas, filters, sorting, and grouping                      | Structured data checks and workbench screenshots                      | `.xls` `.xlsx` `.xlsm` `.csv` `.tsv` | `.xlsx` `.csv` `.tsv` |
+| Board   | Shapes, text, connectors, images, native charts, and routing                                  | Element/connector analysis and overview/region/element screenshots    | —                                    | —                     |
 
-```bash
-univer worktree add ./sales.univer --name agent --json
-univer execute ./sales.univer --worktree <worktree-id> --unit <unit-id> \
-  -e 'workbook.getActiveSheet().getRange("A1").setValue("done");' --json
-univer inspect range A1 ./sales.univer --worksheet name:Sheet1 \
-  --unit <unit-id> --worktree <worktree-id> --json
-univer worktree ready ./sales.univer --worktree <worktree-id>
-univer worktree merge ./sales.univer --worktree <worktree-id>
-```
+Every content type supports isolated draft editing, review, revision, merge, and discard. Board file import and export are not currently supported.
 
-## Command overview
+## How it works
 
-| Area                    | Commands                               |
-| ----------------------- | -------------------------------------- |
-| Univerfile              | `new`, `open`, `status`                |
-| Data exchange           | `import`, `export`                     |
-| Collaboration           | `worktree`, `unit`, `execute`          |
-| Inspection              | `inspect`                              |
-| Rendering and quality   | `screenshot`, `lint`                   |
-| Authoring               | `compile-svg`, `compile-typst`         |
-| Resources and reference | `resources`, `api`, `skills`           |
-| Data maintenance        | `optimize`                             |
-| Local environment       | `config`, `doctor`, `daemon`, `update` |
+1. The discovery Skill checks that Univer CLI is installed, current, and ready.
+2. The agent loads the core Skill and the matching Sheet, Doc, Slide, Base, or Board Skill from the installed CLI.
+3. The agent imports or creates a `.univer` file and opens an isolated draft Worktree.
+4. It inspects the target Unit, makes the requested changes, and reads the stored model back.
+5. It captures screenshots or runs layout lint when appearance matters.
+6. It marks the Worktree `ready` and returns a local Viewer URL.
+7. The user reviews the result and explicitly chooses merge, reopen, or discard.
 
-See [`apps/cli/README.md`](apps/cli/README.md) for the complete command, option, selector, environment-variable, and machine-output contracts. You can also run:
+The operational Skills ship with Univer CLI so their commands and Facade guidance match the installed application version.
 
-```bash
-univer <command> --help
-```
+## CLI capabilities
 
-## Data and security
+The Skill selects these capabilities automatically. Most users do not need to call them manually.
 
-A `.univer` file is a SQLite container that stores content Units, revisions, worktrees, local resources, and a rebuildable History index. New files use the v2 format. Supported v0 and v1 inputs are upgraded through read-only identification, a complete backup, independent candidate verification, and atomic replacement; a failed upgrade never overwrites the source. See [`docs/data-compatibility.md`](docs/data-compatibility.md) for the complete contract.
+| Commands                                           | Purpose                                                                           |
+| -------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `new`, `import`                                    | Create a `.univer` file or import Office content                                  |
+| `status`, `unit`                                   | Inspect file status and manage Sheet, Doc, Slide, Base, or Board Units            |
+| `worktree`                                         | Create, prepare, reopen, merge, or discard isolated changes                       |
+| `inspect`                                          | Read Workbook, Worksheet, Range, Document, Paragraph, Presentation, or Slide data |
+| `execute`                                          | Read or edit content through trusted Univer Facade code                           |
+| `screenshot`, `lint`                               | Render content and diagnose Slide layout issues                                   |
+| `compile-svg`, `compile-typst`                     | Turn SVG or Typst sources into editable Univer content                            |
+| `export`, `open`                                   | Export Office files or return a local Viewer URL                                  |
+| `api`, `resources`, `skills`                       | Find Facade APIs, visual resources, and operational guidance                      |
+| `config`, `doctor`, `update`, `daemon`, `optimize` | Configure, diagnose, update, run, and maintain the local application              |
 
-The bundled Univer runtime development license is an application runtime credential authorized for public redistribution with this application. It is limited to localhost, rotates every 90 days, and is separate from the repository software license. Override it with `UNIVER_LICENSE` or the `univerRuntime.license` configuration key.
+See the [complete CLI reference](apps/cli/README.md) for command options, selectors, environment variables, machine output, and process behavior.
+
+## Requirements and current limits
+
+- An agent that supports Agent Skills, plus Node.js 22.12 or later and npm/npx.
+- Screenshot, Slide layout lint, and browser text measurement require Chrome, Chromium, or Edge. The agent can prepare the browser through `univer screenshot setup`.
+- `execute` runs trusted JavaScript and is not a sandbox for untrusted code.
+- `.univer` files, the Gateway, Viewer, daemon, runtime workers, and browser cache stay on the local machine. Explicit HTTP imports, resource downloads, and update checks can access the network.
+- Board supports structural and visual verification but does not currently support file import or export.
 
 ## Architecture
 
-Univer CLI is built on the Univer CLI SDK. Standard commands and reusable capabilities come from installed CLI SDK packages and are assembled explicitly by this application. This repository owns local product behavior such as files, paths, processes, the Gateway, and data upgrades.
+Univer CLI is built on the [Univer SDK](https://docs.univer.ai/). This repository assembles the SDK into a local Office CLI for agents and implements the application-specific capabilities for `.univer` files, the Gateway, Viewer, process management, and safe data upgrades.
 
-| Boundary          | Responsibility                                                                                                          |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Univer CLI SDK    | Command presets, daemon, execution, inspection, rendering, linting, authoring helpers, configuration, and API reference |
-| Univer SDK        | Unit model, Facade, formula engine, Sheet, Doc, Slide, Base, Board, Office exchange, and rendering engine               |
-| Collaboration SDK | Snapshot, changeset, Worktree, service, transport, client, and persistence contracts                                    |
-| This repository   | `.univer` persistence, local adapters, Gateway, Viewer, runtime composition, data upgrades, and diagnostics             |
+`apps/cli` is the only public application, and `univer` is its only program and binary. Private `packages/*` projects support the application and are not parallel products.
 
-[`apps/cli/src/program.ts`](apps/cli/src/program.ts) is the only composition root and registers commands explicitly through Commander `addCommand()`. See [`docs/architecture.md`](docs/architecture.md) for ownership, runtime topology, and dependency rules.
+## Data and security
 
-## Workspace
+A `.univer` file uses SQLite to store Units, revisions, Worktrees, local resources, and a rebuildable History index. Supported earlier formats are upgraded only after read-only identification, a byte-for-byte backup, independent candidate verification, and atomic replacement. A failed upgrade never overwrites the source.
 
-```text
-apps/cli/                           # public univer-cli application
-packages/collab-gateway/            # local Collaboration SDK Gateway
-packages/collab-gateway-contract/   # Gateway and Viewer control-plane contract
-packages/collab-web/                # browser Viewer
-packages/importrange-formula/       # cross-Unit formula plugin
-packages/render-preset/             # shared Univer browser composition
-packages/render-runtime-client/     # CLI SDK Render Page bundle entry
-packages/univerfile-sqlite/         # .univer persistence and safe upgrades
-docs/                               # architecture, data contracts, and maintenance rules
-```
-
-`apps/cli` is the only public application. The `packages/*` projects are private support packages, not parallel products.
+The bundled Univer runtime development license is a localhost application credential authorized for redistribution with this application. It rotates every 90 days and is separate from the repository software license.
 
 ## Development
 
+The project requires Node.js 22.12 or later and the pnpm version declared in `package.json`.
+
 ```bash
-pnpm build       # build the CLI, daemon, runtime worker, Viewer, and render runtime
-pnpm test        # run workspace tests
-pnpm check       # format, lint, typecheck, locale, build, test, and package checks
+git clone https://github.com/dream-num/univer-cli.git
+cd univer-cli
+pnpm install --frozen-lockfile
+pnpm link:cli
+pnpm check
 ```
 
-Stop the daemon before unlinking a local development build:
+Stop the daemon before unlinking a local build:
 
 ```bash
 univer daemon stop
 pnpm unlink:cli
 ```
 
-The source manifest keeps the sentinel version `0.0.0`. Univer CLI stays on the `0.5.x` release line and uses `alpha`, `insiders`, and `dev` channels. Alpha is the only channel eligible for later external promotion and is triggered by a matching `v0.5.x-alpha.<suffix>` tag. Insiders releases are dispatched manually from the default branch. All three channels currently publish only to insider-npm; this repository does not include a public npm promotion workflow.
-
-```bash
-pnpm release:cli -- --channel=insiders --version=0.5.0-insider.example --dry-run
-```
-
-The local-only `dev` channel permits a dirty worktree and skips the SDK cohort check:
-
-```bash
-pnpm release:cli -- --channel=dev --version=0.5.0-dev.example --publish
-```
-
-Each channel produces a release manifest, package audit, isolated-install verification report, and tarball under `.release/`. These artifacts do not enter repository history. Application code is shipped unobfuscated as open source from the `0.5.x` line; SDK implementations remain behind their published package boundaries.
-
 ## License
 
-Repository source is licensed under [Apache-2.0](LICENSE). Univer Pro SDK packages, runtime credentials, native bindings, and other third-party components retain their own terms.
+[Apache-2.0](LICENSE). Univer Pro SDK packages, runtime credentials, native bindings, and other third-party components retain their own terms.
