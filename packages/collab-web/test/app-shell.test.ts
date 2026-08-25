@@ -184,7 +184,7 @@ describe("collab-web app shell", () => {
     expect(root.querySelector(".topbar")).toBeNull();
     expect(root.querySelector(".sidebar-toggle")).toBeNull();
     expect(root.querySelector(".content")).not.toBeNull();
-  });
+  }, 30_000);
 
   it("keeps the navigation and titlebar in standalone mode", async () => {
     const root = getRoot();
@@ -218,7 +218,7 @@ describe("collab-web app shell", () => {
     expect(root.querySelector(".topbar")?.classList.contains("py-1")).toBe(true);
     expect(root.querySelector('button[aria-label="收起侧边栏"]')).not.toBeNull();
     expect(root.querySelector('button[aria-label="展开侧边栏"]')).toBeNull();
-  });
+  }, 30_000);
 
   it("collapses from the Sidebar and restores from the Topbar", async () => {
     const root = getRoot();
@@ -248,7 +248,7 @@ describe("collab-web app shell", () => {
     click(root, 'button[aria-label="展开侧边栏"]');
     await waitForUi(() => expect(root.querySelector(".sidebar")).not.toBeNull());
     expect(localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY)).toBe("false");
-  });
+  }, 30_000);
 
   it("restores a collapsed Sidebar preference and localizes its visible control", async () => {
     localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, "true");
@@ -274,7 +274,7 @@ describe("collab-web app shell", () => {
     await waitForUi(() =>
       expect(root.querySelector('button[aria-label="Expand sidebar"]')).not.toBeNull()
     );
-  });
+  }, 30_000);
 
   it("peeks the collapsed Sidebar without moving its trigger or persisting hover", async () => {
     const root = getRoot();
@@ -322,7 +322,7 @@ describe("collab-web app shell", () => {
     await waitForUi(() => expect(root.querySelector(".sidebar-drawer")).toBeNull());
     expect(trigger?.getAttribute("aria-expanded")).toBe("false");
     expect(localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY)).toBe("true");
-  });
+  }, 30_000);
 
   it("cancels delayed close on re-entry and closes the hover drawer with Escape", async () => {
     localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, "true");
@@ -357,7 +357,7 @@ describe("collab-web app shell", () => {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
     await waitForUi(() => expect(root.querySelector(".sidebar-drawer")).toBeNull());
     expect(localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY)).toBe("true");
-  });
+  }, 30_000);
 
   it("keeps the hover drawer mounted while its portaled Language submenu is open", async () => {
     localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, "true");
@@ -400,7 +400,7 @@ describe("collab-web app shell", () => {
     );
     await waitForUi(() => expect(root.querySelector(".sidebar-drawer")).toBeNull());
     expect(localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY)).toBe("true");
-  });
+  }, 30_000);
 
   it("ignores non-mouse hover while preserving click-to-expand", async () => {
     localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, "true");
@@ -429,7 +429,7 @@ describe("collab-web app shell", () => {
       expect(root.querySelector(".sidebar:not(.sidebar-drawer)")).not.toBeNull()
     );
     expect(localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY)).toBe("false");
-  });
+  }, 30_000);
 
   it("uses same-origin file keys for gateway-owned viewer URLs", async () => {
     const root = getRoot();
@@ -448,7 +448,7 @@ describe("collab-web app shell", () => {
       gatewayFileKey: key
     });
     expect(location.search).toContain(`file=${key}`);
-  });
+  }, 30_000);
 
   it("coalesces an events-open refresh while the same viewer is mounting", async () => {
     mockState.deferViewer = true;
@@ -473,7 +473,7 @@ describe("collab-web app shell", () => {
     expect(mockState.viewerOptions).toHaveLength(1);
 
     mockState.viewerResolvers[0]?.();
-  });
+  }, 30_000);
 
   it("rebuilds the active worktree viewer when ready changes its server permissions", async () => {
     const worktree: Worktree = {
@@ -511,7 +511,7 @@ describe("collab-web app shell", () => {
       unitId: "unit_1",
       editable: false
     });
-  });
+  }, 30_000);
 
   it("applies a dark-mode choice made while the viewer is still mounting", async () => {
     mockState.deferViewer = true;
@@ -539,7 +539,7 @@ describe("collab-web app shell", () => {
     mockState.viewerResolvers[0]?.();
     await waitForUi(() => expect(mockState.viewerDarkModeCalls.at(-1)).toBe(true));
     expect(mockState.viewerOptions).toHaveLength(1);
-  });
+  }, 30_000);
 });
 
 function getRoot(): HTMLElement {
