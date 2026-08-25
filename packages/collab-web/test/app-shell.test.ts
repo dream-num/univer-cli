@@ -382,6 +382,11 @@ describe("collab-web app shell", () => {
     const drawer = root.querySelector<HTMLElement>(".sidebar-drawer");
     pointer(trigger, "pointerout", "mouse", drawer);
     pointer(drawer, "pointerover", "mouse", trigger);
+    // Let React settle after the drawer mount before driving the settings
+    // trigger: Base UI opens the menu from a rAF scheduled by mousedown, and a
+    // click landing while the drawer subtree is still being replaced makes
+    // that rAF open a store instance that is no longer mounted.
+    await delay(120);
 
     click(root, ".sidebar-drawer .settings-row");
     await waitForUi(() => expect(document.querySelector(".settings-menu")).not.toBeNull());
