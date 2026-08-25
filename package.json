@@ -1,6 +1,15 @@
 {
   "name": "univer-cli-workspace",
   "private": true,
+  "homepage": "https://github.com/dream-num/univer-cli",
+  "bugs": {
+    "url": "https://github.com/dream-num/univer-cli/issues"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dream-num/univer-cli.git"
+  },
   "type": "module",
   "scripts": {
     "build": "pnpm --filter univer-cli build",

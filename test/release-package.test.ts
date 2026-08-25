@@ -1,7 +1,8 @@
-import { readFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { createReleaseManifest } from "../scripts/release/release-package.mjs";
+import { createReleaseManifest, stageReleasePackage } from "../scripts/release/release-package.mjs";
 import { RELEASE_REGISTRY } from "../scripts/release/policy.mjs";
 
 describe("release package", () => {
@@ -12,6 +13,14 @@ describe("release package", () => {
         version: "0.0.0",
         private: true,
         description: "CLI",
+        license: "Apache-2.0",
+        repository: {
+          type: "git",
+          url: "git+https://github.com/dream-num/univer-cli.git",
+          directory: "apps/cli",
+        },
+        homepage: "https://github.com/dream-num/univer-cli",
+        bugs: { url: "https://github.com/dream-num/univer-cli/issues" },
         keywords: ["univer"],
         bin: { univer: "./dist/bin.js" },
         engines: { node: ">=22.12.0" },
@@ -30,7 +39,14 @@ describe("release package", () => {
       name: "univer-cli",
       private: false,
       dependencies: { external: "1.2.3" },
+      files: ["dist", "LICENSE", "README.md", "README.zh-CN.md"],
+      license: "Apache-2.0",
       publishConfig: { registry: RELEASE_REGISTRY, tag: "insiders" },
+      repository: {
+        type: "git",
+        url: "git+https://github.com/dream-num/univer-cli.git",
+        directory: "apps/cli",
+      },
       version: "0.5.0-insider.20260817-374ec99",
     });
     expect(JSON.stringify(manifest)).not.toContain("workspace:");
@@ -49,7 +65,7 @@ describe("release package", () => {
       { registry: RELEASE_REGISTRY, tag: "insiders" },
     );
 
-    expect(source).toMatchObject({ private: true, version: "0.0.0" });
+    expect(source).toMatchObject({ license: "Apache-2.0", private: true, version: "0.0.0" });
     expect(Object.keys(manifest.dependencies)).toEqual(audit.required);
     expect(audit.required).toEqual([
       "@univer-cli/doc-typst-facade",
@@ -64,5 +80,67 @@ describe("release package", () => {
       "libsql",
     ]);
     expect(audit.conditional).toEqual(["bufferutil", "proxy-agent", "utf-8-validate", "yauzl"]);
+  });
+
+  it("stages the repository license and both readmes", async () => {
+    const root = await mkdtemp(join(tmpdir(), "univer-cli-release-package-"));
+    const distPath = join(root, "dist");
+    const outputRoot = join(root, "output");
+    const sourceManifestPath = join(root, "package.json");
+    const dependencyAuditPath = join(root, "release-dependencies.json");
+    const licensePath = join(root, "LICENSE");
+    const readmePath = join(root, "README.md");
+    const readmeZhCnPath = join(root, "README.zh-CN.md");
+    try {
+      await mkdir(distPath);
+      await Promise.all([
+        writeFile(join(distPath, "bin.js"), "export {};\n"),
+        writeFile(
+          sourceManifestPath,
+          `${JSON.stringify({
+            bugs: { url: "https://github.com/dream-num/univer-cli/issues" },
+            dependencies: {},
+            description: "CLI",
+            engines: { node: ">=22.12.0" },
+            homepage: "https://github.com/dream-num/univer-cli",
+            keywords: ["univer"],
+            license: "Apache-2.0",
+            name: "univer-cli",
+            repository: {
+              directory: "apps/cli",
+              type: "git",
+              url: "git+https://github.com/dream-num/univer-cli.git",
+            },
+          })}\n`,
+        ),
+        writeFile(dependencyAuditPath, '{"conditional":[],"required":[]}\n'),
+        writeFile(licensePath, "Apache License\n"),
+        writeFile(readmePath, "# Univer CLI\n"),
+        writeFile(readmeZhCnPath, "# Univer CLI\n"),
+      ]);
+      const staged = await stageReleasePackage({
+        dependencyAuditPath,
+        distPath,
+        licensePath,
+        outputRoot,
+        publishConfig: { registry: RELEASE_REGISTRY, tag: "insiders" },
+        readmePath,
+        readmeZhCnPath,
+        sourceManifestPath,
+        version: "0.5.0-insider.test",
+      });
+
+      await Promise.all(
+        ["LICENSE", "README.md", "README.zh-CN.md", "package.json"].map(async (file) =>
+          access(join(staged.stagingDirectory, file)),
+        ),
+      );
+      expect(staged.manifest).toMatchObject({
+        files: ["dist", "LICENSE", "README.md", "README.zh-CN.md"],
+        license: "Apache-2.0",
+      });
+    } finally {
+      await rm(root, { force: true, recursive: true });
+    }
   });
 });

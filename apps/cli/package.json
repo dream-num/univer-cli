@@ -9,12 +9,24 @@
     "local-first",
     "univer"
   ],
+  "homepage": "https://github.com/dream-num/univer-cli",
+  "bugs": {
+    "url": "https://github.com/dream-num/univer-cli/issues"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dream-num/univer-cli.git",
+    "directory": "apps/cli"
+  },
   "bin": {
     "univer": "./dist/bin.js"
   },
   "files": [
     "dist",
-    "README.md"
+    "LICENSE",
+    "README.md",
+    "README.zh-CN.md"
   ],
   "type": "module",
   "scripts": {

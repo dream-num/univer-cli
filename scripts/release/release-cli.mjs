@@ -44,9 +44,11 @@ run("pnpm", ["--filter", RELEASE_PACKAGE_NAME, "build"], repoRoot, {
 const staged = await stageReleasePackage({
   dependencyAuditPath: join(appRoot, "dist", "release-dependencies.json"),
   distPath: join(appRoot, "dist"),
+  licensePath: join(appRoot, "LICENSE"),
   outputRoot: releaseRoot,
   publishConfig: { registry: RELEASE_REGISTRY, tag: npmTag },
   readmePath: join(appRoot, "README.md"),
+  readmeZhCnPath: join(appRoot, "README.zh-CN.md"),
   sourceManifestPath: join(appRoot, "package.json"),
   version: options.version,
 });
@@ -181,6 +183,12 @@ function assertStrictReleaseSource(baseBranch, sourceStatus) {
 function assertReleaseFiles(files) {
   if (!Array.isArray(files) || files.length === 0) {
     throw new Error("npm pack did not report release files.");
+  }
+  const paths = new Set(files.map((file) => file?.path));
+  for (const required of ["LICENSE", "README.md", "README.zh-CN.md", "package.json"]) {
+    if (!paths.has(required)) {
+      throw new Error(`Release tarball is missing required file ${required}.`);
+    }
   }
   for (const file of files) {
     const path = file?.path;

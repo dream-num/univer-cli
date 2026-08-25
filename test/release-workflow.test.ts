@@ -18,7 +18,8 @@ const updateService = await readFile(
 
 describe("release workflow contract", () => {
   it("keeps the source version as a sentinel and one release entry point", () => {
-    expect(cliManifest).toMatchObject({ private: true, version: "0.0.0" });
+    expect(rootManifest).toMatchObject({ license: "Apache-2.0" });
+    expect(cliManifest).toMatchObject({ license: "Apache-2.0", private: true, version: "0.0.0" });
     expect(rootManifest.scripts["release:cli"]).toBe("node scripts/release/release-cli.mjs");
     expect(rootManifest.scripts["release:pack"]).toBeUndefined();
     expect(rootManifest.scripts["release:pack-local"]).toBeUndefined();

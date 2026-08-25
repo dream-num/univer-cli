@@ -1,22 +1,24 @@
 # Univer CLI
 
-在命令行中创建、编辑、检查、转换和渲染 Office 内容。
+[简体中文](README.zh-CN.md)
 
-Univer CLI 面向 Coding Agent 与本地自动化工作流，通过唯一的 `univer` 命令操作 Sheet、Doc、Slide、Base 和 Board。内容保存在本地 `.univer` 文件中；修改可以在独立 Worktree 中完成、检查并合并，交互命令同时提供适合程序消费的 JSON 输出。
+Create, edit, inspect, convert, and render office content from the command line.
 
-## 核心能力
+Univer CLI is designed for coding agents and local automation. Its single `univer` command works with Sheet, Doc, Slide, Base, and Board content stored in local `.univer` files. Changes can be developed, reviewed, and merged in isolated worktrees, while interactive commands also provide stable JSON output for programs.
 
-- **创建与编辑**：创建 Univerfile 和 Unit，通过 Univer Facade 执行可信代码并提交变更。
-- **结构化检查**：读取 Workbook、Worksheet、Range、Document、Paragraph、Presentation 和 Slide，而不是解析界面文本。
-- **格式交换**：导入 XLS、XLSX、XLSM、CSV、TSV、DOC、DOCX、PPT 和 PPTX；导出 XLSX、CSV、TSV、DOCX 和 PPTX。
-- **可审阅协作**：使用 Worktree 隔离修改，支持 `draft`、`ready`、`reopen`、`merge` 和 `discard` 生命周期。
-- **真实渲染**：在浏览器 runtime 中生成截图，并对 Slide 执行基于实际 glyph geometry 的 layout lint。
-- **Agent 接口**：提供稳定的 `--json` 输出、离线 API reference 和随版本发布的 operational Skills。
-- **本地优先**：Univerfile、Gateway、Viewer、daemon 和 browser cache 均在本机运行。
+## Highlights
 
-## 快速开始
+- **Create and edit** — create Univerfiles and Units, execute trusted Univer Facade code, and commit changes.
+- **Structured inspection** — read workbooks, worksheets, ranges, documents, paragraphs, presentations, and slides instead of scraping UI text.
+- **Office exchange** — import XLS, XLSX, XLSM, CSV, TSV, DOC, DOCX, PPT, and PPTX; export XLSX, CSV, TSV, DOCX, and PPTX.
+- **Reviewable collaboration** — isolate changes in worktrees with `draft`, `ready`, `reopen`, `merge`, and `discard` lifecycle states.
+- **Real rendering** — capture content in a browser runtime and lint Slide layouts using actual glyph geometry.
+- **Agent interface** — consume stable `--json` output, offline API reference, and version-matched operational Skills.
+- **Local first** — Univerfiles, the Gateway, Viewer, daemon, and browser cache stay on the local machine.
 
-需要 Node.js 22.12 或更高版本，并使用仓库声明的 pnpm 版本。
+## Quick start
+
+Univer CLI requires Node.js 22.12 or later and the pnpm version declared by this repository.
 
 ```bash
 pnpm install --frozen-lockfile
@@ -24,7 +26,7 @@ pnpm link:cli
 univer --help
 ```
 
-将现有 Office 文件导入 Univerfile，然后检查状态并在 Viewer 中打开：
+Import an existing Office document, inspect its status, and open it in the Viewer:
 
 ```bash
 univer import ./sales.univer --file ./sales.xlsx --json
@@ -32,9 +34,9 @@ univer status ./sales.univer --json
 univer open ./sales.univer
 ```
 
-Viewer 的 trunk Ribbon 同样支持把 Office 文件导入为当前 `.univer` 的新 Unit、导出 Sheet/Doc/Slide/Base，以及打印受支持的 Unit。trunk Sheet 还可查看按提交时间聚合的版本历史；只读 Viewer 只能查看，可编辑 Viewer 可以显式恢复为某个历史版本。只读 Sheet 中不提供保护和打印。Worktree 和 merge preview 不提供版本历史或导入导出；其他受支持的 Unit 仍可打印，Board 仅提供打印。
+The editable trunk Viewer can also import an Office file as a new Unit, export Sheet, Doc, Slide, and Base Units, and print supported Units from the Ribbon. A trunk Sheet exposes time-grouped version history. Read-only viewers can inspect history, while editable viewers can explicitly restore a version. Worktree and merge-preview views do not expose history or import/export. Other supported Units remain printable; Board supports printing only.
 
-对内容的写操作在 draft Worktree 中完成：
+All content writes happen in a draft worktree:
 
 ```bash
 univer worktree add ./sales.univer --name agent --json
@@ -46,91 +48,90 @@ univer worktree ready ./sales.univer --worktree <worktree-id>
 univer worktree merge ./sales.univer --worktree <worktree-id>
 ```
 
-## 命令概览
+## Command overview
 
-| 场景       | 命令                                   |
-| ---------- | -------------------------------------- |
-| Univerfile | `new`, `open`, `status`                |
-| 数据交换   | `import`, `export`                     |
-| 协作修改   | `worktree`, `unit`, `execute`          |
-| 内容检查   | `inspect`                              |
-| 渲染与质量 | `screenshot`, `lint`                   |
-| 内容生成   | `compile-svg`, `compile-typst`         |
-| 资源与参考 | `resources`, `api`, `skills`           |
-| 数据维护   | `optimize`                             |
-| 本地环境   | `config`, `doctor`, `daemon`, `update` |
+| Area                    | Commands                               |
+| ----------------------- | -------------------------------------- |
+| Univerfile              | `new`, `open`, `status`                |
+| Data exchange           | `import`, `export`                     |
+| Collaboration           | `worktree`, `unit`, `execute`          |
+| Inspection              | `inspect`                              |
+| Rendering and quality   | `screenshot`, `lint`                   |
+| Authoring               | `compile-svg`, `compile-typst`         |
+| Resources and reference | `resources`, `api`, `skills`           |
+| Data maintenance        | `optimize`                             |
+| Local environment       | `config`, `doctor`, `daemon`, `update` |
 
-完整的 command、option、selector、环境变量和 machine-output 合同见 [`apps/cli/README.md`](apps/cli/README.md)。也可以随时运行：
+See [`apps/cli/README.md`](apps/cli/README.md) for the complete command, option, selector, environment-variable, and machine-output contracts. You can also run:
 
 ```bash
 univer <command> --help
 ```
 
-## 数据与安全
+## Data and security
 
-`.univer` 是包含内容 Unit、revision、Worktree、本地资源和可重建 History 索引的 SQLite container。新文件使用 v2 格式；受支持的 v0 和 v1 输入会通过只读识别、完整备份、独立 candidate 验证和原子替换升级，失败时不会覆盖源文件。完整合同见 [`docs/data-compatibility.md`](docs/data-compatibility.md)。
+A `.univer` file is a SQLite container that stores content Units, revisions, worktrees, local resources, and a rebuildable History index. New files use the v2 format. Supported v0 and v1 inputs are upgraded through read-only identification, a complete backup, independent candidate verification, and atomic replacement; a failed upgrade never overwrites the source. See [`docs/data-compatibility.md`](docs/data-compatibility.md) for the complete contract.
 
-Univer runtime development license 是 application 运行凭据，按 90 天周期更新，与 repository software license 分离。可以通过 `UNIVER_LICENSE` 或 `univerRuntime.license` 配置覆盖内置凭据。
+The bundled Univer runtime development license is an application runtime credential authorized for public redistribution with this application. It is limited to localhost, rotates every 90 days, and is separate from the repository software license. Override it with `UNIVER_LICENSE` or the `univerRuntime.license` configuration key.
 
-## 架构
+## Architecture
 
-Univer CLI 基于 Univer CLI SDK 构建。标准命令和通用能力由 CLI SDK package 提供并随 application 安装；本仓库负责显式装配，并实现文件、路径、进程、Gateway 和数据升级等本地产品能力。
+Univer CLI is built on the Univer CLI SDK. Standard commands and reusable capabilities come from installed CLI SDK packages and are assembled explicitly by this application. This repository owns local product behavior such as files, paths, processes, the Gateway, and data upgrades.
 
-| 依赖边界          | 职责                                                                                                          |
-| ----------------- | ------------------------------------------------------------------------------------------------------------- |
-| Univer CLI SDK    | command preset、daemon、execution、inspection、render、lint、authoring helper、configuration 和 API reference |
-| Univer SDK        | Unit model、Facade、formula、Sheet、Doc、Slide、Base、Board、Office exchange 和 render engine                 |
-| Collaboration SDK | Snapshot、changeset、Worktree、service、transport、client 和 persistence contract                             |
-| 本仓库            | `.univer` persistence、本地 adapter、Gateway、Viewer、runtime composition、数据升级和诊断                     |
+| Boundary          | Responsibility                                                                                                          |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Univer CLI SDK    | Command presets, daemon, execution, inspection, rendering, linting, authoring helpers, configuration, and API reference |
+| Univer SDK        | Unit model, Facade, formula engine, Sheet, Doc, Slide, Base, Board, Office exchange, and rendering engine               |
+| Collaboration SDK | Snapshot, changeset, Worktree, service, transport, client, and persistence contracts                                    |
+| This repository   | `.univer` persistence, local adapters, Gateway, Viewer, runtime composition, data upgrades, and diagnostics             |
 
-`apps/cli/src/program.ts` 是唯一 composition root，通过 Commander `addCommand()` 显式装配命令。详细 ownership、runtime topology 和 dependency rule 见 [`docs/architecture.md`](docs/architecture.md)。
+[`apps/cli/src/program.ts`](apps/cli/src/program.ts) is the only composition root and registers commands explicitly through Commander `addCommand()`. See [`docs/architecture.md`](docs/architecture.md) for ownership, runtime topology, and dependency rules.
 
 ## Workspace
 
 ```text
 apps/cli/                           # public univer-cli application
 packages/collab-gateway/            # local Collaboration SDK Gateway
-packages/collab-gateway-contract/   # Gateway 与 Viewer control-plane contract
+packages/collab-gateway-contract/   # Gateway and Viewer control-plane contract
 packages/collab-web/                # browser Viewer
-packages/importrange-formula/       # cross-unit formula plugin
+packages/importrange-formula/       # cross-Unit formula plugin
 packages/render-preset/             # shared Univer browser composition
 packages/render-runtime-client/     # CLI SDK Render Page bundle entry
-packages/univerfile-sqlite/         # .univer persistence 与安全升级
-docs/                               # architecture、data contract 与维护约束
+packages/univerfile-sqlite/         # .univer persistence and safe upgrades
+docs/                               # architecture, data contracts, and maintenance rules
 ```
 
-`apps/cli` 是唯一对外 application；`packages/*` 是其私有支撑 package，不作为平行产品发布。
+`apps/cli` is the only public application. The `packages/*` projects are private support packages, not parallel products.
 
-## 开发
+## Development
 
 ```bash
-pnpm build       # 构建 CLI、daemon、runtime worker、Viewer 和 render runtime
-pnpm test        # 运行 workspace 测试
-pnpm check       # format、lint、typecheck、locale freshness、build、test 和 package dry-run
+pnpm build       # build the CLI, daemon, runtime worker, Viewer, and render runtime
+pnpm test        # run workspace tests
+pnpm check       # format, lint, typecheck, locale, build, test, and package checks
 ```
 
-本地调试结束后，先停止 daemon，再解除全局链接：
+Stop the daemon before unlinking a local development build:
 
 ```bash
 univer daemon stop
 pnpm unlink:cli
 ```
 
-源码 manifest 保持 `0.0.0` 哨兵版本。新 Univer CLI 固定在 `0.5.x` 版本线，只发布
-`alpha`、`insiders` 和 `dev`：`alpha` 是唯一可进入后续对外流程的版本，由匹配
-`v0.5.x-alpha.<suffix>` 的 tag push 触发；`insiders` 由默认分支手动触发。三者都只发布到
-insider-npm；本仓库不提供 public npm promotion workflow。
+The source manifest keeps the sentinel version `0.0.0`. Univer CLI stays on the `0.5.x` release line and uses `alpha`, `insiders`, and `dev` channels. Alpha is the only channel eligible for later external promotion and is triggered by a matching `v0.5.x-alpha.<suffix>` tag. Insiders releases are dispatched manually from the default branch. All three channels currently publish only to insider-npm; this repository does not include a public npm promotion workflow.
 
 ```bash
 pnpm release:cli -- --channel=insiders --version=0.5.0-insider.example --dry-run
 ```
 
-`dev` 是本地触发的研发自测发布，允许 dirty worktree，不执行 SDK cohort 检查：
+The local-only `dev` channel permits a dirty worktree and skips the SDK cohort check:
 
 ```bash
 pnpm release:cli -- --channel=dev --version=0.5.0-dev.example --publish
 ```
 
-三个 channel 都生成 release manifest、package audit、隔离安装验证报告和 tarball 到 `.release/`，
-不进入 repository history。应用代码从 `0.5.x` 起按开源制品发布，不执行混淆；SDK 仍通过闭源 package
-边界提供。
+Each channel produces a release manifest, package audit, isolated-install verification report, and tarball under `.release/`. These artifacts do not enter repository history. Application code is shipped unobfuscated as open source from the `0.5.x` line; SDK implementations remain behind their published package boundaries.
+
+## License
+
+Repository source is licensed under [Apache-2.0](LICENSE). Univer Pro SDK packages, runtime credentials, native bindings, and other third-party components retain their own terms.

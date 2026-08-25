@@ -27,9 +27,13 @@ export function createReleaseManifest(
     version,
     private: false,
     description: sourceManifest.description,
+    license: sourceManifest.license,
+    repository: sourceManifest.repository,
+    homepage: sourceManifest.homepage,
+    bugs: sourceManifest.bugs,
     keywords: sourceManifest.keywords,
     bin: { univer: "dist/bin.js" },
-    files: ["dist", "README.md"],
+    files: ["dist", "LICENSE", "README.md", "README.zh-CN.md"],
     type: "module",
     dependencies,
     engines: sourceManifest.engines,
@@ -67,7 +71,9 @@ export async function stageReleasePackage(input) {
       !source.endsWith(".map") && basename(source) !== "release-dependencies.json",
     recursive: true,
   });
+  await cp(input.licensePath, join(temporaryDirectory, "LICENSE"));
   await cp(input.readmePath, join(temporaryDirectory, "README.md"));
+  await cp(input.readmeZhCnPath, join(temporaryDirectory, "README.zh-CN.md"));
   await writeFile(
     join(temporaryDirectory, "package.json"),
     `${JSON.stringify(manifest, null, 2)}\n`,
