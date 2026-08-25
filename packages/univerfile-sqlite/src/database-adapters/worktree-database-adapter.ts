@@ -554,22 +554,7 @@ export class UniverfileSQLiteWorktreeDatabaseAdapter implements IWorktreeDatabas
     this._assertOpen();
     validateSubmissionIdentity(input.changeset);
     return this._transaction(() => {
-      const { worktreeID, expectedHeadRevision, changeset } = input;
-      const existing = this._database
-        .prepare(
-          `SELECT payload_json
-           FROM collaboration_worktree_changesets
-           WHERE worktree_id = ? AND unit_id = ? AND sid = ? AND req_id = ?`,
-        )
-        .get(worktreeID, changeset.unitID, changeset.sid as string, changeset.reqId as number) as
-        | PayloadRow
-        | undefined;
-      if (existing) {
-        return {
-          status: "already-committed",
-          changeset: decode<IChangeset>(existing.payload_json),
-        };
-      }
+      const { worktreeID, changeset } = input;
       const worktree = this._getWorktreeRow(worktreeID);
       const unit = this._getUnitRow(worktreeID, changeset.unitID);
       if (!worktree || !unit) return { status: "not-found" };
@@ -581,13 +566,13 @@ export class UniverfileSQLiteWorktreeDatabaseAdapter implements IWorktreeDatabas
       }
       const record = rowToUnitRecord(unit);
       if (isTerminal(record)) return { status: "unit-frozen" };
-      if (record.draftHeadRevision !== expectedHeadRevision) {
+      if (record.draftHeadRevision !== changeset.baseRev) {
         return {
           status: "revision-mismatch",
           actualHeadRevision: record.draftHeadRevision,
         };
       }
-      validateChangesetCandidate(record, input);
+      validateChangesetCandidate(record, changeset);
       this._database
         .prepare(
           `INSERT INTO collaboration_worktree_changesets
@@ -616,7 +601,7 @@ export class UniverfileSQLiteWorktreeDatabaseAdapter implements IWorktreeDatabas
           readWorktreeChangeMetadata(context).unitName ?? null,
           worktreeID,
           changeset.unitID,
-          expectedHeadRevision,
+          changeset.baseRev,
         );
       if (update.changes !== 1) {
         throw new CollabError(
@@ -1397,16 +1382,8 @@ function validateSubmissionIdentity(changeset: IChangeset): void {
   }
 }
 
-function validateChangesetCandidate(
-  unit: WorktreeUnitRecord,
-  input: CommitWorktreeChangesetInput,
-): void {
-  const { changeset, expectedHeadRevision } = input;
-  if (
-    changeset.type !== unit.type ||
-    changeset.baseRev !== expectedHeadRevision ||
-    changeset.revision !== expectedHeadRevision + 1
-  ) {
+function validateChangesetCandidate(unit: WorktreeUnitRecord, changeset: IChangeset): void {
+  if (changeset.type !== unit.type || changeset.revision !== changeset.baseRev + 1) {
     throw invalidRequest("Draft changeset must match Unit type and expected revision");
   }
 }

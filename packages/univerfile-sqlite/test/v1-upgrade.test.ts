@@ -429,7 +429,6 @@ async function createV1Fixture(filename: string): Promise<void> {
       },
     );
     await univerfile.databaseAdapter.commitChangeset(context(), {
-      expectedHeadRevision: 1,
       changeset: legacyBaseChangeset("base-1"),
     });
     await univerfile.worktreeDatabaseAdapter.createWorktreeForGateway(
@@ -465,7 +464,6 @@ async function createV1Fixture(filename: string): Promise<void> {
     });
     await univerfile.worktreeDatabaseAdapter.commitDraftChangeset(context(), {
       worktreeID: "wt-1",
-      expectedHeadRevision: 1,
       changeset: legacyBaseChangeset("base-wt"),
     });
   } finally {

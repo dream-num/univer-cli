@@ -334,7 +334,7 @@ describe("Univerfile SQLite database adapters", () => {
           createdAtMs: 5_000,
         },
       }),
-      { worktreeID, expectedHeadRevision: 1, changeset },
+      { worktreeID, changeset },
     );
 
     expect(adapter.listWorktreeUnits(worktreeID)[0]?.headRev).toBe(2);
