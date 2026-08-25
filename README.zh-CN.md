@@ -143,6 +143,16 @@ univer daemon stop
 pnpm unlink:cli
 ```
 
+### SDK 升级
+
+所有 Univer SDK 依赖（`@univer-cli/*`、`@univerjs/*`、`@univerjs-pro/*`）作为一个精确版本 cohort 统一升级；`@univerjs/icons`、`@univerjs-pro/cli-assets`、`@univerjs-pro/engine-formula-rust-binding` 与 `@univerjs-pro/exchange-node-binding` 保持独立发布链。升级运行：
+
+```bash
+pnpm update:sdk --sdk_version <exact-sdk-version>
+```
+
+必须同时提交所有受影响的 manifest 与 `pnpm-lock.yaml`，不得手工只更新其中一部分。
+
 ## 许可证
 
 [Apache-2.0](LICENSE)。Univer Pro SDK package、runtime credential、native binding 与其他第三方组件保留各自条款。
