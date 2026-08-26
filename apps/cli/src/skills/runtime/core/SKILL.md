@@ -38,6 +38,8 @@ Load the matching unit Skill through the same CLI before writing Facade code; ne
 - Embed one Unit inside another → load both Unit Skills, then `univer skills get embed`
 - Read another Unit from a Sheet cell or formula-driven Shape → load the Host and Source Unit Skills,
   then `univer skills get cross-unit-formula`
+- Feed a Chart from another Unit's range → load the Host Unit Skill and the Sheet or Base Unit Skill,
+  then `univer skills get embed` (see "Referencing another Unit's data from a Chart")
 
 ## Typical worktree edit
 

@@ -55,3 +55,25 @@ return { childUnitId: child.getId(), descriptor };'
 Verify the returned child facade, descriptor, and the host Unit's stored anchor. Finish with
 `univer open <file.univer> --worktree <id> --unit <host-unit-id>` and review the rendered child
 inside its host.
+
+## Referencing another Unit's data from a Chart
+
+When a Chart on a Slide, Doc, or Board should reflect a range in a different Unit, bind it as a
+ResourceRef instead of pasting the values. Values are a snapshot: a source edit will not change the
+Chart. A ResourceRef keeps the Chart live.
+
+The source and host Units live in the same `.univer` target; each is addressed by `unitId`. Resolve
+the exact source object with `univer api show IResourceRefChartDataSourceInput`, then pass it straight
+to the host Chart's `setSource` — it accepts the ref contents (`{ file?, unit, part }`) directly.
+Wrapping it as `{ source: { kind, ref } }` fails normalization with `RESOURCE_REF_INVALID_UNIT`.
+
+Verify the stored source is a reference (its `dataSource.source.kind` is `resource-ref`), and confirm
+the Chart reads the referenced range in a fresh read back. A cross-Unit reference resolves only when
+the source Unit is loaded in the same runtime as the host — in the Viewer both are open together (for
+example both embedded in a Board). A single-Unit `execute` or `screenshot` loads only the host, so a
+cross-Unit Chart can render a placeholder there; review it in the Viewer.
+
+Live refresh works when the runtime registers a referenced-source data provider (`watchData`) that
+watches the source range. The `collab-web` Viewer registers one for Sheet ranges; a runtime without it
+never updates the Chart on a source edit, and headless `execute`/`screenshot` never drive this
+refresh.
