@@ -2,14 +2,14 @@ import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { assertExactSemver } from "./policy.mjs";
 
-const SDK_PREFIXES = ["@univer-cli/", "@univerjs/", "@univerjs-pro/"];
-const DEPENDENCY_FIELDS = [
+export const SDK_PREFIXES = ["@univer-cli/", "@univerjs/", "@univerjs-pro/"];
+export const DEPENDENCY_FIELDS = [
   "dependencies",
   "devDependencies",
   "optionalDependencies",
   "peerDependencies",
 ];
-const INDEPENDENT_PACKAGES = new Set([
+export const INDEPENDENT_PACKAGES = new Set([
   "@univerjs/icons",
   "@univerjs-pro/cli-assets",
   "@univerjs-pro/engine-formula-rust-binding",

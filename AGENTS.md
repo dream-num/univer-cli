@@ -28,6 +28,8 @@
 - Git commit message 必须使用英文。
 - 使用 Vitest、oxlint、oxfmt；CLI 测试放在 `apps/cli/test/*.test.ts`，package 测试放在各自的 `test/`。
 - 修改 command、manifest 或数据合同必须更新测试与 README/docs。
+- SDK 升级运行 `pnpm update:sdk --sdk_version <exact-semver>`；必须同时提交所有受影响的 manifest 与
+  `pnpm-lock.yaml`，不得手工只更新其中一部分。
 - Runtime development license 是 90 天轮换的运行凭据；不得将其描述为 repository software license。
 - 完成前运行 `pnpm check`。
 

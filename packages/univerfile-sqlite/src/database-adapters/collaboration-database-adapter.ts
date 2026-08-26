@@ -420,36 +420,20 @@ export class UniverfileSQLiteDatabaseAdapter implements IDatabaseAdapter {
     const payload = encode(input.changeset);
 
     return this._transaction(() => {
-      const { changeset, expectedHeadRevision } = input;
+      const { changeset } = input;
       const unit = this._getActiveUnitRow(changeset.unitID);
       if (!unit) {
         throw new CollabError("UNIT_NOT_FOUND", "Cannot commit to a missing unit");
       }
 
-      const existing = this._database
-        .prepare(
-          `SELECT payload_json
-           FROM collaboration_changesets
-           WHERE unit_id = ? AND sid = ? AND req_id = ?`,
-        )
-        .get(changeset.unitID, changeset.sid as string, changeset.reqId as number) as
-        | PayloadRow
-        | undefined;
-      if (existing) {
-        return {
-          status: "already-committed",
-          changeset: decode<IChangeset>(existing.payload_json),
-        };
-      }
-
-      if (unit.head_revision !== expectedHeadRevision) {
+      if (unit.head_revision !== changeset.baseRev) {
         return {
           status: "revision-mismatch",
           actualHeadRevision: unit.head_revision,
         };
       }
 
-      validateCandidate(rowToUnitRecord(unit), input);
+      validateCandidate(rowToUnitRecord(unit), changeset);
       this._database
         .prepare(
           `INSERT INTO collaboration_changesets
@@ -476,7 +460,7 @@ export class UniverfileSQLiteDatabaseAdapter implements IDatabaseAdapter {
           changeset.revision,
           readOptionalUnitName(context, changeset.unitID) ?? null,
           changeset.unitID,
-          expectedHeadRevision,
+          changeset.baseRev,
         );
       if (update.changes !== 1) {
         throw new CollabError(
@@ -806,13 +790,8 @@ function validateSubmissionIdentity(changeset: IChangeset): void {
   }
 }
 
-function validateCandidate(record: UnitRecord, input: CommitChangesetInput): void {
-  const { changeset, expectedHeadRevision } = input;
-  if (
-    changeset.type !== record.type ||
-    changeset.baseRev !== expectedHeadRevision ||
-    changeset.revision !== expectedHeadRevision + 1
-  ) {
+function validateCandidate(record: UnitRecord, changeset: IChangeset): void {
+  if (changeset.type !== record.type || changeset.revision !== changeset.baseRev + 1) {
     throw invalidRequest("Confirmed changeset must match the unit type and expected revision");
   }
 }

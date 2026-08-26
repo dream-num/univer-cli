@@ -11,30 +11,17 @@ describe("univer local CLI composition", () => {
     expect(packageMetadata.scripts["unlink:cli"]).toBe("npm unlink --global univer-cli");
   });
 
-  it("pins every CLI SDK package to one exact internal build", () => {
-    const baseline = "1.0.0-insiders.20260822-0c0c0dd";
-    const versions = Object.entries(packageMetadata.dependencies)
-      .filter(([name]) => name.startsWith("@univer-cli/"))
-      .map(([, version]) => version);
-
-    expect(new Set(versions)).toEqual(new Set([baseline]));
-    expect(versions.every((version) => !version.startsWith("file:"))).toBe(true);
-    expect(packageMetadata.dependencies).not.toHaveProperty("@univer-cli/doctor");
-    expect(packageMetadata.dependencies).not.toHaveProperty("@univer-cli/doctor-command");
-    expect(packageMetadata.dependencies).not.toHaveProperty("@univer-cli/skills");
-    expect(packageMetadata.dependencies).not.toHaveProperty("@univer-cli/skills-command");
-  });
-
-  it("declares dynamically loaded native bindings as runtime dependencies", () => {
-    expect(packageMetadata.dependencies["@univerjs-pro/engine-formula-rust-binding"]).toBe(
-      "1.0.0-insiders.20260819-8209aa8",
-    );
-    expect(packageMetadata.dependencies["@univerjs-pro/exchange-node-binding"]).toBe("0.1.0");
-    expect(packageMetadata.dependencies["@univerjs-pro/exchange-node"]).toBe(
-      "1.0.0-insiders.20260822-0c0c0dd",
-    );
-    expect(packageMetadata.dependencies).not.toHaveProperty("@univer-cli/unit-exchange");
-    expect(packageMetadata.dependencies).not.toHaveProperty("@univerjs-pro/uexcli");
+  it("does not depend on retired SDK feature packages", () => {
+    for (const name of [
+      "@univer-cli/doctor",
+      "@univer-cli/doctor-command",
+      "@univer-cli/skills",
+      "@univer-cli/skills-command",
+      "@univer-cli/unit-exchange",
+      "@univerjs-pro/uexcli",
+    ]) {
+      expect(packageMetadata.dependencies, name).not.toHaveProperty(name);
+    }
   });
 
   it("keeps the production program name and exposes only the Lite composition", () => {

@@ -18,6 +18,7 @@
     "dev": "pnpm --filter univer-cli dev",
     "link:cli": "pnpm --filter univer-cli link:cli",
     "unlink:cli": "pnpm --filter univer-cli unlink:cli",
+    "update:sdk": "node scripts/update-sdk-dependencies.mjs",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
     "lint": "oxlint . --deny-warnings",
@@ -34,10 +35,5 @@
     "typescript": "^7.0.2",
     "vitest": "^4.1.10"
   },
-  "packageManager": "pnpm@10.32.1",
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild"
-    ]
-  }
+  "packageManager": "pnpm@11.22.0"
 }

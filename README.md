@@ -5,7 +5,7 @@
 English · [简体中文](README.zh-CN.md)
 
 [![Agent Skill](https://img.shields.io/badge/Agent%20Skill-univer--cli-0a7ea4)](https://github.com/dream-num/skills/tree/main/skills/univer-cli)
-[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D22.12-339933?logo=node.js&logoColor=white)](apps/cli/package.json)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D24.0-339933?logo=node.js&logoColor=white)](apps/cli/package.json)
 [![CI](https://github.com/dream-num/univer-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/dream-num/univer-cli/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
@@ -106,7 +106,7 @@ See the [complete CLI reference](apps/cli/README.md) for command options, select
 
 ## Requirements and current limits
 
-- An agent that supports Agent Skills, plus Node.js 22.12 or later and npm/npx.
+- An agent that supports Agent Skills, plus Node.js 24.0 or later and npm/npx.
 - Screenshot, Slide layout lint, and browser text measurement require Chrome, Chromium, or Edge. The agent can prepare the browser through `univer screenshot setup`.
 - `execute` runs trusted JavaScript and is not a sandbox for untrusted code.
 - `.univer` files, the Gateway, Viewer, daemon, runtime workers, and browser cache stay on the local machine. Explicit HTTP imports, resource downloads, and update checks can access the network.
@@ -126,7 +126,7 @@ The bundled Univer runtime development license is a localhost application creden
 
 ## Development
 
-The project requires Node.js 22.12 or later and the pnpm version declared in `package.json`.
+The project requires Node.js 24.0 or later and the pnpm version declared in `package.json`.
 
 ```bash
 git clone https://github.com/dream-num/univer-cli.git
@@ -142,6 +142,16 @@ Stop the daemon before unlinking a local build:
 univer daemon stop
 pnpm unlink:cli
 ```
+
+### SDK upgrades
+
+Every Univer SDK dependency (`@univer-cli/*`, `@univerjs/*`, `@univerjs-pro/*`) moves as one exact version cohort, while `@univerjs/icons`, `@univerjs-pro/cli-assets`, `@univerjs-pro/engine-formula-rust-binding`, and `@univerjs-pro/exchange-node-binding` keep their own release chains. Upgrade the cohort with:
+
+```bash
+pnpm update:sdk --sdk_version <exact-sdk-version>
+```
+
+Commit all affected manifests together with `pnpm-lock.yaml`; updating only part of the cohort by hand is not allowed.
 
 ## License
 

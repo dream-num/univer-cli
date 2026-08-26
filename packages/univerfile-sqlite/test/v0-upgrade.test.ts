@@ -149,7 +149,6 @@ describe("legacy v0 .univer upgrade", () => {
 
       await univerfile.worktreeDatabaseAdapter.commitDraftChangeset(context(), {
         worktreeID: "wt-draft",
-        expectedHeadRevision: 3,
         changeset: {
           unitID: "trunk-sheet",
           type: UniverType.UNIVER_SHEET,

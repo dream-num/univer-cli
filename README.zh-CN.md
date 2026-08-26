@@ -5,7 +5,7 @@
 [English](README.md) · 简体中文
 
 [![Agent Skill](https://img.shields.io/badge/Agent%20Skill-univer--cli-0a7ea4)](https://github.com/dream-num/skills/tree/main/skills/univer-cli)
-[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D22.12-339933?logo=node.js&logoColor=white)](apps/cli/package.json)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D24.0-339933?logo=node.js&logoColor=white)](apps/cli/package.json)
 [![CI](https://github.com/dream-num/univer-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/dream-num/univer-cli/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
@@ -106,7 +106,7 @@ Skill 会自动选择这些能力，日常使用通常不需要手动调用。
 
 ## 要求与当前限制
 
-- 支持 Agent Skills 的 Agent，以及 Node.js 22.12 或更高版本和 npm/npx。
+- 支持 Agent Skills 的 Agent，以及 Node.js 24.0 或更高版本和 npm/npx。
 - Screenshot、Slide layout lint 与浏览器文字度量需要 Chrome、Chromium 或 Edge；Agent 可以通过 `univer screenshot setup` 准备浏览器。
 - `execute` 执行可信 JavaScript，不能作为不受信任代码的 sandbox。
 - `.univer` 文件、Gateway、Viewer、daemon、runtime worker 与 browser cache 保存在本机；显式 HTTP 导入、资源下载与更新检查可能访问网络。
@@ -126,7 +126,7 @@ Univer CLI 基于 [Univer SDK](https://docs.univer.ai/zh-CN/) 构建。本仓库
 
 ## 开发
 
-本项目需要 Node.js 22.12 或更高版本，以及 `package.json` 声明的 pnpm 版本。
+本项目需要 Node.js 24.0 或更高版本，以及 `package.json` 声明的 pnpm 版本。
 
 ```bash
 git clone https://github.com/dream-num/univer-cli.git
@@ -142,6 +142,16 @@ pnpm check
 univer daemon stop
 pnpm unlink:cli
 ```
+
+### SDK 升级
+
+所有 Univer SDK 依赖（`@univer-cli/*`、`@univerjs/*`、`@univerjs-pro/*`）作为一个精确版本 cohort 统一升级；`@univerjs/icons`、`@univerjs-pro/cli-assets`、`@univerjs-pro/engine-formula-rust-binding` 与 `@univerjs-pro/exchange-node-binding` 保持独立发布链。升级运行：
+
+```bash
+pnpm update:sdk --sdk_version <exact-sdk-version>
+```
+
+必须同时提交所有受影响的 manifest 与 `pnpm-lock.yaml`，不得手工只更新其中一部分。
 
 ## 许可证
 
