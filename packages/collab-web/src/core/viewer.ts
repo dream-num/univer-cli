@@ -137,6 +137,7 @@ export async function createViewer(opts: ViewerOptions): Promise<ViewerHandle> {
     return {
       referencedUnitManager: injector.get(IReferencedUnitManagerService),
       univerInstanceService: injector.get(IUniverInstanceService),
+      commandService: injector.get(ICommandService),
       waitForFormulaResultApplied: () =>
         injector.get(FormulaCalculationSessionService).waitForLatestApplied(),
       executeFormulaCalculation: () => {

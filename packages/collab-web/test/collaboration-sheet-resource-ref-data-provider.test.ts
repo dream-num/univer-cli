@@ -1,7 +1,8 @@
-import type { ICellData, Workbook } from "@univerjs/core";
+import type { ICellData, ICommandInfo, Workbook } from "@univerjs/core";
 import type { ResourceRefInput } from "@univerjs-pro/embed";
 import type { ISetFormulaCalculationResultMutation } from "@univerjs/engine-formula";
 import { UniverInstanceType } from "@univerjs/core";
+import { SetRangeValuesMutation, InsertRowMutation } from "@univerjs/sheets";
 import { ReferencedUnitDataType } from "@univerjs-pro/embed";
 import { describe, expect, it, vi } from "vitest";
 import { createCollaborationSheetResourceRefDataProvider } from "../src/core/collaboration-sheet-resource-ref-data-provider";
@@ -67,11 +68,77 @@ describe("Collaboration Sheet ResourceRef data provider", () => {
 
     harness.provider.dispose();
   });
+
+  it("fires onChange when a referenced value mutation intersects the source range", () => {
+    const harness = createHarness([[{ v: 10 }], [{ v: 20 }]]);
+    const onChange = vi.fn();
+    harness.watchData(onChange);
+
+    // D2:D5 source range — a mutation inside it must refresh.
+    harness.notifyCommand({
+      id: SetRangeValuesMutation.id,
+      params: {
+        unitId: "source-sheet",
+        subUnitId: "data-sheet",
+        cellValue: { 1: { 3: { v: 99 } } } // D2 (row 1, col 3 → D)
+      }
+    });
+    expect(onChange).toHaveBeenCalledOnce();
+
+    // A mutation outside the source range must not refresh.
+    onChange.mockClear();
+    harness.notifyCommand({
+      id: SetRangeValuesMutation.id,
+      params: {
+        unitId: "source-sheet",
+        subUnitId: "data-sheet",
+        cellValue: { 0: { 5: { v: 1 } } } // F1 — outside D2:D5
+      }
+    });
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("ignores source mutations in a different sheet or unit", () => {
+    const harness = createHarness([[{ v: 10 }]]);
+    const onChange = vi.fn();
+    harness.watchData(onChange);
+
+    harness.notifyCommand({
+      id: SetRangeValuesMutation.id,
+      params: {
+        unitId: "source-sheet",
+        subUnitId: "other-sheet", // different sheet
+        cellValue: { 1: { 3: { v: 99 } } }
+      }
+    });
+    harness.notifyCommand({
+      id: SetRangeValuesMutation.id,
+      params: {
+        unitId: "other-unit", // different unit
+        subUnitId: "data-sheet",
+        cellValue: { 1: { 3: { v: 99 } } }
+      }
+    });
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("refreshes on structural mutations that can shift what the range resolves to", () => {
+    const harness = createHarness([[{ v: 10 }]]);
+    const onChange = vi.fn();
+    harness.watchData(onChange);
+
+    harness.notifyCommand({
+      id: InsertRowMutation.id,
+      params: { unitId: "source-sheet", subUnitId: "data-sheet" }
+    });
+    expect(onChange).toHaveBeenCalledOnce();
+  });
 });
 
 function createHarness(initialCells: ICellData[][]) {
   let cells = initialCells;
   const waits: Array<{ promise: Promise<void>; resolve: () => void }> = [];
+  const listeners: Array<(command: ICommandInfo) => void> = [];
   const waitForFormulaResultApplied = vi.fn(() => {
     let resolve!: () => void;
     const promise = new Promise<void>((next) => {
@@ -99,6 +166,12 @@ function createHarness(initialCells: ICellData[][]) {
     univerInstanceService: {
       getUnit: vi.fn(() => workbook)
     },
+    commandService: {
+      onCommandExecuted: vi.fn((listener: (command: ICommandInfo) => void) => {
+        listeners.push(listener);
+        return { dispose: vi.fn() };
+      })
+    },
     waitForFormulaResultApplied,
     executeFormulaCalculation
   }));
@@ -124,6 +197,9 @@ function createHarness(initialCells: ICellData[][]) {
     resolveWait(index: number): void {
       waits[index]?.resolve();
     },
+    notifyCommand(command: ICommandInfo): void {
+      listeners.forEach((listener) => listener(command));
+    },
     readData: () =>
       provider.registration.provider.readData({
         ref,
@@ -131,7 +207,15 @@ function createHarness(initialCells: ICellData[][]) {
         dataType: ReferencedUnitDataType.RANGE,
         selector: ref.part!,
         signal: undefined
-      })
+      }),
+    watchData: (onChange: () => void) =>
+      provider.registration.provider.watchData!({
+        ref,
+        unitType: UniverInstanceType.UNIVER_SHEET,
+        dataType: ReferencedUnitDataType.RANGE,
+        selector: ref.part!,
+        signal: undefined
+      }, onChange)
   };
 }
 
