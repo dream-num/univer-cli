@@ -116,9 +116,20 @@ Use `univer <command> --help` as the syntax authority.
 | System   | `daemon status\|start\|stop` / `config`  | Start diagnosis with `daemon status`.                                                                                                                                                                                   |
 | Maintain | `optimize`                               | Write a new copy with explicit `--worktrees clean`, `--history reset`, and/or `--images externalize`; history reset implies terminal Worktree cleanup and refuses active Worktrees. Omitted passes preserve their data. |
 
-## Finding APIs
+## Facade API lookup
 
-- Use `api find <term> [<term>…]` when you do not know the symbol name and `api show <symbol> [<symbol>…]` when you do. Add `--unit slide` or `--unit doc` to remove sheet noise. Method detail types are authoritative; never guess accepted parameters.
+- No relevant class or API symbol is known: use `univer api find <query...>` with API-name keywords or identifier fragments.
+- A class is known: use `univer api show <Class>` to inspect its supported APIs.
+- A type or exact `Class.member` symbol is known: use `univer api show <symbol>` for its authoritative signature, documentation, referenced types, and examples.
+
+`find` is case-insensitive. Each query is searched independently and returns its own matches. Queries are not combined as AND, and `find` does not interpret intent.
+
+Pass a useful symbol returned by `find` directly to `show`; do not search for the same symbol again.
+
+`show` accepts one or more exact symbols. When several relevant symbols are already known, pass them in one `show` command instead of issuing one command per symbol.
+
+Only `find` accepts `--unit sheet|slide|doc|base|board`; use it there to reduce irrelevant Unit-specific results while retaining shared APIs. Do not pass `--unit` to `show`. Treat `show` output as authoritative; do not guess signatures, parameter shapes, or enum values.
+
 - The index covers conditional formatting, data validation, filters, sorting, tables, hyperlinks, comments, number formats, charts, pivot tables, shapes, and sparklines. These features use Facade APIs through `execute`; they do not have dedicated commands.
 - Enumerations are indexed too. For example, `api show ShapeTypeEnum` lists the declared common Shape values. If an enum is absent from the index, inspect it with `return Object.keys(api.Enum.XxxEnum)`.
 - Use `api find/show` as the version-matched Facade contract instead of reading a repository DTS path.

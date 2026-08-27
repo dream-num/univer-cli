@@ -12,7 +12,7 @@ layout lint, and `compile-svg --page` use their documented page selectors. Insid
 indexes are 0-based (`getSlideByIndex`, `getSlides()[i]`). When carrying a page from CLI output into
 code, prefer `getSlideById(id)`.
 
-Query exact signatures and enum values with `univer api show <symbol>` and `univer api find <keyword>`. Use the declared common Shape names such as `ShapeTypeEnum`, `ShapeFillEnum`, and `ShapeLineTypeEnum`.
+Use `univer api find <query...>` to discover API symbols, then use `univer api show <symbol>` for exact signatures, enum values, documentation, and examples. Use the declared common Shape names such as `ShapeTypeEnum`, `ShapeFillEnum`, and `ShapeLineTypeEnum`.
 
 ## Presentation structure
 

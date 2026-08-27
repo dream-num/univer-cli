@@ -7,7 +7,7 @@ description: "Read, edit, paginate, chart, inspect, and visually verify Doc unit
 
 `execute` provides `univerAPI`, `api` (an alias of `univerAPI`), and `doc` (the `FDocument` bound by `--unit`). Do not redeclare them. A Doc unit does not provide `workbook` or `presentation`; if one is undefined, verify the selected unit type.
 
-Use `doc.getParagraphs()` and `doc.getParagraph(paragraphId)` to select paragraphs. Query exact signatures and enum values with `univer api show <symbol>` and `univer api find <keyword>`.
+Use `doc.getParagraphs()` and `doc.getParagraph(paragraphId)` to select paragraphs. Use `univer api find <query...>` to discover API symbols, then use `univer api show <symbol>` for exact signatures, enum values, documentation, and examples.
 
 ## Model essentials
 

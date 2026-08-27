@@ -98,7 +98,7 @@ univer skills get cross-unit-formula
 
 - One `.univer` target can contain Sheet, Doc, Slide, Base, and Board Units addressed by `unitId`.
 - Worktrees isolate agent changes until review and merge.
-- Offline `api show` / `api find` resolves exact Facade symbols for the installed SDK.
+- Offline `api find` searches the installed SDK index by keyword; `api show` resolves exact Facade symbols and details.
 - Runtime readback and the viewer verify the stored model and rendered result.
 - Import/export and screenshots use the product runtime rather than unrelated file writers.
 

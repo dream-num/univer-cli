@@ -81,6 +81,7 @@ describe("application Skill library", () => {
       ),
     );
     const corpus = snapshots.map((snapshot) => snapshot.content).join("\n");
+    const core = snapshots.find((snapshot) => snapshot.metadata.name === "core");
     const skillReadme = await readFile(resolve(assetsRoot, "README.md"), "utf8");
 
     expect(corpus).toContain("univer update");
@@ -89,6 +90,11 @@ describe("application Skill library", () => {
     expect(corpus).toContain("with the Lite Interface");
     expect(corpus).toContain("Use when a task involves reading or editing .univer");
     expect(corpus).toContain("always select exactly one scope with `--trunk` or `--worktree <id>`");
+    expect(core?.content).toContain("Queries are not combined as AND");
+    expect(core?.content).toContain("`find` does not interpret intent");
+    expect(core?.content).toContain("`show` accepts one or more exact symbols");
+    expect(core?.content).toContain("Do not pass `--unit` to `show`");
+    expect(corpus).not.toContain("search by intent");
     expect(skillReadme).toContain("`src/skills` 是 source of truth");
   });
 });
