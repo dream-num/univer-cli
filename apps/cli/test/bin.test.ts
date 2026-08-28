@@ -404,7 +404,7 @@ describe("built univer executable", () => {
           "--unit",
           base.unitId,
           "-e",
-          `const base = api.getBase(${JSON.stringify(base.unitId)}); const table = base.insertTable("Tasks", { primaryFieldName: "Title" }); table.addRecord({ [table.getPrimaryFieldId()]: "Task" }); table.createView("Grid", api.Enum.BaseViewType.Grid); return table.getId();`,
+          `const table = base.insertTable("Tasks", { primaryFieldName: "Title" }); table.addRecord({ [table.getPrimaryFieldId()]: "Task" }); table.createView("Grid", api.Enum.BaseViewType.Grid); return table.getId();`,
           "--json",
         ],
         env,
