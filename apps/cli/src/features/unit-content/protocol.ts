@@ -52,7 +52,6 @@ export function parseInspectRequest(payload: JsonValue): {
   const query = requireRecord(record["query"], "content inspection query");
   const kind = query["kind"];
   if (
-    kind !== "base" &&
     kind !== "workbook" &&
     kind !== "worksheet" &&
     kind !== "worksheet-range" &&

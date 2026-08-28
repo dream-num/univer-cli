@@ -88,13 +88,6 @@ Unit mutations and `execute` are allowed only in a draft worktree. A ready workt
 
 `inspect` uses the CLI SDK selector grammar: `name:`, `id:`, and 1-based `index:`. Reading a Sheet range requires `--worksheet`. Every inspection must choose exactly one scope through `--trunk` or `--worktree <id>`.
 
-Use the selector-free Base overview to discover ordered tables, fields, field config, record counts,
-and views without reading record values:
-
-```bash
-univer inspect base ./data.univer --unit <base-unit-id> --worktree <worktree-id> --json
-```
-
 ## Import and export
 
 `import` uses Univer SDK Exchange Node to import local or HTTP(S) XLS, XLSX, XLSM, CSV, TSV, DOC, DOCX, PPT, and PPTX inputs. The local HTTP adapter streams remote input into a suffix-preserving temporary file, removes it after success or failure, and strips credentials, query strings, and fragments from errors.
