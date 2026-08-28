@@ -409,6 +409,45 @@ describe("built univer executable", () => {
         ],
         env,
       );
+      const inspectedBase = parseJson(
+        (
+          await invoke(
+            [
+              "inspect",
+              "base",
+              importedFile,
+              "--unit",
+              base.unitId,
+              "--worktree",
+              authoringWorktree.worktreeId,
+              "--json",
+            ],
+            env,
+          )
+        ).stdout,
+      ) as {
+        readonly kind: string;
+        readonly tables: readonly {
+          readonly fields: readonly { readonly name: string }[];
+          readonly name: string;
+          readonly recordCount: number;
+          readonly views: readonly { readonly type: string }[];
+        }[];
+      };
+      expect(inspectedBase).toMatchObject({ kind: "base" });
+      expect(inspectedBase.tables[0]).toMatchObject({
+        name: "Table 1",
+        recordCount: 0,
+        views: [expect.objectContaining({ type: "grid" })],
+      });
+      const tasksOverview = inspectedBase.tables.find((table) => table.name === "Tasks");
+      expect(tasksOverview).toMatchObject({ recordCount: 1 });
+      expect(tasksOverview?.fields).toEqual(
+        expect.arrayContaining([expect.objectContaining({ name: "Title" })]),
+      );
+      expect(tasksOverview?.views).toEqual(
+        expect.arrayContaining([expect.objectContaining({ type: "grid" })]),
+      );
       const exportedBase = parseJson(
         (
           await invoke(

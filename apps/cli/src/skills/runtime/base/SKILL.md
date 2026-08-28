@@ -1,90 +1,89 @@
 ---
 name: base
-description: "Create and edit Base database units with the Lite Interface."
+description: "Create and edit Base database units, tables, fields, records, and views with the Lite Interface."
 ---
 
 # Base units
 
-Create a Base on a worktree, then use the returned unit ID for every operation:
+## Model
 
-```bash
-univer unit add data.univer --worktree <id> --type base --name "CRM" --json
+A Base is one Unit inside a `.univer` file:
+
+```text
+FUniver
+└── FBase
+    └── FBaseTable
+        ├── FBaseTableField   schema and value contract
+        ├── FBaseTableRecord  stored business data
+        └── FBaseTableView    projection of the same table records
 ```
 
-For an existing unit, use `univerAPI.getBase("<base-id>")`. Resolve exact Base methods and types
-from the version-matched Facade index:
+- Resolve `FBase` by Unit ID. Tables own their fields, records, and views; views only add filter,
+  sort, group, visibility, and type-specific presentation.
+- The primary field is the record's visible identity for links, cards, and details. Define it with
+  `insertTable(..., { primaryFieldName })` instead of adding a duplicate label field.
+- Use stable Unit/Table/Field/Record/View IDs in Facade relationships and user-facing names for
+  display. Record values and view config normally refer to Field IDs.
+- `table.getFormulaName()` is only the structured-reference name for formulas; it may differ from
+  the table's display name.
+
+## Entry
+
+The CLI owns Unit and Worktree lifecycle; the Facade owns Base content:
 
 ```bash
-univer api show FUniver.createBase FUniver.getBase FBase
-univer api find base table field record view
+univer unit add data.univer --worktree <worktree-id> --type base --name "CRM" --json
+univer inspect base data.univer --worktree <worktree-id> --unit <base-unit-id> --json
+univer execute data.univer --worktree <worktree-id> --unit <base-unit-id> -e '…'
 ```
-
-Use `execute` for changes, then read back the model and verify the worktree before handoff.
-
-## OOXML Base table formulas
-
-Base Formula fields must use Excel structured references exactly; do not invent aliases or infer
-scope from intent.
-
-- `Table[[#This Row],[Column]]` (or `Table[@[Column]]`) reads one value from the formula
-  record's row.
-- `Table[[#Data],[Column]]` (or `Table[Column]`) reads the complete data column.
-- Unqualified `[@[Column]]` is valid only for the current row of the Host table.
-- `table[Column]` is invalid unless `table` is the real table identifier. It is never a generic
-  placeholder for the current table.
-
-Resolve every Base table's formula identifier with `table.getFormulaName()`. The identifier may
-differ from its display name when that name is duplicated or is not a legal Excel table name:
 
 ```ts
-const ordersName = orders.getFormulaName();
-const pricingName = pricing.getFormulaName();
-const lineTotal = orders.addField("Line Total", univerAPI.Enum.BaseFieldType.Formula, {
-  field: {
-    config: {
-      formula: `=${ordersName}[[#This Row],[Quantity]]*${pricingName}[[#This Row],[Unit Price]]`,
-    },
-  },
-  externalReferences: [],
-});
+const base = api.getBase("<base-unit-id>");
+if (!base) throw new Error("Base not found");
 ```
 
-A qualified `#This Row` reference to another Base table aligns by row position; use it only when
-the tables deliberately share row order. For relational data, use a stable key or RecordLink with a
-lookup formula instead. Use `#Data` only when an aggregate over all records is intended. After
-writing or editing a Formula field, await calculation and read back its computed record values; the
-stored formula text alone is not correctness evidence.
+Do not call `createBase()` after `unit add` just to obtain a handle. A new Base already contains
+`Table 1` with a primary `Name` field and `Grid`; `insertTable()` also creates a Grid. Run
+`inspect base` first, then deliberately reuse, rename, or delete defaults.
 
-For a Base Formula Field that reads a Sheet Source Unit, persist the complete external-reference
-binding with the field:
-
-```ts
-const base = univerAPI.getBase("<base-id>");
-const table = base?.getTableById("<table-id>");
-if (!table) throw new Error("Base table not found");
-
-table.addField("Current Total", univerAPI.Enum.BaseFieldType.Formula, {
-  field: {
-    config: { formula: "=SUM('[Sales Source]Data'!B2:B4)" },
-  },
-  externalReferences: [
-    {
-      qualifier: "Sales Source",
-      sourceUnitId: "<sheet-unit-id>",
-      sourceUnitType: univerAPI.Enum.UniverInstanceType.UNIVER_SHEET,
-    },
-  ],
-});
-```
-
-The qualifier in the formula and binding must match. This binding belongs to the Base Formula Field.
-
-Render the opening active table/view as a full Base workbench screenshot:
+## Exact API
 
 ```bash
-univer screenshot data.univer --worktree <id> --unit <base-id> --out ./shots
+univer api show FUniver.getBase FBase FBaseTable FBaseTableField FBaseTableRecord FBaseTableView
+univer api show FEnum.BaseFieldType FBase.insertTable FBaseTable.addField FBaseTable.addRecords FBaseTable.createView
+univer api show IGridViewConfig ICalendarViewConfig IGalleryViewConfig IGanttViewConfig IKanbanViewConfig ICardLayoutConfig
 ```
 
-The output is `./shots/view.png` and includes the Base DOM chrome together with the rendered Canvas.
-Base screenshot accepts only common screenshot options; it does not accept Sheet ranges or Slide
-page selectors.
+Use focused discovery such as `univer api find recordLink --unit base`. Follow every referenced
+child type: if a result says `card?: ICardLayoutConfig`, run `api show ICardLayoutConfig` instead of
+guessing its shape.
+
+## Core contracts
+
+- Add fields one at a time with `FBaseTable.addField(...)`; there is no `addFields` method.
+- Single/MultiSelect options use `{ id, name, color? }`; records store option IDs, not labels.
+- Progress values follow its configured range: with `{ start: 0, end: 100 }`, 75% is `75`, not
+  `0.75`.
+- Money uses `BaseFieldType.Currency` and numeric values; Number is not a semantic substitute.
+- RecordLink config targets a Table ID and stores target Record IDs. Prefer its dedicated Facade
+  methods when editing links.
+- View config uses Field IDs. Kanban/Gallery card title and fields follow `ICardLayoutConfig`;
+  `fieldSettings` does not replace the card contract.
+
+## Verify
+
+After the last write, check:
+
+1. `univer inspect base ... --json` for tables, primary fields, field types and config, record counts,
+   and view types. It is read-only and accepts no selector.
+2. Record readback plus `view.getConfig()` / `view.getProjection()` for stored IDs and view bindings.
+3. The rendered required views for blank labels, exposed IDs, implausible dates/percentages, missing
+   card fields, and empty defaults.
+
+```bash
+univer screenshot data.univer --worktree <worktree-id> --unit <base-unit-id> --out ./shots
+```
+
+The Base screenshot is `./shots/view.png`; it does not accept Sheet ranges or Slide selectors.
+
+For Formula fields, run `univer skills get base --full` and follow `references/formulas.md`.

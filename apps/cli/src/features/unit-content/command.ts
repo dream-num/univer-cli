@@ -27,6 +27,7 @@ interface InspectOptions extends JsonOptions {
 }
 
 const INSPECTION_TARGETS = [
+  "base",
   "workbook",
   "worksheet",
   "range",

@@ -95,6 +95,13 @@ SDK content-execution prelude，执行前 pull，捕获 mutation 后自动提交
 `inspect` 使用 CLI SDK selector grammar：`name:`、`id:`、`index:`，其中 index 为 1-based。读取 Sheet range
 时使用 `--worksheet`。每次 inspection 必须通过 `--trunk` 或 `--worktree <id>` 明确选择一个 scope。
 
+Base overview 不接受 selector，可用于发现有序的 Table、Field、字段 config、Record 数量和 View，且不会
+读取记录值：
+
+```bash
+univer inspect base ./data.univer --unit <base-unit-id> --worktree <worktree-id> --json
+```
+
 ## Import and export
 
 `import` 使用 Univer SDK Exchange Node 导入本地或 HTTP(S) XLS/XLSX/XLSM/CSV/TSV、DOC/DOCX 与 PPT/PPTX。
