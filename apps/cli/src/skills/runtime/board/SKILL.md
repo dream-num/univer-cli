@@ -33,20 +33,29 @@ inspect it with an available browser tool.
 Resolve additional Board methods and types from the version-matched Facade index:
 
 ```bash
-univer api show FUniver.createBoard FUniver.getBoard FBoard.insertShape FBoard.insertShapes FShape FBoard.newChart FBoard.insertChart FBoard.getCharts FBoard.getChart FBoardChart FChart
+univer api show FUniver.createBoard FUniver.getBoard FBoard.insertShape FBoard.insertShapes FBoard.arrangeElementsInLayers FBoard.insertConnector FBoard.insertConnectors FShape FBoard.newChart FBoard.insertChart FBoard.getCharts FBoard.getChart FBoardChart FChart
 univer api find board shape element
 ```
 
 ## Connectors and layout verification
 
-Create related shapes with `insertShapes()` before creating their connectors. Prefer generated
-element IDs and element-bound endpoints; for multi-node diagrams, use `routing: "orthogonal"` and
-`routingMode: "auto"` so moving a shape keeps the relationship attached. Use `straight` only for a
-short adjacent connection with a visibly clear corridor, `curve` for a self-loop or short feedback
-edge, and `freePolyline` only when the requested geometry is intentionally manual.
-Choose outward connection sites from the planned geometry instead of relying on defaults: use
-`Right → Left` for left-to-right flow and `Bottom → Top` for top-to-bottom flow. Keep feedback edges
-on an outer lane and give them sites facing that lane. This reduces crossings before the router runs.
+Create and arrange related shapes before creating connectors. Use nodes at least `160 × 80` unless
+the content requires more room. For Mermaid-like flowcharts, prefer
+`arrangeElementsInLayers(layers, { direction })`; its `140` layer gap and `100` item gap defaults
+leave usable terminal and branch corridors. Do not compress gaps merely to reduce screenshot size.
+
+Prefer generated element IDs and element-bound endpoints. For an ordinary relationship, omit
+`side`, `routing`, and `routingMode`: facade planning chooses facing sides, persists `straight` for
+an aligned unobstructed corridor, and otherwise persists automatic `orthogonal` routing with
+`miter` corners. Explicit routing reproduces requested geometry: use `curve` only for a deliberate
+self-loop or a short feedback arc with a visibly clear sweep, and `freePolyline` only for requested
+manual geometry. Do not use rounded orthogonal corners when a terminal leg or corridor is narrow.
+
+Branch endpoints need deliberate port separation. On one source side, order normalized `position`
+values by target geometry, such as `0.25` for the upper branch and `0.75` for the lower branch.
+Reuse a position only for an intentional shared port. Keep feedback edges on an outer lane, use
+sites facing that lane, and prefer explicit orthogonal miter waypoints when a curve would cross the
+main flow.
 
 ```js
 const shapes = board.insertShapes([
@@ -63,14 +72,17 @@ if (!shapes) throw new Error("Cannot insert Board shapes");
 const source = shapes[0];
 const target = shapes[1];
 if (!source || !target) throw new Error("Expected two Board shapes");
+if (
+  !board.arrangeElementsInLayers([[source.getId()], [target.getId()]], {
+    direction: "horizontal",
+    start: { x: 80, y: 80 },
+  })
+)
+  throw new Error("Cannot arrange Board shapes");
 const connectors = board.insertConnectors([
   {
-    fromElementId: source.getId(),
-    toElementId: target.getId(),
-    fromConnectionSiteId: api.Enum.BoardConnectorSite.Right,
-    toConnectionSiteId: api.Enum.BoardConnectorSite.Left,
-    routing: "orthogonal",
-    routingMode: "auto",
+    start: { elementId: source.getId() },
+    end: { elementId: target.getId() },
     style: { endMarker: { type: "filledTriangle", size: "md" } },
   },
 ]);
@@ -80,8 +92,12 @@ if (!analysis) throw new Error("Cannot analyze Board layout");
 return { connectorIds: connectors.map((item) => item.id), analysis };
 ```
 
-Treat `element-overlap`, `connector-through-element`, and `connector-collinear-overlap` as blocking;
-treat `connector-crossing` as a warning that still needs local review. Model analysis deliberately
+Treat `element-overlap`, `connector-through-element`, `connector-collinear-overlap`, and
+`connector-terminal-direction-reversed` as blocking. Treat `connector-crossing` and
+`connector-excessive-detour` as warnings that still need local review. A reversed terminal means
+the rendered line approaches a bound endpoint against its outward normal; an excessive detour means
+an orthogonal route is over three times the direct distance with material extra length. Fix endpoint
+sides, spacing, or the outer lane instead of accepting either result. Model analysis deliberately
 reports an auto connector without persisted route points as unresolved. Do not infer that it is
 clear: browser rendering owns its final route.
 
@@ -102,9 +118,12 @@ endpoint gap, rounded corners, and dash phase. For orthogonal auto connectors wi
 waypoints or route points, the router reserves marker-aware terminal space without changing the
 connector type. Imported or explicitly manual routes keep their topology: rendered lint reports
 `connector-marker-target-overlap`, `connector-marker-corner-overlap`, `connector-marker-collision`,
+`connector-terminal-direction-reversed`, `connector-excessive-detour`,
 `connector-terminal-stem-too-short`, or `connector-terminal-dash-discontinuity` when their visual
 configuration does not fit. Treat marker target/corner overlap and marker collision as errors;
-review terminal stem and dash continuity warnings instead of repeatedly normalizing the route.
+review detour, terminal stem, and dash continuity warnings instead of repeatedly normalizing the
+route. A stem warning in a very short direct corridor is a spacing problem: enlarge the gap or use a
+smaller marker; do not force a folded route into the same corridor.
 
 Run the full screenshot with `--json` to materialize the renderer. Read
 `outputs[0].layoutAnalysis`, not the model's unresolved route, as the final routing evidence. Every
