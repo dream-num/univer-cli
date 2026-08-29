@@ -152,6 +152,53 @@ univer screenshot canvas.univer --worktree <id> --unit <board-id> \
   --out ./board-review --json
 ```
 
+## Connector animation
+
+Connector animation is off by default. When a diagram has a small number of important flows—roughly twelve or fewer
+animated connectors—and motion makes direction or activity easier to understand, prefer enabling animation instead
+of leaving every relationship visually identical. Keep dense diagrams static: animation is emphasis, not decoration.
+
+Use `style.animation.mode` to choose the visual: `dash` moves a dash pattern, `particle` moves one dot, `pulse`
+highlights the full path, `gradient` moves a fading highlight, `particles` renders a repeated dot sequence, and
+`arrows` renders repeated directional arrowheads. `direction` is `forward` from connector start to end or `reverse`;
+it does not depend on marker placement and is ignored by `pulse`. `speed` is a positive multiplier; use `0.5`, `1`,
+or `2` for the floating menu's slow, normal, and fast presets. Use `board.setConnectorStyle(id, { animation: null })`
+to disable animation; omitting `animation` preserves its current value.
+
+This executable case renders every animation style without overlapping routes:
+
+```js
+const modes = ["dash", "particle", "pulse", "gradient", "particles", "arrows"];
+const connectors = board.insertConnectors(
+  modes.map((mode, index) => ({
+    start: { kind: "free", x: 120, y: 100 + index * 80 },
+    end: { kind: "free", x: 620, y: 100 + index * 80 },
+    routing: "straight",
+    style: {
+      stroke: index % 2 === 0 ? "#0f766e" : "#b45309",
+      strokeWidth: 3,
+      endMarker: { type: "filledTriangle", size: "md" },
+      animation: {
+        mode,
+        direction: index % 2 === 0 ? "forward" : "reverse",
+        speed: index < 2 ? 0.5 : index < 4 ? 1 : 2,
+      },
+    },
+    labelText: mode,
+  })),
+);
+if (!connectors) throw new Error("Cannot insert animated connectors");
+return connectors.map((connector) => ({
+  id: connector.id,
+  animation: board.getConnectorStyle(connector.id)?.animation,
+}));
+```
+
+A still screenshot verifies geometry, labels, and persisted styles but cannot prove motion direction or speed. After
+model and rendered layout checks pass, open the Board viewer and observe at least one full animation cycle. Confirm
+that markers remain static, moving effects follow rounded/curved paths, labels interrupt animated paint cleanly, and
+reverse arrows point along their actual travel direction.
+
 ## Images
 
 Images may come from user-provided assets or the built-in SVG resource library. For built-in assets,
