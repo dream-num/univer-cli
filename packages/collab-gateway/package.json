@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@univer/collab-gateway-contract": "workspace:*",
+    "@univer/unit-compare": "workspace:*",
     "@univer/univerfile-sqlite": "workspace:*",
     "@univerjs-pro/bases": "1.0.0-insiders.20260827-ea62ff2",
     "@univerjs-pro/boards": "1.0.0-insiders.20260827-ea62ff2",

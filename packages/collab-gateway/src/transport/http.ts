@@ -8,6 +8,9 @@ import {
   isGatewayDescriptorContentType,
   type ErrorEnvelope,
   type OptimizeUniverfileRequest,
+  type UnitComparisonContextDiffKind,
+  type UnitComparisonContextQuery,
+  type UnitComparisonRefRequest,
   type UnitType,
 } from "@univer/collab-gateway-contract";
 import { CollabGatewayAssetScopeNotFoundError } from "../assets/errors.js";
@@ -25,6 +28,79 @@ import {
   UniverfileNotFoundError,
 } from "../univerfile-manager.js";
 const SHEET_TYPE = 2;
+
+function parseComparisonRef(
+  value: { kind?: unknown; worktreeId?: unknown } | undefined,
+): UnitComparisonRefRequest {
+  if (value === undefined || value.kind === undefined || value.kind === "trunk") {
+    return { kind: "trunk" };
+  }
+  if (
+    value.kind === "worktree" &&
+    typeof value.worktreeId === "string" &&
+    value.worktreeId !== ""
+  ) {
+    return { kind: "worktree", worktreeId: value.worktreeId };
+  }
+  throw new Error("comparison left ref must be Trunk or an active Worktree ID");
+}
+
+function parseComparisonContextQuery(params: URLSearchParams): UnitComparisonContextQuery {
+  const offset = parseOptionalNonNegativeInteger(params.get("offset"), "offset");
+  const limit = parseOptionalPositiveInteger(params.get("limit"), "limit");
+  const kinds = parseCsv(params.get("kind"));
+  if (kinds.some((kind) => kind !== "delete" && kind !== "insert" && kind !== "update")) {
+    throw new Error("kind must contain only delete, insert, or update");
+  }
+  const entityTypes = parseCsv(params.get("entityType"));
+  const detail = params.get("detail");
+  if (detail !== null && detail !== "summary" && detail !== "changes" && detail !== "full") {
+    throw new Error("detail must be summary, changes, or full");
+  }
+  const includeValues = params.get("includeValues");
+  if (includeValues !== null && includeValues !== "true" && includeValues !== "false") {
+    throw new Error("includeValues must be true or false");
+  }
+  const parentStableId = params.get("parentStableId")?.trim();
+  const search = params.get("search")?.trim();
+  return {
+    ...(offset === undefined ? {} : { offset }),
+    ...(limit === undefined ? {} : { limit }),
+    ...(kinds.length === 0 ? {} : { kinds: kinds as readonly UnitComparisonContextDiffKind[] }),
+    ...(entityTypes.length === 0 ? {} : { entityTypes }),
+    ...(parentStableId === undefined || parentStableId === "" ? {} : { parentStableId }),
+    ...(search === undefined || search === "" ? {} : { search }),
+    ...(detail === null ? {} : { detail: detail as "summary" | "changes" | "full" }),
+    ...(includeValues === null ? {} : { includeValues: includeValues === "true" }),
+  };
+}
+
+function parseOptionalNonNegativeInteger(value: string | null, label: string): number | undefined {
+  if (value === null) return undefined;
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed < 0) {
+    throw new Error(`${label} must be a non-negative integer`);
+  }
+  return parsed;
+}
+
+function parseOptionalPositiveInteger(value: string | null, label: string): number | undefined {
+  if (value === null) return undefined;
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+    throw new Error(`${label} must be a positive integer`);
+  }
+  return parsed;
+}
+
+function parseCsv(value: string | null): string[] {
+  return value === null
+    ? []
+    : value
+        .split(",")
+        .map((part) => part.trim())
+        .filter((part) => part.length > 0);
+}
 
 type RouteParams = Record<string, string>;
 type RouteHandler = (
@@ -426,6 +502,63 @@ async function handleWorktrees(
     return;
   }
 
+  // A comparison pins both refs and their Unit heads. The right side is this Worktree;
+  // the left defaults to Trunk and may name another active Worktree.
+  if (sub.length === 1 && sub[0] === "comparisons" && method === "POST") {
+    try {
+      const body = (await readJsonBody(req)) as
+        | { left?: { kind?: unknown; worktreeId?: unknown } }
+        | undefined;
+      const left = parseComparisonRef(body?.left);
+      const comparison = collab.createUnitComparison(worktreeId, left);
+      sendJson(res, 200, { error: { code: 1, message: "" }, ...comparison });
+    } catch (error) {
+      sendJson(res, 200, { error: toErrorDetail(error) });
+    }
+    return;
+  }
+
+  if (sub.length === 4 && sub[0] === "comparisons" && sub[2] === "units" && method === "GET") {
+    try {
+      const data = await collab.getUnitComparison(worktreeId, sub[1] ?? "", sub[3] ?? "");
+      sendJson(res, 200, {
+        error: { code: 1, message: "" },
+        ...data,
+        left: encodeComparisonSideForWire(data.left),
+        right: encodeComparisonSideForWire(data.right),
+      });
+    } catch (error) {
+      sendJson(res, 200, {
+        error: toErrorDetail(error),
+        leftChangesets: [],
+        rightChangesets: [],
+        stale: false,
+      });
+    }
+    return;
+  }
+
+  if (
+    sub.length === 5 &&
+    sub[0] === "comparisons" &&
+    sub[2] === "units" &&
+    sub[4] === "diff" &&
+    method === "GET"
+  ) {
+    try {
+      const context = await collab.getUnitComparisonContext(
+        worktreeId,
+        sub[1] ?? "",
+        sub[3] ?? "",
+        parseComparisonContextQuery(url.searchParams),
+      );
+      sendJson(res, 200, { error: { code: 1, message: "" }, context });
+    } catch (error) {
+      sendJson(res, 200, { error: toErrorDetail(error) });
+    }
+    return;
+  }
+
   // /uf/<enc>/worktrees/<worktreeId>/preview — read-only merge preview summary (MergePreview).
   if (sub.length === 1 && sub[0] === "preview" && method === "GET") {
     try {
@@ -697,6 +830,20 @@ export function encodeSnapshotForWire(snapshot: ISnapshot | undefined): ISnapsho
   }
 
   return out as unknown as ISnapshot;
+}
+
+function encodeComparisonSideForWire(side: {
+  readonly present: boolean;
+  readonly revision?: number;
+  readonly snapshot?: ISnapshot;
+  readonly sheetBlocks?: readonly unknown[];
+}): object {
+  return {
+    present: side.present,
+    ...(side.revision === undefined ? {} : { revision: side.revision }),
+    ...(side.snapshot === undefined ? {} : { snapshot: encodeSnapshotForWire(side.snapshot) }),
+    ...(side.sheetBlocks === undefined ? {} : { sheetBlocks: side.sheetBlocks }),
+  };
 }
 
 function split(template: string): string[] {

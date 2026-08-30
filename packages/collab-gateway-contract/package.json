@@ -13,6 +13,7 @@
   },
   "scripts": {
     "clean": "rm -rf dist *.tsbuildinfo",
+    "example:agent-diff": "node examples/agent-diff-context.mjs",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.test.json --noEmit --pretty false"
   }

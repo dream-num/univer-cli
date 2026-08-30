@@ -232,3 +232,281 @@ export interface MergePreviewUnitResponse extends ErrorEnvelope {
   /** 叠加在 snapshot 上的 changesets(协议形态);冲突单元仅含最新版本到 head 的部分。 */
   changesets: unknown[];
 }
+
+// ---- pinned Unit comparison (worktree-diff) ----
+
+/** A comparison endpoint accepted by the read-only Worktree diff flow. */
+export type UnitComparisonRefRequest =
+  | { readonly kind: "trunk" }
+  | { readonly kind: "worktree"; readonly worktreeId: string };
+
+/** A ref plus the immutable Unit heads captured when the comparison was created. */
+export type PinnedUnitComparisonRef =
+  | {
+      readonly kind: "trunk";
+      readonly label: "Trunk";
+      readonly heads: Readonly<Record<string, number>>;
+    }
+  | {
+      readonly kind: "worktree";
+      readonly worktreeId: string;
+      readonly label: string;
+      readonly heads: Readonly<Record<string, number>>;
+    };
+
+export type UnitComparisonPresence = "paired" | "left-only" | "right-only";
+
+export interface UnitComparisonSummary {
+  readonly unitId: string;
+  readonly type: UnitType;
+  readonly name: string;
+  readonly presence: UnitComparisonPresence;
+}
+
+export interface CreateUnitComparisonRequest {
+  /** Defaults to Trunk. The right side is always the Worktree addressed by the route. */
+  readonly left?: UnitComparisonRefRequest;
+}
+
+export interface UnitComparisonSession {
+  readonly comparisonId: string;
+  readonly createdAt: string;
+  readonly left: PinnedUnitComparisonRef;
+  readonly right: PinnedUnitComparisonRef & { readonly kind: "worktree" };
+  readonly units: readonly UnitComparisonSummary[];
+}
+
+export interface CreateUnitComparisonResponse extends ErrorEnvelope, UnitComparisonSession {}
+
+export interface UnitComparisonSideData {
+  readonly present: boolean;
+  readonly revision?: number;
+  /** Fully materialized protocol snapshot pinned to revision. */
+  readonly snapshot?: unknown;
+  /** Sheet/Base blocks belonging to the fully materialized snapshot. */
+  readonly sheetBlocks?: readonly unknown[];
+}
+
+export type UnitComparisonFidelity = "history" | "snapshot";
+
+/**
+ * One Unit's pinned, symmetric comparison input. Both snapshots are final states. When fidelity is
+ * history, each changeset stream starts at commonBaseRevision and ends at its pinned side head.
+ */
+export interface UnitComparisonResponse extends ErrorEnvelope {
+  readonly comparisonId: string;
+  readonly unit: UnitComparisonSummary;
+  readonly fidelity: UnitComparisonFidelity;
+  readonly commonBaseRevision?: number;
+  readonly left: UnitComparisonSideData;
+  readonly right: UnitComparisonSideData;
+  readonly leftChangesets: readonly unknown[];
+  readonly rightChangesets: readonly unknown[];
+  readonly stale: boolean;
+}
+
+/** Product-neutral change semantics exposed to SDK and agent consumers. */
+export type UnitComparisonContextDiffKind = "delete" | "insert" | "update";
+
+/**
+ * Controls how much changed content is returned for every comparison item.
+ *
+ * - `summary` keeps semantic property paths but removes before/after values and inline segments.
+ * - `changes` returns normalized leaf changes and inline text/formula segments without the
+ *   duplicate `item.values` projections. Whole-entity insert/delete changes use an empty path.
+ * - `full` additionally returns each product's original projected entity in `item.values`.
+ */
+export type UnitComparisonContextDetailLevel = "summary" | "changes" | "full";
+
+/** Coarse value family that lets an agent choose an appropriate explanation or renderer. */
+export type UnitComparisonContextValueType =
+  | "array"
+  | "boolean"
+  | "color"
+  | "formula"
+  | "geometry"
+  | "null"
+  | "number"
+  | "object"
+  | "position"
+  | "reference"
+  | "style"
+  | "text"
+  | "unknown";
+
+/** One side of a character/token diff. Equal spans are retained so consumers can render context. */
+export interface UnitComparisonContextSegment {
+  readonly kind: "delete" | "equal" | "insert";
+  readonly text: string;
+}
+
+/**
+ * One normalized leaf change inside a changed entity. `path` is relative to the parent item, not
+ * the Unit root. For example a Slide element may report `["geometry", "x"]`, while a Sheet cell
+ * reports `["formula"]`. Insert/delete entities use an empty path to represent the whole entity.
+ */
+export interface UnitComparisonContextChange {
+  readonly path: readonly string[];
+  readonly kind: UnitComparisonContextDiffKind;
+  readonly valueType: UnitComparisonContextValueType;
+  readonly before?: unknown;
+  readonly after?: unknown;
+  /** Present for comparable text/formula values when the bounded tokenizer can produce hunks. */
+  readonly segments?: {
+    readonly left: readonly UnitComparisonContextSegment[];
+    readonly right: readonly UnitComparisonContextSegment[];
+  };
+}
+
+export interface UnitComparisonContextQuery {
+  /** Zero-based offset inside the filtered, deterministic item order. */
+  readonly offset?: number;
+  /** Page size, clamped by the server to at most 500. */
+  readonly limit?: number;
+  /** Keep only the requested symmetric change kinds. */
+  readonly kinds?: readonly UnitComparisonContextDiffKind[];
+  /** Keep only product entity families advertised by `coverage.supportedEntityTypes`. */
+  readonly entityTypes?: readonly string[];
+  /** Keep entities contained by this stable Sheet/page/table/record identity. */
+  readonly parentStableId?: string;
+  /** Case-insensitive search across identity, title, paths, details, and returned leaf values. */
+  readonly search?: string;
+  /** Requested response detail. Defaults to `full` for compatibility with the original API. */
+  readonly detail?: UnitComparisonContextDetailLevel;
+  /**
+   * Backward-compatible alias: `false` selects `summary`, `true` selects `full`. `detail` wins when
+   * both are supplied. New agent integrations should use `detail` explicitly.
+   */
+  readonly includeValues?: boolean;
+}
+
+export interface UnitComparisonContextDetail {
+  /** Legacy product-specific display label; prefer `changes.path` for programmatic use. */
+  readonly label: string;
+  readonly before?: string | null;
+  readonly after?: string | null;
+  readonly kind?: UnitComparisonContextDiffKind | null;
+}
+
+export interface UnitComparisonContextLocation {
+  /** Unit-root semantic path for this side; it may differ when native IDs differ by side. */
+  readonly path: readonly string[];
+  /** Native identity to pass to the product-specific focus adapter. */
+  readonly stableId: string;
+  readonly parentStableId?: string;
+  readonly position?: number | null;
+  /** Product-specific semantic target, for example a Sheet range or Base cell coordinate. */
+  readonly target?: unknown;
+}
+
+export interface UnitComparisonContextItem {
+  /** Stable diff identity within this pinned comparison and schema version. */
+  readonly id: string;
+  /** Stable product-level identity used for follow-up queries and navigation. */
+  readonly stableId: string;
+  /** Stable identity of the containing Sheet, page, table, or other parent object. */
+  readonly parentStableId?: string;
+  readonly kind: UnitComparisonContextDiffKind;
+  /** Product entity family, drawn from `coverage.supportedEntityTypes`. */
+  readonly entityType: string;
+  /** Stable path from the Unit root to the aligned changed entity. */
+  readonly path: readonly string[];
+  /** Human-readable content or ordinal label; stable identity is always carried separately. */
+  readonly title: string;
+  /** True for an aligned stable entity whose order/position changed. */
+  readonly moved: boolean;
+  /**
+   * Product-neutral property changes. These are the preferred source for agent explanations and
+   * are also consumed by the Compare UI, so both surfaces describe the same diff.
+   */
+  readonly changes: readonly UnitComparisonContextChange[];
+  readonly details: readonly UnitComparisonContextDetail[];
+  /** Null means that the aligned entity is absent on that side. */
+  readonly locations: {
+    readonly left: UnitComparisonContextLocation | null;
+    readonly right: UnitComparisonContextLocation | null;
+  };
+  readonly values?: {
+    /** Raw product projection; returned only by `detail: "full"`. */
+    readonly left?: unknown;
+    readonly right?: unknown;
+  };
+}
+
+export type UnitComparisonProductContext =
+  | {
+      readonly kind: "sheet";
+      readonly sheets: readonly {
+        readonly id: string;
+        readonly name: string;
+        readonly status: UnitComparisonContextDiffKind | "unchanged";
+        readonly changeCount: number;
+      }[];
+    }
+  | {
+      readonly kind: "doc";
+      readonly paragraphAlignment: {
+        readonly total: number;
+        /** Alignment rows corresponding to paragraph items in the current page. */
+        readonly rows: readonly {
+          readonly id: string;
+          readonly stableId: string;
+          readonly kind: "delete" | "equal" | "insert" | "update";
+          readonly moved: boolean;
+          readonly leftIndex: number | null;
+          readonly rightIndex: number | null;
+        }[];
+      };
+    }
+  | { readonly kind: "slide" }
+  | { readonly kind: "base"; readonly visualProjection: "raw-table-data" }
+  | { readonly kind: "board" };
+
+export interface UnitComparisonContextSummary {
+  /** Total items before query filtering and paging. */
+  readonly total: number;
+  readonly insert: number;
+  readonly delete: number;
+  readonly update: number;
+  readonly moved: number;
+  readonly byEntityType: Readonly<Record<string, number>>;
+}
+
+export interface UnitComparisonContextPage {
+  readonly offset: number;
+  readonly limit: number;
+  readonly matched: number;
+  readonly hasMore: boolean;
+}
+
+/**
+ * Versioned, UI-independent diff context. The same payload is suitable for CLI SDKs, agents, and
+ * the Compare UI; paths and semantic locations are stable navigation anchors.
+ */
+export interface UnitComparisonContext {
+  readonly schemaVersion: 1;
+  readonly comparisonId: string;
+  readonly unit: UnitComparisonSummary;
+  readonly fidelity: UnitComparisonFidelity;
+  readonly commonBaseRevision?: number;
+  readonly stale: boolean;
+  /** Effective detail projection used to serialize `items`. */
+  readonly detail: UnitComparisonContextDetailLevel;
+  readonly summary: UnitComparisonContextSummary;
+  readonly coverage: {
+    /** Entity families this API version can detect for the Unit product. */
+    readonly supportedEntityTypes: readonly string[];
+  };
+  readonly page: UnitComparisonContextPage;
+  readonly items: readonly UnitComparisonContextItem[];
+  readonly diagnostics: {
+    readonly readiness: "ready" | "degraded";
+    readonly unsupportedMutationIds: readonly string[];
+    readonly notes: readonly string[];
+  };
+  readonly productContext: UnitComparisonProductContext;
+}
+
+export interface UnitComparisonContextResponse extends ErrorEnvelope {
+  readonly context?: UnitComparisonContext;
+}
