@@ -83,6 +83,16 @@ https://discord.gg/nThHPupraR
 6. Agent 将 Worktree 标记为 `ready`，并返回本地 Viewer URL。
 7. 用户审阅结果，并明确选择合并、重新打开或放弃。
 
+进入 Worktree 后，Viewer 为 Sheet、Doc、Slide、Base 和 Board Unit 提供只读的 **查看** 与
+**对比** 模式。默认对比当前 Worktree 与固定的 Trunk 状态；左侧也可以改选另一个 active Worktree。
+对比前，两侧都会物化到各自固定的 head；对比过期后由用户显式刷新。
+
+同一份固定结果也会以带版本、且不依赖 UI 的 Agent context 提供。SDK consumer 可以按 entity type、
+稳定 parent ID 或搜索文本分页和筛选标准化的新增/删除/修改项；每一项都带有稳定 path 与左右侧导航目标，
+覆盖 Sheet、Doc、Slide、Base 和 Board。标准化 leaf change 还会提供语义属性 path、带类型的前后值，以及
+有长度上限的文字/公式内联片段。调用方可选择 `summary`、`changes` 或 `full` 详情级别，且不会改变 item
+identity。详见 [Agent diff contract 与可执行案例](packages/collab-gateway-contract/README.md#agent-diff-contract)。
+
 Operational Skills 随 Univer CLI 一同提供，确保其中的 command 和 Facade guidance 与已安装 application 版本一致。
 
 ## CLI 能力

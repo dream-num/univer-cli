@@ -70,6 +70,7 @@ univer command
 univer open
   -> Gateway-hosted Viewer
        -> Collaboration SDK browser client
+       -> read-only pinned Unit comparison (Trunk or Worktree <-> current Worktree)
        -> trunk-only Universer exchange tasks + all-scope print plugins
 
 univer screenshot / lint / compile-svg
@@ -85,6 +86,20 @@ daemon 只管理本地服务和 runtime lifecycle。它为 render operation 物�
 Gateway 按 `.univer` runtime 隔离 Viewer Ribbon 使用的 `source=1` exchange 上传、异步 import/export task 与临时 artifact；导入在当前 trunk 创建新 Unit，导出物化 trunk head。Worktree 路径不暴露 exchange。嵌入资源继续使用按 Unit/worktree 授权的 `source=3` 文件协议，不能与 exchange artifact 混用。
 
 Gateway 为 trunk revision 组合 Collaboration SDK History Service 与 Endpoint。`@univer/univerfile-sqlite` 在共享文件 connection 上实现 History persistence contract；History 表只是由 core Unit/changeset 重建的派生索引。每个文件 runtime 启动时先把索引 reconcile 到 trunk head，再开放 SDK transport。Viewer 只为 trunk Sheet 注册 History Loader；Worktree、merge preview 和其他 Unit 不呈现这项能力。
+
+Viewer 的 Unit comparison 在创建时固定左右 ref、Unit 集合和各自 head。Gateway 通过 Collaboration SDK
+把每侧物化为最终 snapshot；history 连续时同时返回从共同 Trunk revision 到两侧 head 的 changeset path，
+否则显式降级为 snapshot fidelity。比较只读且不生成 mutation。Sheet 使用双侧 changeset 做对称坐标投影；
+Doc、Slide、Base 和 Board 以稳定对象 ID 对齐最终状态。后续 head 或 Unit presence 变化只将 session 标为
+stale，不会改变已固定的结果。
+
+同一 session 通过 `WorktreeControlClient.getUnitComparisonContext()` 和对应的 `/diff` route 暴露
+`schemaVersion: 1` 的 UI-independent context。Gateway 只在首次请求时准备 pinned diff，之后在同一固定结果上做
+filter、search 与 paging。item 使用统一的 insert/delete/update 语义、稳定 ID/path、左右 location；内部
+`changes` 再以相对语义 path、value type、before/after 和可选文本/公式 segment 描述 leaf difference。
+`summary | changes | full` projection 只改变 payload 详情，不改变 item identity。Compare UI 的紧凑差异导航
+直接消费同一 changes 语义；coverage 与 diagnostics 明确声明当前 product family 支持范围和降级原因。这个
+contract 是 CLI SDK / Agent 入口的复用边界，不能从 Viewer DOM 反向提取差异。
 
 headless collaboration runtime 只拥有一个可写 Host Unit。Embed 遇到 `self` ResourceRef 时，application-owned
 Local provider 通过当前 `.univer` 与 Worktree 已限定的 Snapshot endpoint 按需物化 child Unit，并透传 Embed
@@ -109,7 +124,9 @@ packages/collab-web/                # Collaboration browser application
 packages/importrange-formula/       # cross-unit formula plugin
 packages/render-preset/             # shared browser Univer composition
 packages/render-runtime-client/     # CLI SDK Render Page bundle entry
+packages/unit-compare/              # SDK/Agent-ready stable-ID structural diff model
 packages/univerfile-sqlite/         # .univer persistence 与安全升级
+packages/workbook-compare/          # Sheet 双侧 mutation/snapshot diff 与 agent report
 ```
 
 Skill Markdown 是 application asset，保持在 `apps/cli/src/skills`；build 将其复制到 `dist/skills`，runtime 不读取

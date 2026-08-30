@@ -83,6 +83,18 @@ Every content type supports isolated draft editing, review, revision, merge, and
 6. It marks the Worktree `ready` and returns a local Viewer URL.
 7. The user reviews the result and explicitly chooses merge, reopen, or discard.
 
+Inside a Worktree, the Viewer offers read-only **View** and **Compare** modes for Sheet, Doc, Slide,
+Base, and Board Units. Diff compares the current Worktree with a pinned Trunk state by default; the
+left side can instead be another active Worktree. Both sides are materialized through their pinned
+heads before comparison, and a stale comparison is refreshed explicitly.
+
+The pinned result is also available as a versioned, UI-independent Agent context. SDK consumers can
+page or filter normalized insert/delete/update items by entity type, stable parent ID, or search text;
+each item carries stable paths and side-specific navigation targets for Sheet, Doc, Slide, Base, and
+Board. Normalized leaf changes expose semantic property paths, typed before/after values, and bounded
+inline text/formula hunks. Callers can select `summary`, `changes`, or `full` detail without changing
+item identity. See the [Agent diff contract and executable example](packages/collab-gateway-contract/README.md#agent-diff-contract).
+
 The operational Skills ship with Univer CLI so their commands and Facade guidance match the installed application version.
 
 ## CLI capabilities
