@@ -1,6 +1,6 @@
 @import "tailwindcss" source("..");
 @import "tw-animate-css";
-@import "@univerjs-pro/edit-history-viewer/lib/index.css";
+@import "@univerjs-pro/sheets-history-ui/lib/index.css";
 
 /*
  * shadcn/ui design tokens (neutral, light) expressed as Tailwind v4 theme keys.
