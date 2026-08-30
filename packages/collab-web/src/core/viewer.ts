@@ -28,7 +28,7 @@ import {
 } from "@univerjs-pro/collaboration";
 import { UniverCollaborationClientPlugin } from "@univerjs-pro/collaboration-client";
 import { UniverCollaborationEmbedPlugin } from "@univerjs-pro/collaboration-embed";
-import { UniverEditHistoryLoaderPlugin } from "@univerjs-pro/edit-history-loader";
+import { UniverSheetsHistoryUIPlugin } from "@univerjs-pro/sheets-history-ui";
 import {
   BrowserCollaborationSocketService,
   UniverCollaborationClientUIPlugin
@@ -189,7 +189,7 @@ export async function createViewer(opts: ViewerOptions): Promise<ViewerHandle> {
         ...(opts.unitType === UNIT_TYPE_BASE ? { enableDocumentCollaborationUI: false } : {})
       });
       if (opts.unitType === UNIT_TYPE_SHEET && opts.worktreeId === undefined) {
-        univer.registerPlugin(UniverEditHistoryLoaderPlugin, {
+        univer.registerPlugin(UniverSheetsHistoryUIPlugin, {
           historyListServerUrl: urls.historyListServerUrl,
           univerContainerId: opts.container,
         });
