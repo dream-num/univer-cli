@@ -1,9 +1,52 @@
 import type { Messages } from "./en-US";
+import {
+  localizedStructuralEntity,
+  type VocabularyLocale
+} from "./structural-entity-labels";
 
 export interface MessageVocabulary {
   title: string;
   file: string;
   modification: string;
+  compare: string;
+  workbook: string;
+  worksheet: string;
+  content: string;
+  formatting: string;
+  search: string;
+  row: string;
+  styles: string;
+  sheetCategories: {
+    chart: string;
+    cell: string;
+    conditionFormat: string;
+    dataValidation: string;
+    move: string;
+    pivot: string;
+    rowColumn: string;
+    shape: string;
+    sparkline: string;
+    table: string;
+    formula: string;
+    value: string;
+    start: string;
+    count: string;
+    position: string;
+    name: string;
+    background: string;
+    bold: string;
+    textColor: string;
+    fontSize: string;
+    italic: string;
+    numberFormat: string;
+    column: string;
+    inserted: string;
+    deleted: string;
+    moved: string;
+    changed: string;
+    sheet: string;
+    renamed: string;
+  };
   currentVersion: string;
   aiAssistant: string;
   no: string;
@@ -57,9 +100,19 @@ export interface MessageVocabulary {
 }
 
 /** Build a structurally complete shell table from locale-owned vocabulary, without English fallback. */
-export function messagesFromVocabulary(v: MessageVocabulary): Messages {
+export function messagesFromVocabulary(v: MessageVocabulary, locale: VocabularyLocale): Messages {
   const failure = (action: string, error: string): string => `${action} ${v.failed}: ${error}`;
   const ago = (n: number, unit: string): string => `${n} ${unit}`;
+  const structuralEntity = (category: string): string =>
+    localizedStructuralEntity(locale, category, {
+      content: v.content,
+      styles: v.styles,
+      chart: v.sheetCategories.chart,
+      table: v.sheetCategories.table,
+      cell: v.sheetCategories.cell,
+      formula: v.sheetCategories.formula,
+      shape: v.sheetCategories.shape
+    });
   return {
     app: { title: v.title },
     boot: {
@@ -129,7 +182,123 @@ export function messagesFromVocabulary(v: MessageVocabulary): Messages {
       editingPending: (n) => `${v.editing} · ${n} ${v.awaiting}`,
       lockedPending: (n) => `${v.locked} · ${n} ${v.awaiting}`,
       stopEditing: `${v.stop} ${v.editing}`,
-      editAnyway: `${v.continue} ${v.editing}`
+      editAnyway: `${v.continue} ${v.editing}`,
+      segView: v.viewOnly,
+      segDiff: v.compare,
+      comparisonSource: `${v.compare} · ${v.choose}`,
+      trunk: v.currentVersion,
+      refreshComparison: `${v.modification} · ${v.updated}`
+    },
+    diff: {
+      compare: v.compare,
+      changes: v.modification,
+      structuralDiff: `${v.compare} · ${v.content}`,
+      kind: { insert: v.create, delete: v.discarded, update: v.updated },
+      entity: structuralEntity,
+      entityAt: (category, index) => `${structuralEntity(category)} ${index}`,
+      changePath: (path) => path.map((part) => ({
+        text: v.content,
+        formula: v.sheetCategories.formula,
+        name: v.sheetCategories.name,
+        position: v.sheetCategories.position,
+        style: v.styles,
+        background: v.sheetCategories.background,
+        bold: v.sheetCategories.bold,
+        italic: v.sheetCategories.italic
+      })[part] ?? part).join(" · "),
+      wholeItem: v.content,
+      present: v.content,
+      itemCount: (count) => `${count} ${v.content}`,
+      propertyCount: (count) => `${count} ${v.content}`,
+      moved: v.sheetCategories.moved,
+      rightCurrentVersion: `${v.currentVersion} · ${v.viewOnly}`,
+      revision: (revision) => `${v.currentVersion} ${revision}`,
+      readOnly: v.viewOnly,
+      side: { left: v.compare, right: v.currentVersion },
+      changeCount: (count) => `${count} ${v.modification}`,
+      changedSlides: `${v.modification} · ${v.file}`,
+      changedBaseTables: `${v.modification} · ${v.sheetCategories.table}`,
+      noRawTableChanges: `${v.no} ${v.sheetCategories.table} ${v.modification}`,
+      rawTableData: `${v.sheetCategories.table} · ${v.content}`,
+      baseAlignmentHint: `${v.sheetCategories.table} · stable ID`,
+      checkboxState: { checked: v.confirm, unchecked: v.no },
+      comparingMaterializedSnapshots: `${v.preview} · ${v.compare}`,
+      snapshot: `${v.preview} · ${v.compare}`,
+      noStructuralChanges: `${v.no} ${v.modification}`,
+      notPresent: `${v.no} ${v.file}`,
+      workbookTitle: `${v.workbook} · ${v.compare}`,
+      invalidPayloadTitle: `${v.compare} · ${v.failed}`,
+      invalidPayloadBody: `${v.preview}: ${v.cannot}`,
+      summaryUnavailable: `${v.no} ${v.compare}`,
+      scopeLabel: `${v.compare} · ${v.choose}`,
+      displayModeLabel: `${v.compare} · ${v.content}`,
+      worksheet: v.worksheet,
+      workbook: v.workbook,
+      content: v.content,
+      formatting: v.formatting,
+      searchChanges: `${v.search} ${v.modification}`,
+      noItems: `${v.no} ${v.modification}`,
+      selectItemHint: `${v.choose} ${v.modification}`,
+      snapshotUnavailable: `${v.preview}: ${v.cannot}`,
+      formulaDiff: `${v.compare} · ${v.sheetCategories.formula}`,
+      baseFormula: `${v.currentVersion} · ${v.sheetCategories.formula}`,
+      currentFormula: `${v.modification} · ${v.sheetCategories.formula}`,
+      baseValue: `${v.currentVersion} · ${v.content}`,
+      currentValue: `${v.modification} · ${v.content}`,
+      base: v.currentVersion,
+      current: v.modification,
+      summaryLabel: `${v.compare} · ${v.modification}`,
+      sheetTree: {
+        categories: {
+          chart: v.sheetCategories.chart,
+          cell: v.sheetCategories.cell,
+          conditionFormat: v.sheetCategories.conditionFormat,
+          dataValidation: v.sheetCategories.dataValidation,
+          move: v.sheetCategories.move,
+          pivot: v.sheetCategories.pivot,
+          rowColumn: v.sheetCategories.rowColumn,
+          shape: v.sheetCategories.shape,
+          sparkline: v.sheetCategories.sparkline,
+          table: v.sheetCategories.table,
+          workbook: v.workbook,
+          worksheet: v.worksheet
+        },
+        emptyText: `(${v.empty})`,
+        noActiveSheet: `${v.no} ${v.worksheet}`,
+        noCompareData: `${v.no} ${v.compare}`,
+        row: (index) => `${v.row} ${index}`,
+        styles: v.styles,
+        workbookRoot: v.workbook,
+        terms: {
+          formula: v.sheetCategories.formula,
+          value: v.sheetCategories.value,
+          start: v.sheetCategories.start,
+          count: v.sheetCategories.count,
+          position: v.sheetCategories.position,
+          name: v.sheetCategories.name,
+          background: v.sheetCategories.background,
+          bold: v.sheetCategories.bold,
+          textColor: v.sheetCategories.textColor,
+          fontSize: v.sheetCategories.fontSize,
+          italic: v.sheetCategories.italic,
+          numberFormat: v.sheetCategories.numberFormat
+        },
+        titles: {
+          insertedRows: `${v.sheetCategories.inserted} ${v.row}`,
+          deletedRows: `${v.sheetCategories.deleted} ${v.row}`,
+          insertedColumns: `${v.sheetCategories.inserted} ${v.sheetCategories.column}`,
+          deletedColumns: `${v.sheetCategories.deleted} ${v.sheetCategories.column}`,
+          rowsMoved: `${v.row} · ${v.sheetCategories.moved}`,
+          columnsMoved: `${v.sheetCategories.column} · ${v.sheetCategories.moved}`,
+          rowChanged: (index) => `${v.row} ${index} · ${v.sheetCategories.changed}`,
+          columnChanged: (index) =>
+            `${v.sheetCategories.column} ${index} · ${v.sheetCategories.changed}`,
+          sheetAdded: (name) => `${v.sheetCategories.inserted} ${v.sheetCategories.sheet}: ${name}`,
+          sheetDeleted: (name) => `${v.sheetCategories.deleted} ${v.sheetCategories.sheet}: ${name}`,
+          sheetRenamed: `${v.sheetCategories.sheet} · ${v.sheetCategories.renamed}`,
+          workbookRenamed: `${v.workbook} · ${v.sheetCategories.renamed}`
+        }
+      }
     },
     settings: {
       title: v.settings,

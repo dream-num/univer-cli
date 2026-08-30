@@ -1,4 +1,12 @@
-import type { UnitSummary, Worktree } from "@univer/collab-gateway-contract";
+import {
+  UNIT_TYPE_BASE,
+  UNIT_TYPE_BOARD,
+  UNIT_TYPE_SHEET,
+  UNIT_TYPE_SLIDE,
+  type UnitSummary,
+  type Worktree
+} from "@univer/collab-gateway-contract";
+import type { IWorkbookData } from "@univerjs/core";
 import { UniverCliIcon } from "@univerjs/icons";
 import {
   Check,
@@ -7,6 +15,7 @@ import {
   Eye,
   FolderOpen,
   GitMerge,
+  RefreshCw,
   Lock,
   Moon,
   PanelLeftClose,
@@ -20,12 +29,16 @@ import {
 import {
   useCallback,
   useEffect,
+  lazy,
+  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
+  Suspense,
   type PointerEvent as ReactPointerEvent,
   type PointerEventHandler,
   type ReactElement,
+  type MutableRefObject,
   type ReactNode
 } from "react";
 import { Badge } from "../components/ui/badge";
@@ -44,18 +57,37 @@ import {
 import { Spinner } from "../components/ui/spinner";
 import { SegmentedToggle } from "../components/ui/toggle-group";
 import { LOCALE_MANIFEST, t, type Lang } from "../i18n";
+import { sdkLocaleOf } from "../i18n";
 import type { Appearance } from "../appearance";
 import { cn } from "../lib/utils";
+import {
+  buildChangedSlidePages,
+  buildUnitStructuralDiff,
+  type UnitStructuralDiffItem
+} from "@univer/unit-compare";
+import type { PreviewViewerHandle } from "../core/viewer";
+import { structuralDiffFocusTarget } from "../core/preview-comparison-focus";
 import type { App, AppSnapshot } from "./app";
 import { relativeTime, summaryText } from "./format";
 import { toast } from "./modals";
 import { UnitIcon } from "./unit-icon";
 import { DiscordIcon } from "./discord-icon";
+import { BaseTableDiffViewer } from "./base-table-diff-viewer";
+import { ComparisonPageTabs, type ComparisonPageTabOption } from "./comparison-page-tabs";
+import { ComparisonChangeNavigator } from "./comparison-change-navigator";
+import {
+  structuralDiffItemEntityLabel,
+  structuralDiffItemLabel
+} from "./structural-diff-item-label";
 
 const SIDEBAR_DRAWER_ID = "gateway-sidebar-hover-drawer";
 const SIDEBAR_DRAWER_OPEN_DELAY_MS = 120;
 const SIDEBAR_DRAWER_CLOSE_DELAY_MS = 200;
 const DISCORD_INVITE_URL = "https://discord.gg/nThHPupraR";
+const WorkbookDiffViewer = lazy(async () => {
+  const module = await import("./workbook-diff-viewer");
+  return { default: module.WorkbookDiffViewer };
+});
 
 interface SidebarHoverDrawerController {
   open: boolean;
@@ -687,7 +719,7 @@ function Topbar({ app, snap }: { app: App; snap: AppSnapshot }): ReactElement {
     <span aria-hidden="true" className="sidebar-toggle-spacer size-8 shrink-0" />
   ) : undefined;
   return (
-    <header className="topbar flex min-h-11 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border bg-background px-4 py-1">
+    <header className="topbar relative flex min-h-11 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border bg-background px-4 py-1">
       {snap.view.kind === "trunk" ? (
         <TrunkTitle app={app} snap={snap} leading={leading} />
       ) : (
@@ -830,7 +862,36 @@ function WorktreeTitle({
           unitBadge && <ChangeTag variant={unitBadge.variant}>{unitBadge.text}</ChangeTag>
         )}
       </div>
+      <div
+        className="absolute top-1/2 left-1/2 z-10 -translate-x-1/2 -translate-y-1/2"
+        data-testid="view-diff-center"
+      >
+        <SegmentedToggle
+          className="h-8 bg-muted/80 p-0.5 shadow-xs"
+          itemClassName="h-7 min-w-[72px] px-5 py-0 text-[13px]"
+          value={snap.comparisonMode ? "diff" : "view"}
+          options={[
+            { value: "view", label: t().topbar.segView },
+            { value: "diff", label: t().topbar.segDiff }
+          ]}
+          onChange={(value) => void app.setComparisonMode(value === "diff")}
+        />
+      </div>
       <div className="flex shrink-0 items-center gap-2">
+        {snap.comparisonMode && (
+          <>
+            {snap.comparisonData?.response.stale && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void app.refreshUnitComparison()}
+              >
+                <RefreshCw />
+                {t().topbar.refreshComparison}
+              </Button>
+            )}
+          </>
+        )}
         {preview?.diverged && (
           <SegmentedToggle
             value={snap.viewPreview ? "preview" : "original"}
@@ -878,9 +939,61 @@ function WorktreeTitle({
   );
 }
 
+function ComparisonSourceSelect({ app, snap }: { app: App; snap: AppSnapshot }): ReactElement {
+  const currentWorktreeId = snap.view.kind === "worktree" ? snap.view.worktreeId : null;
+  const pinnedRevision = snap.comparisonData?.response.left.revision;
+  return (
+    <label className="grid min-w-0 gap-0.5" data-testid="comparison-source-title">
+      <span className="text-[9px] font-bold uppercase tracking-[0.09em] text-muted-foreground">
+        {t().topbar.comparisonSource}
+      </span>
+      <div className="flex min-w-0 items-center gap-2">
+        <select
+          aria-label={t().topbar.comparisonSource}
+          className="-ml-1 h-7 min-w-0 max-w-56 cursor-pointer rounded-md border border-transparent bg-transparent px-1 text-[12px] font-semibold text-foreground outline-none transition-[border-color,background,box-shadow] hover:border-border hover:bg-muted/55 focus-visible:border-ring focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring/20"
+        value={
+          snap.comparisonLeft.kind === "trunk"
+            ? "trunk"
+            : `worktree:${snap.comparisonLeft.worktreeId}`
+        }
+        onChange={(event) => {
+          const value = event.target.value;
+          void app.setComparisonLeft(
+            value === "trunk"
+              ? { kind: "trunk" }
+              : { kind: "worktree", worktreeId: value.slice("worktree:".length) }
+          );
+        }}
+        >
+          <option value="trunk">{t().topbar.trunk}</option>
+          {snap.worktrees
+            .filter(
+              (candidate) =>
+                candidate.worktreeId !== currentWorktreeId &&
+                (candidate.status === "draft" || candidate.status === "ready")
+            )
+            .map((candidate) => (
+              <option key={candidate.worktreeId} value={`worktree:${candidate.worktreeId}`}>
+                {candidate.name || candidate.worktreeId}
+              </option>
+            ))}
+        </select>
+        {pinnedRevision !== undefined ? (
+          <span className="shrink-0 text-[9px] font-semibold tabular-nums text-muted-foreground">
+            {t().diff.revision(pinnedRevision)}
+          </span>
+        ) : null}
+      </div>
+    </label>
+  );
+}
+
 // ---- content pane ----
 
 function ContentPane({ app, snap }: { app: App; snap: AppSnapshot }): ReactElement {
+  if (snap.comparisonMode) {
+    return <ComparisonContent app={app} snap={snap} />;
+  }
   return (
     <div className="content relative min-h-0 flex-1 bg-background">
       <div
@@ -892,6 +1005,574 @@ function ContentPane({ app, snap }: { app: App; snap: AppSnapshot }): ReactEleme
       {snap.selectedUnitId === undefined && <EmptyContent />}
     </div>
   );
+}
+
+function ComparisonContent({ app, snap }: { app: App; snap: AppSnapshot }): ReactElement {
+  const data = snap.comparisonData;
+  if (snap.comparisonError !== undefined) {
+    return (
+      <div className="grid min-h-0 flex-1 place-items-center p-8 text-sm text-destructive">
+        {snap.comparisonError}
+      </div>
+    );
+  }
+  if (data === undefined || snap.comparisonSession === undefined) {
+    return <div className="min-h-0 flex-1" />;
+  }
+  const session = snap.comparisonSession;
+  if (data.response.unit.type === UNIT_TYPE_SHEET) {
+    return (
+      <div className="min-h-0 flex-1 overflow-hidden p-2">
+        <Suspense fallback={<div className="h-full" />}>
+          <WorkbookDiffViewer
+            leftSourceControl={<ComparisonSourceSelect app={app} snap={snap} />}
+            unitLabel={data.response.unit.name}
+            compare={{
+              comparisonKey: `${session.comparisonId}:${data.response.unit.unitId}`,
+              leftLabel: session.left.label,
+              leftWorkbookData: (data.leftUnitData as IWorkbookData | undefined) ?? null,
+              rightLabel: comparisonRevisionLabel(session.right.label, data.response.right.revision),
+              rightWorkbookData: (data.rightUnitData as IWorkbookData | undefined) ?? null,
+              orderedChangesetStream: data.orderedChangesetStream,
+              ...(data.response.fidelity === "snapshot"
+                ? {
+                    degradedReason: t().diff.comparingMaterializedSnapshots
+                  }
+                : {})
+            }}
+          />
+        </Suspense>
+      </div>
+    );
+  }
+  return <NativeUnitDiff app={app} snap={snap} />;
+}
+
+function NativeUnitDiff({ app, snap }: { app: App; snap: AppSnapshot }): ReactElement {
+  const data = snap.comparisonData;
+  const session = snap.comparisonSession;
+  if (data === undefined || session === undefined) return <div className="min-h-0 flex-1" />;
+  if (data.response.unit.type === UNIT_TYPE_BASE) {
+    return (
+      <BaseTableDiffViewer
+        fidelity={data.response.fidelity}
+        left={data.leftUnitData}
+        leftLabel={session.left.label}
+        leftSourceControl={<ComparisonSourceSelect app={app} snap={snap} />}
+        right={data.rightUnitData}
+        rightLabel={comparisonRevisionLabel(session.right.label, data.response.right.revision)}
+      />
+    );
+  }
+  return <CanvasNativeUnitDiff app={app} snap={snap} />;
+}
+
+function CanvasNativeUnitDiff({ app, snap }: { app: App; snap: AppSnapshot }): ReactElement {
+  const leftRef = useRef<HTMLDivElement | null>(null);
+  const rightRef = useRef<HTMLDivElement | null>(null);
+  const leftHandleRef = useRef<PreviewViewerHandle | null>(null);
+  const rightHandleRef = useRef<PreviewViewerHandle | null>(null);
+  const [selectedItemId, setSelectedItemId] = useState<string | undefined>(undefined);
+  const [activePageId, setActivePageId] = useState<string | null>(null);
+  const data = snap.comparisonData;
+  const session = snap.comparisonSession;
+  const items = useMemo(
+    () =>
+      data === undefined
+        ? []
+        : buildUnitStructuralDiff({
+            type: data.response.unit.type,
+            left: data.leftUnitData,
+            right: data.rightUnitData
+          }),
+    [data]
+  );
+  const selectedItem =
+    items.find((item) => item.id === selectedItemId) ?? items[0] ?? undefined;
+  const selectedIndex = selectedItem === undefined ? -1 : items.indexOf(selectedItem);
+  const pageTabs = useMemo(
+    () =>
+      data?.response.unit.type === UNIT_TYPE_SLIDE
+        ? buildChangedSlidePages({ left: data.leftUnitData, right: data.rightUnitData, items })
+        : [],
+    [data, items]
+  );
+  const selectedPageId =
+    activePageId !== null && pageTabs.some((page) => page.id === activePageId)
+      ? activePageId
+      : pageTabs[0]?.id ?? null;
+
+  useEffect(() => {
+    if (items.length === 0) {
+      setSelectedItemId(undefined);
+      return;
+    }
+    if (selectedItemId === undefined || !items.some((item) => item.id === selectedItemId)) {
+      setSelectedItemId(items[0]?.id);
+    }
+  }, [items, selectedItemId]);
+
+  useEffect(() => {
+    setActivePageId(selectedPageId);
+  }, [selectedPageId]);
+
+  useEffect(() => {
+    if (data === undefined || session === undefined) return;
+    const handles: PreviewViewerHandle[] = [];
+    let disposeLinkedBoardViewport = (): void => undefined;
+    let disposed = false;
+    const mount = async (
+      target: HTMLDivElement | null,
+      source: typeof data.response.left,
+      handleRef: MutableRefObject<PreviewViewerHandle | null>,
+      comparisonSide: "left" | "right",
+      peerData: unknown
+    ): Promise<void> => {
+      if (target === null || source.snapshot === undefined) return;
+      const id = `comparison-pane-${Math.random().toString(36).slice(2)}`;
+      target.id = id;
+      const { createPreviewViewer } = await import("../core/viewer");
+      const handle = await createPreviewViewer({
+        container: id,
+        unitType: data.response.unit.type,
+        snapshot: source.snapshot,
+        sheetBlocks: [...(source.sheetBlocks ?? [])],
+        changesets: [],
+        comparison: { side: comparisonSide, peerData, items },
+        ...(data.response.unit.type === UNIT_TYPE_SLIDE &&
+        selectedPageId !== null &&
+        slidePagePresent(
+          comparisonSide === "left" ? data.leftUnitData : data.rightUnitData,
+          selectedPageId
+        )
+          ? { initialSlideId: selectedPageId }
+          : {}),
+        locale: sdkLocaleOf(snap.lang),
+        darkMode: snap.appearance === "dark"
+      });
+      if (disposed) handle.dispose();
+      else {
+        handleRef.current = handle;
+        handles.push(handle);
+      }
+    };
+    void Promise.all([
+      mount(leftRef.current, data.response.left, leftHandleRef, "left", data.rightUnitData),
+      mount(rightRef.current, data.response.right, rightHandleRef, "right", data.leftUnitData)
+    ]).then(() => {
+      disposeLinkedBoardViewport = attachLinkedBoardViewport(
+        leftRef.current,
+        rightRef.current,
+        leftHandleRef.current,
+        rightHandleRef.current
+      );
+      const initialItem =
+        selectedPageId === null
+          ? items[0]
+          : (items.find(
+              (item) =>
+                item.category !== "slide" && slidePageIdOfItem(item) === selectedPageId
+            ) ??
+            items.find(
+              (item) => item.category === "slide" && item.stableId === selectedPageId
+            ));
+      if (disposed || initialItem === undefined) return;
+      void Promise.all([
+        leftHandleRef.current?.focusComparisonTarget(
+          structuralDiffFocusTarget(initialItem, "left")
+        ),
+        rightHandleRef.current?.focusComparisonTarget(
+          structuralDiffFocusTarget(initialItem, "right")
+        )
+      ]);
+    });
+    const disposeLinkedNavigation =
+      data.response.unit.type === UNIT_TYPE_BOARD
+        ? () => undefined
+        : attachLinkedWheelNavigation(leftRef.current, rightRef.current);
+    return () => {
+      disposed = true;
+      disposeLinkedNavigation();
+      disposeLinkedBoardViewport();
+      for (const handle of handles) handle.dispose();
+      leftHandleRef.current = null;
+      rightHandleRef.current = null;
+    };
+  }, [data, items, selectedPageId, session, snap.appearance, snap.lang]);
+
+  const focusItem = useCallback((item: UnitStructuralDiffItem): void => {
+    setSelectedItemId(item.id);
+    const pageId = slidePageIdOfItem(item);
+    if (pageId !== null) setActivePageId(pageId);
+    void Promise.all([
+      leftHandleRef.current?.focusComparisonTarget(structuralDiffFocusTarget(item, "left")),
+      rightHandleRef.current?.focusComparisonTarget(structuralDiffFocusTarget(item, "right"))
+    ]);
+  }, []);
+
+  const focusPage = useCallback((pageId: string): void => {
+    setActivePageId(pageId);
+    const pageItem =
+      items.find((item) => item.category === `slide-element:${pageId}`) ??
+      items.find((item) => item.category === "slide" && item.stableId === pageId);
+    if (pageItem !== undefined) setSelectedItemId(pageItem.id);
+    void Promise.all([
+      leftHandleRef.current?.focusComparisonTarget({ category: "slide", stableId: pageId }),
+      rightHandleRef.current?.focusComparisonTarget({ category: "slide", stableId: pageId })
+    ]);
+  }, [items]);
+
+  if (data === undefined || session === undefined) return <div className="min-h-0 flex-1" />;
+  return (
+    <div className="min-h-0 flex-1 overflow-auto bg-muted/30 p-2">
+      <div className="grid h-full min-h-[420px] grid-cols-[240px_minmax(720px,1fr)] overflow-hidden rounded-xl border border-border bg-border shadow-[0_12px_32px_rgb(15_23_42/0.08),0_1px_2px_rgb(15_23_42/0.06)] max-[1023px]:grid-cols-1 max-[1023px]:grid-rows-1">
+        <NativeDiffSidebar
+          items={items}
+          fidelity={data.response.fidelity}
+          selectedItemId={selectedItem?.id}
+          onSelect={focusItem}
+        />
+        <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] bg-card">
+          <ComparisonChangeNavigator
+            changeIndex={Math.max(0, selectedIndex)}
+            item={
+              selectedItem === undefined
+                ? null
+                : {
+                    ...selectedItem,
+                    entityLabel: structuralDiffItemEntityLabel(selectedItem),
+                    label: structuralDiffItemLabel(selectedItem)
+                  }
+            }
+            total={items.length}
+            onNext={() => {
+              const next = items[selectedIndex + 1];
+              if (next !== undefined) focusItem(next);
+            }}
+            onPrevious={() => {
+              const previous = items[selectedIndex - 1];
+              if (previous !== undefined) focusItem(previous);
+            }}
+          />
+          <div className="grid min-h-0 grid-cols-2 gap-px max-[1023px]:h-full max-[1023px]:grid-cols-1 max-[1023px]:grid-rows-2">
+            <NativeDiffSide
+              activePageId={selectedPageId}
+              hostRef={leftRef}
+              hideSlideAddControl={data.response.unit.type === UNIT_TYPE_SLIDE}
+              itemCount={items.length}
+              label={session.left.label}
+              leftSourceControl={<ComparisonSourceSelect app={app} snap={snap} />}
+              pagePresent={slidePagePresent(data.leftUnitData, selectedPageId)}
+              pageTabs={pageTabs}
+              present={data.response.left.present}
+              side="left"
+              onSelectPage={focusPage}
+            />
+            <NativeDiffSide
+              activePageId={selectedPageId}
+              hostRef={rightRef}
+              hideSlideAddControl={data.response.unit.type === UNIT_TYPE_SLIDE}
+              itemCount={items.length}
+              label={comparisonRevisionLabel(session.right.label, data.response.right.revision)}
+              leftSourceControl={undefined}
+              pagePresent={slidePagePresent(data.rightUnitData, selectedPageId)}
+              pageTabs={pageTabs}
+              present={data.response.right.present}
+              side="right"
+              onSelectPage={focusPage}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function attachLinkedBoardViewport(
+  leftRoot: HTMLDivElement | null,
+  rightRoot: HTMLDivElement | null,
+  left: PreviewViewerHandle | null,
+  right: PreviewViewerHandle | null
+): () => void {
+  if (leftRoot === null || rightRoot === null || left === null || right === null) {
+    return () => undefined;
+  }
+  let syncing = false;
+  const initial = left.getBoardViewport();
+  if (initial === null || right.getBoardViewport() === null) return () => undefined;
+  let disposed = false;
+  const copy = (source: PreviewViewerHandle, target: PreviewViewerHandle): void => {
+    if (disposed || syncing) return;
+    const viewport = source.getBoardViewport();
+    if (viewport === null) return;
+    syncing = true;
+    try {
+      target.setBoardViewport(viewport);
+    } finally {
+      syncing = false;
+    }
+  };
+  const scheduleCopy = (
+    source: PreviewViewerHandle,
+    target: PreviewViewerHandle
+  ): void => {
+    requestAnimationFrame(() => copy(source, target));
+  };
+  scheduleCopy(left, right);
+  const relay = (
+    source: PreviewViewerHandle,
+    target: PreviewViewerHandle
+  ): (() => void) =>
+    source.subscribeBoardViewport((viewport) => {
+      if (syncing) return;
+      syncing = true;
+      try {
+        target.setBoardViewport(viewport);
+      } finally {
+        syncing = false;
+      }
+    });
+  const attachInteraction = (
+    root: HTMLDivElement,
+    source: PreviewViewerHandle,
+    target: PreviewViewerHandle
+  ): (() => void) => {
+    const listener = (): void => scheduleCopy(source, target);
+    root.addEventListener("click", listener, true);
+    root.addEventListener("pointerup", listener, true);
+    root.addEventListener("wheel", listener, true);
+    return () => {
+      root.removeEventListener("click", listener, true);
+      root.removeEventListener("pointerup", listener, true);
+      root.removeEventListener("wheel", listener, true);
+    };
+  };
+  const disposeLeft = relay(left, right);
+  const disposeRight = relay(right, left);
+  const disposeLeftInteraction = attachInteraction(leftRoot, left, right);
+  const disposeRightInteraction = attachInteraction(rightRoot, right, left);
+  return () => {
+    disposed = true;
+    disposeLeft();
+    disposeRight();
+    disposeLeftInteraction();
+    disposeRightInteraction();
+  };
+}
+
+function NativeDiffSidebar({
+  items,
+  fidelity,
+  selectedItemId,
+  onSelect
+}: {
+  items: readonly UnitStructuralDiffItem[];
+  fidelity: "history" | "snapshot";
+  selectedItemId: string | undefined;
+  onSelect: (item: UnitStructuralDiffItem) => void;
+}): ReactElement {
+  return (
+    <aside className="min-h-0 overflow-auto border-r bg-card p-3 max-[1023px]:hidden">
+      <div className="mb-3 flex items-center justify-between border-b border-border pb-3 text-xs font-semibold">
+        <div className="grid gap-0.5">
+          <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+            {t().diff.changes}
+          </span>
+          <span className="text-[13px] text-foreground">{t().diff.structuralDiff}</span>
+        </div>
+        <Badge variant="neutral">{items.length}</Badge>
+      </div>
+      {fidelity === "snapshot" && (
+        <div className="mb-2 rounded-md border border-warning/35 bg-warning-muted p-2 text-[11px] leading-4 text-warning">
+          {t().diff.snapshot}
+        </div>
+      )}
+      {items.length === 0 ? (
+        <div className="px-1 py-3 text-xs text-muted-foreground">
+          {t().diff.noStructuralChanges}
+        </div>
+      ) : (
+        <div className="space-y-1.5">
+          {items.map((item) => (
+            <button
+              type="button"
+              key={item.id}
+              aria-pressed={selectedItemId === item.id}
+              onClick={() => onSelect(item)}
+              className={cn(
+                "block w-full rounded-lg border px-2.5 py-2 text-left text-[11px] leading-4 outline-none transition-[border-color,background,box-shadow,transform] hover:-translate-y-px focus-visible:ring-2 focus-visible:ring-ring",
+                item.kind === "insert"
+                  ? "border-diff-insert/35 bg-diff-insert-muted text-diff-insert"
+                  : item.kind === "delete"
+                    ? "border-diff-delete/35 bg-diff-delete-muted text-diff-delete"
+                    : "border-diff-update/35 bg-diff-update-muted text-diff-update",
+                selectedItemId === item.id && "ring-2 ring-ring ring-offset-1 ring-offset-background"
+              )}
+              title={structuralDiffItemLabel(item)}
+            >
+              <div className="truncate font-medium">{structuralDiffItemLabel(item)}</div>
+              <div className="truncate opacity-70">
+                {structuralDiffItemEntityLabel(item)} · {t().diff.kind[item.kind]}
+                {item.changes.length > 0 ? ` · ${t().diff.changeCount(item.changes.length)}` : ""}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </aside>
+  );
+}
+
+/**
+ * Native Unit renderers consume wheel gestures on canvases instead of exposing a shared scroll
+ * container. Relay only trusted user gestures and mark the synthetic counterpart event so it
+ * cannot echo back. Product-specific stable-ID navigation is represented by the change sidebar;
+ * this keeps direct pan/scroll gestures paired as well.
+ */
+function attachLinkedWheelNavigation(
+  left: HTMLDivElement | null,
+  right: HTMLDivElement | null
+): () => void {
+  if (left === null || right === null) return () => undefined;
+  const linkedEvents = new WeakSet<Event>();
+  const attach = (source: HTMLElement, target: HTMLElement): (() => void) => {
+    const listener = (event: WheelEvent): void => {
+      if (linkedEvents.has(event) || !event.isTrusted) return;
+      const targetNode = target.querySelector("canvas") ?? target;
+      const linked = new WheelEvent("wheel", {
+        deltaX: event.deltaX,
+        deltaY: event.deltaY,
+        deltaZ: event.deltaZ,
+        deltaMode: event.deltaMode,
+        ctrlKey: event.ctrlKey,
+        shiftKey: event.shiftKey,
+        altKey: event.altKey,
+        metaKey: event.metaKey,
+        bubbles: true,
+        cancelable: true
+      });
+      linkedEvents.add(linked);
+      targetNode.dispatchEvent(linked);
+    };
+    source.addEventListener("wheel", listener, { capture: true, passive: true });
+    return () => source.removeEventListener("wheel", listener, { capture: true });
+  };
+  const disposeLeft = attach(left, right);
+  const disposeRight = attach(right, left);
+  return () => {
+    disposeLeft();
+    disposeRight();
+  };
+}
+
+function NativeDiffSide({
+  activePageId,
+  hostRef,
+  hideSlideAddControl,
+  itemCount,
+  label,
+  leftSourceControl,
+  pagePresent,
+  pageTabs,
+  present,
+  side,
+  onSelectPage
+}: {
+  activePageId: string | null;
+  hostRef: MutableRefObject<HTMLDivElement | null>;
+  hideSlideAddControl: boolean;
+  itemCount: number;
+  label: string;
+  leftSourceControl: ReactNode | undefined;
+  pagePresent: boolean;
+  pageTabs: readonly ComparisonPageTabOption[];
+  present: boolean;
+  side: "left" | "right";
+  onSelectPage: (pageId: string) => void;
+}): ReactElement {
+  return (
+    <section
+      className={cn(
+        "grid min-h-0 bg-background",
+        pageTabs.length > 0
+          ? "grid-rows-[56px_auto_minmax(0,1fr)]"
+          : "grid-rows-[56px_minmax(0,1fr)]"
+      )}
+    >
+      <header className="flex min-w-0 items-center justify-between gap-3 border-b border-border bg-card px-4">
+        {leftSourceControl ?? (
+          <div className="grid min-w-0 gap-0.5">
+            <span className="text-[9px] font-bold uppercase tracking-[0.09em] text-muted-foreground">
+              {t().diff.rightCurrentVersion}
+            </span>
+            <span className="truncate text-[12px] font-semibold text-foreground" title={label}>
+              {label}
+            </span>
+          </div>
+        )}
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="rounded-full border border-border bg-muted/55 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+            {t().diff.readOnly}
+          </span>
+          <span className="text-[10px] font-semibold tabular-nums text-muted-foreground">
+            {t().diff.changeCount(itemCount)}
+          </span>
+        </div>
+      </header>
+      {pageTabs.length > 0 ? (
+        <ComparisonPageTabs
+          activeId={activePageId}
+          ariaLabel={`${t().diff.side[side]} · ${t().diff.changedSlides}`}
+          options={pageTabs}
+          onSelect={onSelectPage}
+        />
+      ) : null}
+      {present ? (
+        <div className="relative min-h-0 overflow-hidden">
+          <div
+            ref={hostRef}
+            className="absolute inset-0"
+            data-native-diff-host="true"
+            data-native-diff-product={hideSlideAddControl ? "slide" : "other"}
+          />
+          {!pagePresent ? (
+            <div
+              className={cn(
+                "absolute inset-0 z-20 grid place-items-center px-6 text-center text-sm font-medium backdrop-blur-sm",
+                side === "left"
+                  ? "bg-diff-delete-muted/95 text-diff-delete"
+                  : "bg-diff-insert-muted/95 text-diff-insert"
+              )}
+            >
+              {t().diff.notPresent}
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        <div className="grid place-items-center bg-diff-delete-muted/40 text-sm text-diff-delete">
+          {t().diff.notPresent}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function slidePageIdOfItem(item: UnitStructuralDiffItem): string | null {
+  if (item.category === "slide") return item.stableId;
+  return item.category.startsWith("slide-element:")
+    ? item.category.slice("slide-element:".length)
+    : null;
+}
+
+function comparisonRevisionLabel(label: string, revision: number | undefined): string {
+  return revision === undefined ? label : `${label} · ${t().diff.revision(revision)}`;
+}
+
+function slidePagePresent(snapshot: unknown, pageId: string | null): boolean {
+  if (pageId === null) return true;
+  if (typeof snapshot !== "object" || snapshot === null || Array.isArray(snapshot)) return false;
+  const slides = (snapshot as Record<string, unknown>).slides;
+  return typeof slides === "object" && slides !== null && !Array.isArray(slides) && pageId in slides;
 }
 
 function EmptyContent(): ReactElement {

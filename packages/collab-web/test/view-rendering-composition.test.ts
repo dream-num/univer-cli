@@ -65,10 +65,17 @@ describe("authoritative Browser View rendering composition", () => {
     expect(occurrences(human, "assetIoOwner: ViewAssetIoOwner.Local")).toBe(1);
     expect(occurrences(human, "enableAuthServer: true")).toBe(1);
     expect(occurrences(human, 'loginUrlKey: "/login"')).toBe(1);
-    expect(occurrences(human, 'ribbonType: "grid"')).toBe(2);
+    expect(occurrences(human, 'ribbonType: "grid"')).toBe(1);
+    expect(occurrences(human, 'workbenchChrome: "hidden"')).toBe(1);
+    expect(human).toContain(
+      'workbenchChrome: opts.unitType === UNIT_TYPE_SHEET ? "visible" : "hidden"'
+    );
     expect(occurrences(human, "unitType: toUniverInstanceType(opts.unitType)")).toBe(2);
     expect(occurrences(human, "darkMode: opts.darkMode")).toBe(2);
-    expect(occurrences(human, "api.toggleDarkMode(isDarkMode)")).toBe(2);
+    expect(occurrences(human, "api.toggleDarkMode(isDarkMode)")).toBe(1);
+    expect(human).toContain(
+      "univer.__getInjector().get(ThemeService).setDarkMode(isDarkMode)"
+    );
   });
 
   it("owns the shared Browser View facade surface", async () => {
@@ -193,5 +200,43 @@ describe("authoritative Browser View rendering composition", () => {
     expect(styles).toContain("overscroll-behavior: none;");
     expect(styles).toContain("html.gateway-dark {");
     expect(styles).toContain("--color-background: #0a0a0a;");
+  });
+
+  it("keeps local comparison facades alive and refreshes Slide overlays after zoom", async () => {
+    const human = await read("collab-web/src/core/viewer.ts");
+    const highlights = await read("collab-web/src/core/native-comparison-highlights.ts");
+
+    expectInOrder(human, [
+      "if (!previewInjector.has(CollaborationController))",
+      "previewInjector.add([",
+      "const previewAPI = FUniver.newAPI(univer)"
+    ]);
+    expect(human).toContain("{ useValue: { entityInit$: EMPTY }");
+    expect(highlights).toContain(
+      "render.scene.onTransformChange$.subscribeEvent(scheduleRefresh)"
+    );
+    expect(highlights).toContain("sceneTransformSubscription?.unsubscribe()");
+    expect(highlights).toContain("cancelAnimationFrame(scheduledRefresh)");
+  });
+
+  it("hides change navigation and evenly splits comparison panes below 1024px", async () => {
+    const appView = await read("collab-web/src/ui/app-view.tsx");
+    const base = await read("collab-web/src/ui/base-table-diff-viewer.tsx");
+    const workbook = await read("collab-web/src/ui/workbook-diff-viewer.tsx");
+
+    expect(occurrences(appView, "max-[1023px]:grid-cols-1")).toBeGreaterThanOrEqual(2);
+    expect(appView).toContain("max-[1023px]:grid-rows-2");
+    expect(appView).toContain("max-[1023px]:hidden");
+    expect(appView).not.toContain("max-[1023px]:min-h-[560px]");
+    expect(occurrences(base, "max-[1023px]:grid-cols-1")).toBeGreaterThanOrEqual(2);
+    expect(base).toContain("max-[1023px]:grid-rows-2");
+    expect(base).toContain("max-[1023px]:hidden");
+    expect(base).not.toContain("max-[1023px]:min-h-[460px]");
+    expect(workbook).toContain("max-[1023px]:grid-cols-1");
+    expect(workbook).toContain("max-[1023px]:grid-rows-2");
+    expect(workbook).toContain("max-[1023px]:hidden");
+    expect(workbook).toContain("max-[1023px]:min-h-0");
+    expect(workbook).toContain("{messages.readOnly}");
+    expect(workbook).not.toContain("max-[900px]:grid-cols-2");
   });
 });

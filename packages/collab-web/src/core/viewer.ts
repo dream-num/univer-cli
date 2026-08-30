@@ -5,18 +5,25 @@ import "@univer/render-preset/facades";
 import {
   IAuthzIoService,
   ICommandService,
+  LocaleService,
   IPermissionService,
   IUniverInstanceService,
   IUndoRedoService,
+  ThemeService,
   type LocaleType,
   Univer,
   UniverInstanceType
 } from "@univerjs/core";
+import { SetDocZoomRatioOperation } from "@univerjs/docs-ui";
 import type { IBoardData } from "@univerjs-pro/boards";
+import { IBoardUIStateService } from "@univerjs-pro/boards-ui";
+import { SetSlideZoomRatioOperation, type ISlidePageSize } from "@univerjs-pro/slides";
 import type {
   IBaseSnapshot,
   ICellData,
+  IDocumentData,
   IObjectMatrixPrimitiveType,
+  IWorkbookData,
   ITableSnapshot
 } from "@univerjs/core";
 import type { IDeserializedSheetBlock, ISheetBlock, ISnapshot } from "@univerjs/protocol";
@@ -26,7 +33,10 @@ import {
   transformSnapshotToWorkbookData,
   UniverCollaborationPlugin
 } from "@univerjs-pro/collaboration";
-import { UniverCollaborationClientPlugin } from "@univerjs-pro/collaboration-client";
+import {
+  CollaborationController,
+  UniverCollaborationClientPlugin
+} from "@univerjs-pro/collaboration-client";
 import { UniverCollaborationEmbedPlugin } from "@univerjs-pro/collaboration-embed";
 import { UniverEditHistoryLoaderPlugin } from "@univerjs-pro/edit-history-loader";
 import {
@@ -42,7 +52,7 @@ import {
   FormulaCalculationSessionService,
   SetTriggerFormulaCalculationStartMutation
 } from "@univerjs/engine-formula";
-import { WorkbookEditablePermission } from "@univerjs/sheets";
+import { ISlideDrawingStateService } from "@univerjs-pro/slides-ui";
 import { TEST_LICENSE, ViewAssetIoOwner, registerViewRendering } from "@univer/render-preset";
 import {
   buildRuntimeConfig,
@@ -55,12 +65,26 @@ import {
 } from "@univer/collab-gateway-contract";
 import {
   blockLocalEditingCommands,
+  enforceUnitViewerReadOnlyPermission,
   enforceSheetViewerReadOnlyPermissions,
   resolveViewerReadOnlyEnforcement
 } from "./viewer-readonly";
 import { createCollaborationSheetResourceRefDataProvider } from "./collaboration-sheet-resource-ref-data-provider";
 import { installHistoryShapeFormulaCompatibility } from "./history-shape-formula-compatibility";
 import { loadViewerLocale } from "./locales/generated/load";
+import {
+  focusPreviewComparisonTarget,
+  type PreviewFocusTarget
+} from "./preview-comparison-focus";
+import {
+  decorateDocumentComparisonSide,
+  type ComparisonSide
+} from "./document-comparison-decoration";
+import { createNativeComparisonHighlightController } from "./native-comparison-highlights";
+import type { UnitStructuralDiffItem } from "@univer/unit-compare";
+import { EMPTY } from "rxjs";
+
+export type { PreviewFocusTarget } from "./preview-comparison-focus";
 
 installHistoryShapeFormulaCompatibility();
 
@@ -88,7 +112,20 @@ export interface ViewerHandle {
   dispose(): void;
 }
 
+export interface PreviewViewerHandle extends ViewerHandle {
+  /** Navigate a materialized read-only Unit to the same stable object on either comparison side. */
+  focusComparisonTarget(target: PreviewFocusTarget): Promise<boolean>;
+  getBoardViewport(): BoardPreviewViewport | null;
+  setBoardViewport(viewport: BoardPreviewViewport): void;
+  subscribeBoardViewport(listener: (viewport: BoardPreviewViewport) => void): () => void;
+}
+
 type ViewerDebugAPI = ReturnType<typeof FUniver.newAPI>;
+
+export interface BoardPreviewViewport {
+  readonly zoomRatio: number;
+  readonly panOffset: { readonly x: number; readonly y: number };
+}
 
 declare global {
   interface Window {
@@ -156,7 +193,10 @@ export async function createViewer(opts: ViewerOptions): Promise<ViewerHandle> {
     container: opts.container,
     assetIoOwner: ViewAssetIoOwner.CollaborationClient,
     license: TEST_LICENSE,
-    workbenchChrome: opts.unitType === UNIT_TYPE_BOARD ? "hidden" : "visible",
+    // Sheets keep their familiar grid chrome in the read-only viewer. The other four products
+    // are document/canvas inspection surfaces here, so a ribbon would advertise editing actions
+    // that the permission and command guards deliberately reject.
+    workbenchChrome: opts.unitType === UNIT_TYPE_SHEET ? "visible" : "hidden",
     ribbonType: "grid",
     unitType: toUniverInstanceType(opts.unitType),
     ...(opts.worktreeId === undefined && opts.unitType !== UNIT_TYPE_BOARD
@@ -200,7 +240,13 @@ export async function createViewer(opts: ViewerOptions): Promise<ViewerHandle> {
     }
   });
 
-  const api = FUniver.newAPI(univer);
+  let api: ViewerDebugAPI;
+  try {
+    api = FUniver.newAPI(univer);
+  } catch (error) {
+    console.error("[comparison-preview] Failed to initialize facade", error);
+    throw error;
+  }
   const collaboration = api.getCollaboration();
   const formulaResultAppliedSubscription = univer
     .__getInjector()
@@ -236,6 +282,11 @@ export async function createViewer(opts: ViewerOptions): Promise<ViewerHandle> {
       opts.unitId
     );
   } else if (readOnlyEnforcement === "mutation-gate") {
+    enforceUnitViewerReadOnlyPermission(
+      univer.__getInjector().get(IPermissionService),
+      opts.unitType,
+      opts.unitId
+    );
     blockLocalEditingCommands(univer.__getInjector().get(ICommandService));
   }
 
@@ -266,15 +317,6 @@ async function materializeHostEmbedChildren(univer: Univer, hostUnitId: string):
   }
 }
 
-function makeReadonly(univer: Univer, unitId: string): void {
-  const permissionService = univer.__getInjector().get(IPermissionService);
-  const point = new WorkbookEditablePermission(unitId);
-  if (!permissionService.getPermissionPoint(point.id)) {
-    permissionService.addPermissionPoint(point);
-  }
-  permissionService.updatePermissionPoint(point.id, false);
-}
-
 export interface PreviewViewerOptions {
   /** DOM id of the (already-empty) element UniverUIPlugin mounts into. */
   container: string;
@@ -285,6 +327,14 @@ export interface PreviewViewerOptions {
   sheetBlocks?: unknown[];
   /** Protocol changesets ({ mutations: { id, data }[] }) to replay on top of the snapshot. */
   changesets: unknown[];
+  /** Materialized opposite side plus structural changes used for native in-product diff paint. */
+  comparison?: {
+    readonly side: ComparisonSide;
+    readonly peerData: unknown;
+    readonly items: readonly UnitStructuralDiffItem[];
+  };
+  /** Slide page selected by the comparison shell before the read-only viewer mounts. */
+  initialSlideId?: string;
   /** Which language the Univer UI renders in; see {@link ViewerOptions.locale}. */
   locale: LocaleType;
   /** Initial Univer appearance. Later changes use ViewerHandle.setDarkMode without rebuilding. */
@@ -299,7 +349,7 @@ export interface PreviewViewerOptions {
  * changesets' mutations locally, then lock editing. Disposable and non-collaborative: it never
  * opens comb and never writes back. Switching unit/worktree is done by disposing and recreating.
  */
-export async function createPreviewViewer(opts: PreviewViewerOptions): Promise<ViewerHandle> {
+export async function createPreviewViewer(opts: PreviewViewerOptions): Promise<PreviewViewerHandle> {
   const localePack = await loadViewerLocale(opts.locale);
   const univer = new Univer({
     locale: opts.locale,
@@ -311,19 +361,37 @@ export async function createPreviewViewer(opts: PreviewViewerOptions): Promise<V
     container: opts.container,
     assetIoOwner: ViewAssetIoOwner.Local,
     license: TEST_LICENSE,
-    workbenchChrome: opts.unitType === UNIT_TYPE_BOARD ? "hidden" : "visible",
-    ribbonType: "grid",
+    // Comparison panes are inspection surfaces. The surrounding diff shell owns navigation,
+    // labels and actions, so mounting an editor ribbon in each pane is both redundant and a
+    // misleading affordance even though mutation commands are vetoed below.
+    workbenchChrome: "hidden",
     unitType: toUniverInstanceType(opts.unitType)
   });
 
   const snapshot = decodeSnapshotFromWire(opts.snapshot) as ISnapshot;
   let unitId = "";
+  let docPageWidth: number | undefined;
+  let slidePageSize: ISlidePageSize | undefined;
   if (opts.unitType === UNIT_TYPE_DOC) {
-    const data = transformSnapshotToDocumentData(snapshot);
+    const source = transformSnapshotToDocumentData(snapshot);
+    const data =
+      opts.comparison === undefined
+        ? source
+        : decorateDocumentComparisonSide(
+            source,
+            opts.comparison.peerData as IDocumentData,
+            opts.comparison.side
+          );
     unitId = data.id ?? "";
+    docPageWidth = data.documentStyle.pageSize?.width;
     univer.createUnit(UniverInstanceType.UNIVER_DOC, data);
   } else if (opts.unitType === UNIT_TYPE_SLIDE) {
     const data = transformSnapshotToSlideData(snapshot);
+    if (opts.initialSlideId !== undefined) data.activeSlideId = opts.initialSlideId;
+    // An editor snapshot may persist a zoom chosen for a full-window workbench. Comparison panes
+    // are much narrower, so let Slides UI calculate its fit-to-pane zoom after mounting.
+    delete data.zoomRatio;
+    slidePageSize = data.defaultPageSize;
     unitId = data.id ?? "";
     univer.createUnit(UniverInstanceType.UNIVER_SLIDE, data);
   } else if (opts.unitType === UNIT_TYPE_BASE) {
@@ -357,31 +425,168 @@ export async function createPreviewViewer(opts: PreviewViewerOptions): Promise<V
     }
   }
 
-  if (opts.unitType === UNIT_TYPE_SHEET) {
-    if (unitId !== "") {
-      makeReadonly(univer, unitId);
-    }
-  } else {
-    // doc/slide/base have no WorkbookEditablePermission-style point — veto data-changing commands instead.
+  if (opts.unitType === UNIT_TYPE_SLIDE && slidePageSize !== undefined) {
+    await fitSlidePreviewToPane(commandService, opts.container, unitId, slidePageSize);
+  }
+  if (opts.unitType === UNIT_TYPE_DOC) {
+    await fitDocPreviewToPane(commandService, opts.container, unitId, docPageWidth ?? 816);
+  }
+
+  const comparisonHighlights =
+    opts.comparison === undefined || opts.unitType === UNIT_TYPE_DOC
+      ? undefined
+      : createNativeComparisonHighlightController({
+          univer,
+          unitId,
+          unitType: opts.unitType,
+          side: opts.comparison.side,
+          items: opts.comparison.items
+        });
+  await comparisonHighlights?.refresh();
+
+  if (unitId !== "") {
+    enforceUnitViewerReadOnlyPermission(
+      univer.__getInjector().get(IPermissionService),
+      opts.unitType,
+      unitId
+    );
+  }
+  if (opts.unitType !== UNIT_TYPE_SHEET) {
+    // Keep a second, product-independent guard against local data changes in comparison panes.
     blockLocalEditingCommands(univer.__getInjector().get(ICommandService));
   }
 
-  const api = FUniver.newAPI(univer);
-  const disposeDebugEndpoint = exposeDebugEndpoint(univer, api);
+  const slideDrawingStateService =
+    opts.unitType === UNIT_TYPE_SLIDE
+      ? univer.__getInjector().get(ISlideDrawingStateService)
+      : undefined;
+  const boardUIStateService =
+    opts.unitType === UNIT_TYPE_BOARD
+      ? univer.__getInjector().get(IBoardUIStateService)
+      : undefined;
+  const previewInjector = univer.__getInjector();
+  // The collaboration facade is installed globally for the live viewer. Its initializer expects
+  // CollaborationController, but merge-preview instances intentionally omit every network plugin.
+  // Provide an inert event source so the shared Facade can initialize without opening collaboration.
+  if (!previewInjector.has(CollaborationController)) {
+    previewInjector.add([
+      CollaborationController,
+      { useValue: { entityInit$: EMPTY } as unknown as CollaborationController }
+    ]);
+  }
+  const previewAPI = FUniver.newAPI(univer);
 
   return {
-    setDarkMode: (isDarkMode) => api.toggleDarkMode(isDarkMode),
+    focusComparisonTarget: async (target) => {
+      const focused = await focusPreviewComparisonTarget(
+        previewAPI,
+        opts.unitType,
+        opts.container,
+        target,
+        {
+          selectSlideElement: (slideId, elementId) =>
+            slideDrawingStateService?.selectDrawings(
+              { unitId, subUnitId: slideId },
+              [elementId],
+              elementId
+            )
+        }
+      );
+      if (focused) await comparisonHighlights?.refresh();
+      return focused;
+    },
+    getBoardViewport: () => {
+      if (boardUIStateService === undefined) return null;
+      const state = boardUIStateService.getState();
+      return {
+        zoomRatio: state.zoomRatio,
+        panOffset: { ...state.viewportPanOffset }
+      };
+    },
+    setBoardViewport: (viewport) => {
+      boardUIStateService?.setViewportTransform({
+        zoomRatio: viewport.zoomRatio,
+        panOffset: { ...viewport.panOffset }
+      });
+    },
+    subscribeBoardViewport: (listener) => {
+      if (boardUIStateService === undefined) return () => undefined;
+      const subscription = boardUIStateService.state$.subscribe((state) => {
+        listener({
+          zoomRatio: state.zoomRatio,
+          panOffset: { ...state.viewportPanOffset }
+        });
+      });
+      return () => subscription.unsubscribe();
+    },
+    setDarkMode: (isDarkMode) =>
+      univer.__getInjector().get(ThemeService).setDarkMode(isDarkMode),
     setLocale: async (locale) => {
       const pack = await loadViewerLocale(locale);
-      api.loadLocales(locale, pack);
-      api.setLocale(locale);
+      const localeService = univer.__getInjector().get(LocaleService);
+      localeService.load({ [locale]: pack });
+      localeService.setLocale(locale);
     },
     dispose: () => {
-      disposeDebugEndpoint();
-      api.dispose();
+      comparisonHighlights?.dispose();
       univer.dispose();
     }
   };
+}
+
+async function fitDocPreviewToPane(
+  commandService: ICommandService,
+  containerId: string,
+  unitId: string,
+  pageWidth: number
+): Promise<void> {
+  const canvas = await waitForElementSize(containerId, "canvas");
+  if (canvas === null || pageWidth <= 0) return;
+  const gutter = 20;
+  const zoomRatio = Math.min(1, Math.max(1, canvas.clientWidth - gutter * 2) / pageWidth);
+  await commandService.executeCommand(
+    SetDocZoomRatioOperation.id,
+    { unitId, zoomRatio },
+    { onlyLocal: true }
+  );
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+}
+
+async function fitSlidePreviewToPane(
+  commandService: ICommandService,
+  containerId: string,
+  unitId: string,
+  pageSize: ISlidePageSize
+): Promise<void> {
+  const host = await waitForElementSize(containerId, "[data-slide-canvas-host='true']");
+  if (host === null || pageSize.width <= 0 || pageSize.height <= 0) return;
+  const gutter = 24;
+  const zoomRatio = Math.min(
+    1,
+    Math.max(1, host.clientWidth - gutter * 2) / pageSize.width,
+    Math.max(1, host.clientHeight - gutter * 2) / pageSize.height
+  );
+  await commandService.executeCommand(
+    SetSlideZoomRatioOperation.id,
+    { unitId, zoomRatio },
+    { onlyLocal: true }
+  );
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+}
+
+async function waitForElementSize(
+  containerId: string,
+  selector: string
+): Promise<HTMLElement | null> {
+  for (let attempt = 0; attempt < 120; attempt += 1) {
+    const container = document.getElementById(containerId);
+    const element = container?.querySelector<HTMLElement>(selector);
+    if (element !== undefined && element !== null && element.clientWidth > 0 && element.clientHeight > 0) {
+      return element;
+    }
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  }
+  return null;
 }
 
 function exposeDebugEndpoint(univer: Univer, univerAPI: ViewerDebugAPI): () => void {
@@ -431,6 +636,39 @@ function decodeSnapshotFromWire(snapshot: unknown): unknown {
     out.workbook = { ...s.workbook, originalMeta: dec(s.workbook.originalMeta), sheets };
   }
   return out;
+}
+
+/** Decode one fully materialized Sheet comparison side into the legacy compare core's input. */
+export async function decodeComparisonWorkbookData(
+  snapshot: unknown,
+  sheetBlocks: readonly unknown[] = [],
+): Promise<IWorkbookData> {
+  return transformSnapshotToWorkbookData(
+    decodeSnapshotFromWire(snapshot) as ISnapshot,
+    sheetBlocks as Parameters<typeof transformSnapshotToWorkbookData>[1],
+  );
+}
+
+/** Decode any fully materialized comparison side into its native Unit model data. */
+export async function decodeComparisonUnitData(
+  unitType: UnitType,
+  snapshot: unknown,
+  sheetBlocks: readonly unknown[] = [],
+): Promise<unknown> {
+  const decoded = decodeSnapshotFromWire(snapshot) as ISnapshot;
+  if (unitType === UNIT_TYPE_DOC) return transformSnapshotToDocumentData(decoded);
+  if (unitType === UNIT_TYPE_SLIDE) return transformSnapshotToSlideData(decoded);
+  if (unitType === UNIT_TYPE_BASE) {
+    return decodeBaseSnapshotData(
+      decoded,
+      sheetBlocks as Array<IDeserializedSheetBlock | ISheetBlock>,
+    );
+  }
+  if (unitType === UNIT_TYPE_BOARD) return decodeBoardSnapshotData(decoded);
+  if (unitType === UNIT_TYPE_SHEET) {
+    return decodeComparisonWorkbookData(snapshot, sheetBlocks);
+  }
+  throw new Error(`Unsupported comparison unit type: ${String(unitType)}`);
 }
 
 function decodeBoardSnapshotData(snapshot: ISnapshot): IBoardData {

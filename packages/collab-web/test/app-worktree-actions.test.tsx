@@ -49,6 +49,23 @@ describe("collab-web worktree actions", () => {
     expect(discard).toHaveBeenCalledOnce();
   });
 
+  it("centers the view and diff switch in the worktree topbar", () => {
+    const { app } = createApp("draft");
+    render(app);
+
+    const switcher = document.querySelector('[data-testid="view-diff-center"]');
+    const compareButton = [...(switcher?.querySelectorAll("button") ?? [])].find(
+      (button) => button.textContent === "Compare"
+    );
+    expect(switcher).not.toBeNull();
+    expect(switcher?.classList.contains("left-1/2")).toBe(true);
+    expect(switcher?.classList.contains("-translate-x-1/2")).toBe(true);
+    expect(switcher?.firstElementChild?.classList.contains("h-8")).toBe(true);
+    expect(compareButton?.classList.contains("h-7")).toBe(true);
+    expect(compareButton?.classList.contains("px-5")).toBe(true);
+    expect(document.querySelector(".topbar select")).toBeNull();
+  });
+
   function render(app: App): void {
     const host = document.getElementById("root");
     if (host === null) {

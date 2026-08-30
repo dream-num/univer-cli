@@ -33,10 +33,12 @@ describe("viewer locale wiring", () => {
     expect(source).not.toMatch(/from "\.\.\/i18n/u);
   });
 
-  it("hot-switches live and preview viewers through the public Facade", async () => {
+  it("hot-switches live and preview viewers through their public locale services", async () => {
     const source = await readViewer();
-    expect([...source.matchAll(/api\.loadLocales\(locale, pack\);/gu)]).toHaveLength(2);
-    expect([...source.matchAll(/api\.setLocale\(locale\);/gu)]).toHaveLength(2);
+    expect([...source.matchAll(/api\.loadLocales\(locale, pack\);/gu)]).toHaveLength(1);
+    expect([...source.matchAll(/api\.setLocale\(locale\);/gu)]).toHaveLength(1);
+    expect(source).toContain("localeService.load({ [locale]: pack });");
+    expect(source).toContain("localeService.setLocale(locale);");
   });
 
   it("treats load*Async completion as the initial snapshot barrier", async () => {
@@ -47,14 +49,14 @@ describe("viewer locale wiring", () => {
     expect(source).not.toContain("collaboration.flush(");
   });
 
-  it("disposes Facade subscriptions before their Univer injectors", async () => {
+  it("disposes the live Facade and the Facade-free preview before their Univer injectors", async () => {
     const source = await readViewer();
     const disposeBodies = [
       ...source.matchAll(
         /dispose: \(\) => \{(?<beforeFacade>[\s\S]*?)api\.dispose\(\);\s+univer\.dispose\(\);\s+\}/gu
       )
     ];
-    expect(disposeBodies).toHaveLength(2);
+    expect(disposeBodies).toHaveLength(1);
     for (const match of disposeBodies) {
       expect(match.groups?.beforeFacade).toContain("disposeDebugEndpoint();");
     }
@@ -63,6 +65,9 @@ describe("viewer locale wiring", () => {
     );
     expect(disposeBodies[0]?.groups?.beforeFacade).toContain(
       "sheetResourceRefDataProvider.dispose();"
+    );
+    expect(source).toMatch(
+      /dispose: \(\) => \{\s+comparisonHighlights\?\.dispose\(\);\s+univer\.dispose\(\);\s+\}/u
     );
   });
 });
