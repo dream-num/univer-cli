@@ -74,7 +74,8 @@ After the last write, check:
 
 1. `univer inspect base ... --json` for tables, primary fields, field types and config, record counts,
    and view types. It is read-only and accepts no selector.
-2. Record readback plus `view.getConfig()` / `view.getProjection()` for stored IDs and view bindings.
+2. In a read-only `execute`, explicitly `return` record values plus `view.getConfig()` /
+   `view.getProjection()` for stored IDs and view bindings.
 3. The rendered required views for blank labels, exposed IDs, implausible dates/percentages, missing
    card fields, and empty defaults.
 

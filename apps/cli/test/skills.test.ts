@@ -87,6 +87,7 @@ describe("application Skill library", () => {
     expect(base.content).toContain("ICardLayoutConfig");
     expect(base.content).toContain("univer inspect base");
     expect(base.content).toContain("It is read-only and accepts no selector");
+    expect(base.content).toContain("explicitly `return` record values");
     expect(base.content).toContain(
       "`execute` predefines `univerAPI`, `api`, and the `FBase` named `base`",
     );
@@ -127,6 +128,9 @@ describe("application Skill library", () => {
     expect(core?.content).toContain("`find` does not interpret intent");
     expect(core?.content).toContain("`show` accepts one or more exact symbols");
     expect(core?.content).toContain("Do not pass `--unit` to `show`");
+    expect(core?.content).toContain("Use `-e` for short one-line code");
+    expect(core?.content).toContain("bare expressions and `console.log` do not populate");
+    expect(core?.content).toContain("has no Node.js `require`");
     expect(corpus).not.toContain("search by intent");
     expect(skillReadme).toContain("`src/skills` 是 source of truth");
   });

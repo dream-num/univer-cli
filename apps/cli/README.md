@@ -84,7 +84,9 @@ univer worktree ready ./book.univer --worktree <worktree-id>
 univer worktree merge ./book.univer --worktree <worktree-id>
 ```
 
-Unit mutations and `execute` are allowed only in a draft worktree. A ready worktree must be reopened before further writes. `execute` uses the CLI SDK content-execution prelude, pulls before execution, captures mutations, commits automatically, and reports the Collaboration revision. Read-only code does not create a revision.
+Unit mutations and `execute` are allowed only in a draft worktree. A ready worktree must be reopened before further writes. `execute` uses the CLI SDK content-execution prelude, pulls before execution, captures mutations, commits automatically, and reports the Collaboration revision. Use `-e` for one-line code and `--script` for multiline code. Explicitly `return` readback values; bare expressions and `console.log` do not populate `value`, and Node.js `require` is unavailable. Read-only code does not create a revision.
+
+`status` and `unit list` read trunk by default and also accept an explicit `--trunk`; use `--worktree <id>` to read a Worktree.
 
 `inspect` supports Sheet workbook/worksheet/range, Doc document/paragraph, Slide
 presentation/slide, Base overview, and Board overview/element detail in that order. It uses the CLI
