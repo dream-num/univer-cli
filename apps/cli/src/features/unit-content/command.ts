@@ -62,7 +62,7 @@ function createExecuteCommand(application: LocalUnitContentApplication): Command
         "",
         "Execution notes:",
         "  Explicitly return readback values; bare expressions and console.log do not populate value.",
-        "  The execution sandbox has no Node.js require. Read-only code creates no revision.",
+        "  Read-only code creates no revision.",
         "",
       ].join("\n"),
     )

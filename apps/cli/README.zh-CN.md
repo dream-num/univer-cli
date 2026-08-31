@@ -90,8 +90,8 @@ univer worktree merge ./book.univer --worktree <worktree-id>
 
 Unit mutation 和 `execute` 只允许在 `draft` Worktree；`ready` 后必须 `reopen` 才能继续写。`execute` 使用 CLI
 SDK content-execution prelude，执行前 pull，捕获 mutation 后自动提交，并报告 Collaboration revision。单行代码使用
-`-e`，多行代码使用 `--script`。读回值必须显式 `return`；裸表达式和 `console.log` 不会填充 `value`，执行环境也不提供
-Node.js `require`。只读代码不创建 revision。
+`-e`，多行代码使用 `--script`。读回值必须显式 `return`；裸表达式和 `console.log` 不会填充 `value`。只读代码不创建
+revision。
 
 `status` 和 `unit list` 默认读取 trunk，也接受显式 `--trunk`；使用 `--worktree <id>` 读取 Worktree。
 
