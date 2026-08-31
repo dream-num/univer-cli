@@ -1,5 +1,8 @@
 @import "tailwindcss" source("..");
 @import "tw-animate-css";
+@import "@univerjs-pro/bases-history-ui/lib/index.css";
+@import "@univerjs-pro/boards-history-ui/lib/index.css";
+@import "@univerjs-pro/edit-history-ui/lib/index.css";
 @import "@univerjs-pro/sheets-history-ui/lib/index.css";
 
 /*
@@ -128,5 +131,11 @@
 
   body {
     @apply bg-background font-sans text-sm text-foreground antialiased;
+  }
+
+  /* The SDK Base toolbar is horizontally scrollable, so its actions must not collapse into
+   * overlapping hit targets when the application sidebar reduces the available width. */
+  [data-u-comp="base-toolbar"] > * {
+    flex-shrink: 0;
   }
 }
