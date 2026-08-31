@@ -100,7 +100,7 @@ scope through `--trunk` or `--worktree <id>`.
 
 Without `--worktree`, import creates a new Univerfile. With a worktree, it writes into that draft. `export` supports Sheet/Base to XLSX, CSV, or TSV; Doc to DOCX; and Slide to PPTX. CSV and TSV use `--sheet` or `--table` to select one output object. `--formula-calculation forced|when_empty|no` controls the Sheet converter formula policy; the compatibility default is `forced`.
 
-The editable `univer open` Viewer can import and export through its Ribbon. Import creates a new Unit in the current Univerfile. A trunk Sheet exposes time-grouped version history; read-only viewers can inspect it, while editable viewers can explicitly restore a version. Read-only Sheets do not expose Protect or Print. Worktree and merge-preview views do not expose import, export, or history. Other supported Units remain printable; Board supports printing only.
+The editable `univer open` Viewer can import and export through its Ribbon. Import creates a new Unit in the current Univerfile. Trunk Sheet, Doc, Slide, Base, and Board Units expose their standard SDK version-history UI; read-only viewers can inspect history, while editable viewers can explicitly restore a version. Read-only Sheets do not expose Protect or Print. Worktree and merge-preview views do not expose import, export, or history. Other supported Units remain printable; Board supports printing only.
 
 `optimize` is copy-only. Unless `--dry-run` is used, it requires `--out` and never overwrites the source.
 
