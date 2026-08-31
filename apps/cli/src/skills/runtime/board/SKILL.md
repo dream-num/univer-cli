@@ -9,6 +9,7 @@ Create a Board on a worktree, then use the returned unit ID for every operation:
 
 ```bash
 univer unit add canvas.univer --worktree <id> --type board --name "Planning Board" --json
+univer inspect board canvas.univer --worktree <id> --unit <board-id> --json
 univer execute canvas.univer --worktree <id> --unit <board-id> -e '
 const shape = board.insertShape({
   shapeType: api.Enum.ShapeTypeEnum.RoundRect,
@@ -19,6 +20,11 @@ shape.getText().setText("Review");
 return { shapeId: shape.getId(), elements: board.describeElements() };'
 univer open canvas.univer --worktree <id>
 ```
+
+`inspect board` is a selector-free overview of ordered elements, counts, bounds, relationships, and
+text summaries. Use `inspect board-element id:<element-id> ...` for type-specific detail without
+loading the full Board snapshot. Both commands are read-only; use them before editing to discover
+existing IDs and after editing to verify persisted structure.
 
 `execute` predefines `univerAPI`, `api`, and the `FBoard` named `board`; do not redeclare them.
 `insertShape` accepts the common `IShapeCreateInput`: geometry belongs in `transform`, visual data

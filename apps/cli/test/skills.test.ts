@@ -73,6 +73,39 @@ describe("application Skill library", () => {
     }
   });
 
+  it("keeps Base and Board inspection guidance aligned with their object models", async () => {
+    const library = createApplicationSkillLibrary(assetsRoot);
+    const base = await library.read({ full: true, name: "base" });
+    const board = await library.read({ full: true, name: "board" });
+
+    expect(base.content).toContain("FBaseTableField");
+    expect(base.content).toContain("FBaseTableRecord");
+    expect(base.content).toContain("FBaseTableView");
+    expect(base.content).toContain("FEnum.BaseFieldType");
+    expect(base.content).toContain("FBaseTable.addField");
+    expect(base.content).toContain("there is no `addFields` method");
+    expect(base.content).toContain("ICardLayoutConfig");
+    expect(base.content).toContain("univer inspect base");
+    expect(base.content).toContain("It is read-only and accepts no selector");
+    expect(base.content).toContain(
+      "`execute` predefines `univerAPI`, `api`, and the `FBase` named `base`",
+    );
+    expect(base.content).not.toContain("const base =");
+    expect(base.content).not.toContain("api find base table field record view");
+    expect(base.files).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          content: expect.stringContaining("table.getFormulaName()"),
+          path: "references/formulas.md",
+        }),
+      ]),
+    );
+
+    expect(board.content).toContain("univer inspect board");
+    expect(board.content).toContain("inspect board-element id:<element-id>");
+    expect(board.content).toContain("Both commands are read-only");
+  });
+
   it("keeps the current Skill corpus aligned with the CLI contract", async () => {
     const library = createApplicationSkillLibrary(assetsRoot);
     const snapshots = await Promise.all(

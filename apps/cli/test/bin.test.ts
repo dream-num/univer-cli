@@ -22,6 +22,25 @@ describe("built univer executable", () => {
     expect(stdout).toContain("Usage: univer");
     expect(stdout).toContain("api");
     expect(stdout).not.toContain("sac");
+
+    const inspectionHelp = (await invoke(["inspect", "--help"])).stdout;
+    const targets = [
+      "workbook",
+      "worksheet",
+      "range",
+      "document",
+      "paragraph",
+      "presentation",
+      "slide",
+      "base",
+      "board",
+      "board-element",
+    ];
+    for (let index = 1; index < targets.length; index += 1) {
+      expect(inspectionHelp.indexOf(`"${targets[index - 1]}"`)).toBeLessThan(
+        inspectionHelp.indexOf(`"${targets[index]}"`),
+      );
+    }
   });
 
   it("compiles a minimal Typst bundle from the packaged entrypoint", async () => {
@@ -381,20 +400,24 @@ describe("built univer executable", () => {
           )
         ).stdout,
       ) as { readonly unitId: string };
-      await invoke(
-        [
-          "execute",
-          importedFile,
-          "--worktree",
-          authoringWorktree.worktreeId,
-          "--unit",
-          board.unitId,
-          "-e",
-          "const shape = board.insertShape({ shapeType: api.Enum.ShapeTypeEnum.Rect, transform: { left: 20, top: 20, width: 240, height: 120 } }); shape.getText().setText('Board'); return shape.getId();",
-          "--json",
-        ],
-        env,
-      );
+      const boardExecution = parseJson(
+        (
+          await invoke(
+            [
+              "execute",
+              importedFile,
+              "--worktree",
+              authoringWorktree.worktreeId,
+              "--unit",
+              board.unitId,
+              "-e",
+              "const shape = board.insertShape({ shapeType: api.Enum.ShapeTypeEnum.Rect, transform: { left: 20, top: 20, width: 240, height: 120 } }); shape.getText().setText('Board'); return shape.getId();",
+              "--json",
+            ],
+            env,
+          )
+        ).stdout,
+      ) as { readonly value: string };
       await invoke(
         [
           "execute",
@@ -409,6 +432,92 @@ describe("built univer executable", () => {
         ],
         env,
       );
+      const inspectedBase = parseJson(
+        (
+          await invoke(
+            [
+              "inspect",
+              "base",
+              importedFile,
+              "--unit",
+              base.unitId,
+              "--worktree",
+              authoringWorktree.worktreeId,
+              "--json",
+            ],
+            env,
+          )
+        ).stdout,
+      ) as {
+        readonly kind: string;
+        readonly tables: readonly {
+          readonly fields: readonly { readonly name: string }[];
+          readonly name: string;
+          readonly recordCount: number;
+          readonly views: readonly { readonly type: string }[];
+        }[];
+      };
+      expect(inspectedBase).toMatchObject({ kind: "base" });
+      expect(inspectedBase.tables[0]).toMatchObject({
+        name: "Table 1",
+        recordCount: 0,
+        views: [expect.objectContaining({ type: "grid" })],
+      });
+      const tasksOverview = inspectedBase.tables.find((table) => table.name === "Tasks");
+      expect(tasksOverview).toMatchObject({ recordCount: 1 });
+      expect(tasksOverview?.fields).toEqual(
+        expect.arrayContaining([expect.objectContaining({ name: "Title" })]),
+      );
+
+      const inspectedBoard = parseJson(
+        (
+          await invoke(
+            [
+              "inspect",
+              "board",
+              importedFile,
+              "--unit",
+              board.unitId,
+              "--worktree",
+              authoringWorktree.worktreeId,
+              "--json",
+            ],
+            env,
+          )
+        ).stdout,
+      ) as {
+        readonly elementCounts: { readonly total: number };
+        readonly elements: readonly { readonly id: string; readonly text?: string }[];
+        readonly kind: string;
+      };
+      expect(inspectedBoard).toMatchObject({ elementCounts: { total: 1 }, kind: "board" });
+      expect(inspectedBoard.elements).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: boardExecution.value, text: "Board" }),
+        ]),
+      );
+
+      const inspectedBoardElement = parseJson(
+        (
+          await invoke(
+            [
+              "inspect",
+              "board-element",
+              `id:${boardExecution.value}`,
+              importedFile,
+              "--unit",
+              board.unitId,
+              "--worktree",
+              authoringWorktree.worktreeId,
+              "--json",
+            ],
+            env,
+          )
+        ).stdout,
+      ) as { readonly elements: readonly { readonly id: string; readonly type: string }[] };
+      expect(inspectedBoardElement.elements).toEqual([
+        expect.objectContaining({ id: boardExecution.value, type: "shape" }),
+      ]);
       const exportedBase = parseJson(
         (
           await invoke(
