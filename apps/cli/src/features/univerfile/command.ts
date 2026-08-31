@@ -1,4 +1,4 @@
-import { Command } from "commander";
+import { Command, Option } from "commander";
 import type { LocalUniverfileApplication, OpenUniverfileResult } from "./service.js";
 import type { UniverfileStatusResult } from "./protocol.js";
 
@@ -56,7 +56,8 @@ export function createUniverfileCommands(
     .description("Show Unit and Worktree status for a local .univer file")
     .argument("<file.univer>", "local .univer file path")
     .option("--unit <id>", "filter to one Unit")
-    .option("--worktree <id>", "inspect one Worktree")
+    .addOption(new Option("--trunk", "inspect the trunk").conflicts("worktree"))
+    .addOption(new Option("--worktree <id>", "inspect one Worktree").conflicts("trunk"))
     .option("--json", "write structured JSON")
     .action(async (path: string, options: StatusOptions) => {
       const result = await execute(

@@ -63,7 +63,8 @@ export function createUnitCommand(application: LocalUnitApplication): Command {
   const list = new Command("list")
     .description("List Units in trunk or a Worktree")
     .argument("<file.univer>", "local .univer file path")
-    .option("--worktree <id>", "read a Worktree; defaults to trunk")
+    .addOption(new Option("--trunk", "read the trunk").conflicts("worktree"))
+    .addOption(new Option("--worktree <id>", "read a Worktree").conflicts("trunk"))
     .option("--json", "write structured JSON")
     .action(async (path: string, options: JsonOptions & { readonly worktree?: string }) => {
       const result = await run(list, async () =>

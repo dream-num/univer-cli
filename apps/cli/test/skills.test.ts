@@ -87,6 +87,7 @@ describe("application Skill library", () => {
     expect(base.content).toContain("ICardLayoutConfig");
     expect(base.content).toContain("univer inspect base");
     expect(base.content).toContain("It is read-only and accepts no selector");
+    expect(base.content).toContain("explicitly `return` record values");
     expect(base.content).toContain(
       "`execute` predefines `univerAPI`, `api`, and the `FBase` named `base`",
     );

@@ -35,8 +35,13 @@ describe("Local Worktree and Unit operations", () => {
       worktreeApplication: application,
     });
     const worktree = program.commands.find((command) => command.name() === "worktree");
+    const status = program.commands.find((command) => command.name() === "status");
+    const unit = program.commands.find((command) => command.name() === "unit");
+    const unitList = unit?.commands.find((command) => command.name() === "list");
     const inspect = program.commands.find((command) => command.name() === "inspect");
     const execute = program.commands.find((command) => command.name() === "execute");
+    const executeHelp: string[] = [];
+    execute?.configureOutput({ writeOut: (text) => executeHelp.push(text) }).outputHelp();
 
     expect(worktree?.commands.map((command) => command.name())).toEqual([
       "add",
@@ -52,6 +57,10 @@ describe("Local Worktree and Unit operations", () => {
     expect(inspect?.helpInformation()).toContain("--trunk");
     expect(inspect?.helpInformation()).toContain("--worktree <id>");
     expect(execute?.helpInformation()).toContain("-e, --code <code>");
+    expect(execute?.helpInformation()).toContain("use --script for multiline code");
+    expect(executeHelp.join("")).toContain("Explicitly return readback values");
+    expect(status?.helpInformation()).toContain("--trunk");
+    expect(unitList?.helpInformation()).toContain("--trunk");
   });
 
   it("exposes Worktree and Unit lifecycle results without a success wrapper", async () => {
@@ -115,6 +124,10 @@ describe("Local Worktree and Unit operations", () => {
     );
     expect(unit.exitCode).toBe(0);
     expect(JSON.parse(unit.stdout)).toMatchObject({ unitId: "unit-1", kind: "sheet" });
+
+    const units = await invoke(["unit", "list", "book.univer", "--trunk", "--json"], editing);
+    expect(units.exitCode).toBe(0);
+    expect(JSON.parse(units.stdout)).toMatchObject({ scope: "trunk", units: [] });
     expect(calls).toEqual([
       { name: "agent work", path: "book.univer" },
       { kind: "sheet", name: "Plan", path: "book.univer", worktreeId: "wt-1" },
