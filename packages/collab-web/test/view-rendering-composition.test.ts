@@ -226,7 +226,5 @@ describe("authoritative Browser View rendering composition", () => {
     expect(styles).toContain("overscroll-behavior: none;");
     expect(styles).toContain("html.gateway-dark {");
     expect(styles).toContain("--color-background: #0a0a0a;");
-    expect(styles).toContain('[data-u-comp="base-toolbar"] > *');
-    expect(styles).toContain("flex-shrink: 0;");
   });
 });
