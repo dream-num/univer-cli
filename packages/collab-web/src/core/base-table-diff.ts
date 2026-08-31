@@ -1,4 +1,6 @@
-import type { UnitStructuralDiffKind } from "@univer/unit-compare";
+import type { UnitStructuralDiffItem, UnitStructuralDiffKind } from "@univer/unit-compare";
+import { formatBaseDateValue, formatBaseNumberValue } from "@univerjs-pro/bases";
+import { BaseFieldType } from "@univerjs/core";
 
 export interface BaseDiffField {
   readonly id: string;
@@ -9,6 +11,7 @@ export interface BaseDiffField {
 }
 
 export interface BaseDiffRecord {
+  readonly cellChanges: ReadonlyMap<string, UnitStructuralDiffKind>;
   readonly id: string;
   readonly left: Record<string, unknown> | null;
   readonly right: Record<string, unknown> | null;
@@ -44,7 +47,18 @@ const BASE_DEFAULT_FIELD_WIDTH = 160;
 const BASE_MIN_FIELD_WIDTH = 80;
 const BASE_MAX_FIELD_WIDTH = 480;
 
-export function buildBaseTableDiff(left: unknown, right: unknown): BaseTableDiff[] {
+/** Preserve the original header on each side when a field has been renamed. */
+export function baseDiffFieldLabel(field: BaseDiffField, side: "left" | "right"): string {
+  const name = field[side]?.name;
+  return typeof name === "string" && name.length > 0 ? name : field.label;
+}
+
+/** Projects SDK differences onto one shared DOM grid; never compares snapshot values. */
+export function buildBaseTableDiff(
+  left: unknown,
+  right: unknown,
+  items: readonly UnitStructuralDiffItem[]
+): BaseTableDiff[] {
   const leftTables = asRecord(asRecord(left)?.tables) ?? {};
   const rightTables = asRecord(asRecord(right)?.tables) ?? {};
   const tableIds = alignStableOrder(
@@ -55,10 +69,12 @@ export function buildBaseTableDiff(left: unknown, right: unknown): BaseTableDiff
   return tableIds.flatMap((tableId) => {
     const leftTable = asRecord(leftTables[tableId]) ?? null;
     const rightTable = asRecord(rightTables[tableId]) ?? null;
-    const fields = buildFields(leftTable, rightTable);
-    const records = buildRecords(leftTable, rightTable, fields);
-    const status = tableStatus(leftTable, rightTable, fields, records);
-    if (status === null) return [];
+    const tableItem = items.find((item) => item.entityType === "table" && item.stableId === tableId);
+    const children = items.filter((item) => item.parentStableId === tableId);
+    if (tableItem === undefined && children.length === 0) return [];
+    const fields = buildFields(leftTable, rightTable, children);
+    const records = buildRecords(leftTable, rightTable, fields, children);
+    const status = tableItem?.kind ?? "update";
     return [
       {
         id: tableId,
@@ -83,19 +99,13 @@ export function getBaseDiffCell(input: {
   const present = field !== null && record !== null;
   const value = asRecord(record)?.values;
   const cellValue = asRecord(value)?.[input.field.id];
-  const peerRecord = input.record[input.side === "left" ? "right" : "left"];
-  const peerValue = asRecord(asRecord(peerRecord)?.values)?.[input.field.id];
-  const status =
-    input.field.left === null || input.field.right === null ||
-    input.record.left === null || input.record.right === null
-      ? input.side === "left"
-        ? "delete"
-        : "insert"
-      : stableJson(cellValue) === stableJson(peerValue)
-        ? null
-        : "update";
+  const kind = input.record.cellChanges.get(input.field.id) ??
+    (input.field.status === "insert" || input.field.status === "delete" ? input.field.status :
+      input.record.status === "insert" || input.record.status === "delete" ? input.record.status : null);
+  const status = kind === null || kind === "update" ? kind :
+    (kind === "insert") === (input.side === "right") ? "insert" : "delete";
   return {
-    displayValue: present ? formatBaseCellValue(cellValue) : "",
+    displayValue: present ? formatBaseCellValue(cellValue, field ?? undefined) : "",
     present,
     value: cellValue,
     status
@@ -116,14 +126,23 @@ export function buildBaseDiffGridLayout(table: BaseTableDiff): BaseDiffGridLayou
   };
 }
 
-export function formatBaseCellValue(value: unknown): string {
+export function formatBaseCellValue(value: unknown, field?: Record<string, unknown>): string {
   if (value === undefined || value === null) return "";
+  const config = asRecord(field?.config) ?? {};
+  if ([BaseFieldType.Date, BaseFieldType.CreatedAt, BaseFieldType.UpdatedAt].some((type) => field?.type === type)) {
+    return formatBaseDateValue(value, config);
+  }
+  if (field?.type === BaseFieldType.Number || field?.type === BaseFieldType.Currency) {
+    if (value === "") return "";
+    const number = typeof value === "number" ? value : Number(value);
+    return Number.isFinite(number) ? formatBaseNumberValue(number, config) : String(value);
+  }
   if (typeof value === "string") return value;
   if (typeof value === "number" || typeof value === "boolean") return String(value);
-  if (Array.isArray(value)) return value.map(formatBaseCellValue).filter(Boolean).join(", ");
+  if (Array.isArray(value)) return value.map((entry) => formatBaseCellValue(entry)).filter(Boolean).join(", ");
   const record = asRecord(value);
   if (record === undefined) return String(value);
-  const humanLabel = [record.name, record.label, record.title].find(
+  const humanLabel = [record.name, record.label, record.title, record.text, record.url, record.email].find(
     (candidate): candidate is string => typeof candidate === "string"
   );
   return humanLabel ?? JSON.stringify(value);
@@ -131,7 +150,8 @@ export function formatBaseCellValue(value: unknown): string {
 
 function buildFields(
   leftTable: Record<string, unknown> | null,
-  rightTable: Record<string, unknown> | null
+  rightTable: Record<string, unknown> | null,
+  items: readonly UnitStructuralDiffItem[]
 ): BaseDiffField[] {
   const leftFields = asRecord(leftTable?.fields) ?? {};
   const rightFields = asRecord(rightTable?.fields) ?? {};
@@ -142,8 +162,7 @@ function buildFields(
     isVisibleComparisonField(rightFields[id])
   );
   const ids = alignStableOrder(leftIds, rightIds);
-  const leftCommon = leftIds.filter((id) => id in rightFields);
-  const rightCommon = rightIds.filter((id) => id in leftFields);
+  const changes = new Map(items.filter((item) => item.entityType === "field").map((item) => [item.stableId, item.kind]));
   return ids.map((id) => {
     const left = asRecord(leftFields[id]) ?? null;
     const right = asRecord(rightFields[id]) ?? null;
@@ -152,14 +171,7 @@ function buildFields(
       left,
       right,
       label: displayName(right) ?? displayName(left) ?? id,
-      status: pairStatus(
-        left,
-        right,
-        fieldProjection,
-        left !== null &&
-          right !== null &&
-          leftCommon.indexOf(id) !== rightCommon.indexOf(id)
-      )
+      status: changes.get(id) ?? null
     };
   });
 }
@@ -172,15 +184,16 @@ function isVisibleComparisonField(value: unknown): boolean {
 function buildRecords(
   leftTable: Record<string, unknown> | null,
   rightTable: Record<string, unknown> | null,
-  fields: readonly BaseDiffField[]
+  fields: readonly BaseDiffField[],
+  items: readonly UnitStructuralDiffItem[]
 ): BaseDiffRecord[] {
   const leftRecords = asRecord(leftTable?.records) ?? {};
   const rightRecords = asRecord(rightTable?.records) ?? {};
   const leftIds = orderedIds(leftRecords, leftTable?.recordOrder);
   const rightIds = orderedIds(rightRecords, rightTable?.recordOrder);
   const ids = alignStableOrder(leftIds, rightIds);
-  const leftCommon = leftIds.filter((id) => id in rightRecords);
-  const rightCommon = rightIds.filter((id) => id in leftRecords);
+  const changes = new Map(items.filter((item) => item.entityType === "record").map((item) => [item.stableId, item.kind]));
+  const cellChanges = new Map(items.filter((item) => item.entityType === "cell").map((item) => [item.stableId, item.kind]));
   const labelFieldId =
     typeof rightTable?.primaryFieldId === "string"
       ? rightTable.primaryFieldId
@@ -190,11 +203,7 @@ function buildRecords(
   return ids.map((id) => {
     const left = asRecord(leftRecords[id]) ?? null;
     const right = asRecord(rightRecords[id]) ?? null;
-    const moved =
-      left !== null &&
-      right !== null &&
-      leftCommon.indexOf(id) !== rightCommon.indexOf(id);
-    const status = pairStatus(left, right, recordProjection, moved);
+    const status = changes.get(id) ?? null;
     const labelValue =
       asRecord(asRecord(right)?.values)?.[labelFieldId ?? ""] ??
       asRecord(asRecord(left)?.values)?.[labelFieldId ?? ""];
@@ -203,82 +212,13 @@ function buildRecords(
       left,
       right,
       label: formatBaseCellValue(labelValue) || id,
+      cellChanges: new Map(fields.flatMap((field) => {
+        const kind = cellChanges.get(`${id}:${field.id}`);
+        return kind === undefined ? [] : [[field.id, kind] as const];
+      })),
       status
     };
   });
-}
-
-function tableStatus(
-  left: Record<string, unknown> | null,
-  right: Record<string, unknown> | null,
-  fields: readonly BaseDiffField[],
-  records: readonly BaseDiffRecord[]
-): UnitStructuralDiffKind | null {
-  if (left === null) return "insert";
-  if (right === null) return "delete";
-  if (
-    stableJson(tableProjection(left)) !== stableJson(tableProjection(right)) ||
-    fields.some((field) => field.status !== null) ||
-    records.some((record) => record.status !== null) ||
-    hasChangedCell(fields, records)
-  ) {
-    return "update";
-  }
-  return null;
-}
-
-function hasChangedCell(
-  fields: readonly BaseDiffField[],
-  records: readonly BaseDiffRecord[]
-): boolean {
-  return fields.some((field) =>
-    records.some(
-      (record) =>
-        field.left !== null &&
-        field.right !== null &&
-        record.left !== null &&
-        record.right !== null &&
-        stableJson(asRecord(record.left.values)?.[field.id]) !==
-          stableJson(asRecord(record.right.values)?.[field.id])
-    )
-  );
-}
-
-function pairStatus(
-  left: Record<string, unknown> | null,
-  right: Record<string, unknown> | null,
-  project: (value: Record<string, unknown>) => unknown,
-  moved = false
-): UnitStructuralDiffKind | null {
-  if (left === null) return "insert";
-  if (right === null) return "delete";
-  return moved || stableJson(project(left)) !== stableJson(project(right)) ? "update" : null;
-}
-
-function fieldProjection(value: Record<string, unknown>): unknown {
-  return value;
-}
-
-function recordProjection(value: Record<string, unknown>): unknown {
-  return withoutKeys(value, "values", "orderKey", "createdAt", "updatedAt");
-}
-
-function tableProjection(value: Record<string, unknown>): unknown {
-  return withoutKeys(
-    value,
-    "fields",
-    "fieldOrder",
-    "records",
-    "recordOrder",
-    "rowIndex",
-    "rowId",
-    "colIndex",
-    "colId",
-    "cellData",
-    "resources",
-    "views",
-    "viewOrder"
-  );
 }
 
 function resolveFieldWidth(table: BaseTableDiff, field: BaseDiffField): number {
@@ -340,20 +280,6 @@ function alignStableOrder(left: readonly string[], right: readonly string[]): st
 
 function displayName(value: Record<string, unknown> | null): string | null {
   return typeof value?.name === "string" ? value.name : null;
-}
-
-function withoutKeys(value: Record<string, unknown>, ...keys: readonly string[]): unknown {
-  return Object.fromEntries(Object.entries(value).filter(([key]) => !keys.includes(key)));
-}
-
-function stableJson(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
-  const record = asRecord(value);
-  if (record === undefined) return JSON.stringify(value) ?? "undefined";
-  return `{${Object.keys(record)
-    .sort()
-    .map((key) => `${JSON.stringify(key)}:${stableJson(record[key])}`)
-    .join(",")}}`;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {

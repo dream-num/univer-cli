@@ -1,6 +1,26 @@
 import type { Messages } from "./en-US";
+import { UnitComparisonEntityType } from "@univerjs-pro/edit-history";
+import { comparisonTerm, localizedComparisonEnum, localizedComparisonPath } from "./comparison-labels.js";
 
-const STRUCTURAL_ENTITY_LABELS: Readonly<Record<string, string>> = {
+const UNIT_COMPARISON_ENTITY_TYPES = new Set<string>(Object.values(UnitComparisonEntityType));
+
+function isUnitComparisonEntityType(value: string): value is UnitComparisonEntityType {
+  return UNIT_COMPARISON_ENTITY_TYPES.has(value);
+}
+
+const STRUCTURAL_ENTITY_LABELS: Readonly<Record<UnitComparisonEntityType, string>> = {
+  unit: "文件",
+  workbook: "工作簿",
+  worksheet: "工作表",
+  cell: "单元格",
+  "row-column": "行与列",
+  move: "移动",
+  "condition-format": "条件格式",
+  "data-validation": "数据验证",
+  sparkline: "迷你图",
+  shape: "形状",
+  chart: "图表",
+  pivot: "数据透视表",
   paragraph: "段落",
   "text-style": "文字样式",
   section: "分节",
@@ -39,7 +59,6 @@ const STRUCTURAL_ENTITY_LABELS: Readonly<Record<string, string>> = {
   field: "字段",
   record: "记录",
   view: "视图",
-  cell: "单元格",
   "board-page": "画板页",
   "board-element": "画板元素",
   "board-theme": "画板主题",
@@ -52,17 +71,34 @@ const COMPARISON_PATH_LABELS: Readonly<Record<string, string>> = {
   text: "文字",
   value: "值",
   formula: "公式",
+  formulaName: "公式名称",
   name: "名称",
   type: "类型",
   language: "语言",
   config: "设置",
-  columns: "分栏布局",
+  columns: "列",
+  rowCount: "行数", columnCount: "列数",
+  h: "行高", w: "列宽", hd: "隐藏", ia: "自动行高",
+  bg: "背景", rgb: "颜色", cl: "文字颜色", fs: "字号", bl: "粗体", it: "斜体",
+  range: "范围", ranges: "范围", rangeInfo: "范围", rule: "规则", operator: "比较方式",
+  startRow: "起始行", endRow: "结束行", startColumn: "起始列", endColumn: "结束列",
+  transform: "变换", left: "水平位置", top: "垂直位置", angle: "旋转角度",
+  cfId: "规则标识", uid: "标识", id: "标识", palette: "配色", content: "内容", titles: "标题", title: "标题",
+  sparklines: "迷你图", fieldsConfig: "透视字段", collection: "数据源", filters: "筛选", options: "选项",
   gap: "栏间距",
   position: "位置",
+  start: "起始位置",
+  count: "数量",
   geometry: "位置与尺寸",
   "geometry.x": "水平位置",
   "geometry.y": "垂直位置",
   style: "格式",
+  "style.bg": "背景",
+  "style.bl": "粗体",
+  "style.cl": "文字颜色",
+  "style.fs": "字号",
+  "style.it": "斜体",
+  "style.n": "数字格式",
   "style.backgroundColor.rgb": "背景色",
   "style.background": "背景色",
   backgroundColor: "背景色",
@@ -74,9 +110,14 @@ const COMPARISON_PATH_LABELS: Readonly<Record<string, string>> = {
 };
 
 function comparisonPathLabel(path: readonly string[]): string {
-  const exact = COMPARISON_PATH_LABELS[path.join(".")];
-  if (exact !== undefined) return exact;
-  return path.map((part) => COMPARISON_PATH_LABELS[part] ?? part).join(" · ");
+  return localizedComparisonPath("zh-CN", path, (key) => COMPARISON_PATH_LABELS[key]);
+}
+
+function comparisonEntityLabel(category: string): string {
+  const entityType = category.split(":")[0] ?? "";
+  return isUnitComparisonEntityType(entityType)
+    ? STRUCTURAL_ENTITY_LABELS[entityType]
+    : "内容";
 }
 
 /**
@@ -172,11 +213,14 @@ export const ZH_CN_MESSAGES: Messages = {
     changes: "差异",
     structuralDiff: "结构差异",
     kind: { insert: "新增", delete: "删除", update: "修改" },
-    entity: (category: string): string =>
-      STRUCTURAL_ENTITY_LABELS[category.split(":")[0] ?? ""] ?? "内容",
+    entity: comparisonEntityLabel,
     entityAt: (category: string, index: number): string =>
-      `第 ${index} 个${STRUCTURAL_ENTITY_LABELS[category.split(":")[0] ?? ""] ?? "内容"}`,
+      `第 ${index} 个${comparisonEntityLabel(category)}`,
     changePath: comparisonPathLabel,
+    changeValue: (entityType: string, path: readonly string[], value: unknown): string | undefined => localizedComparisonEnum("zh-CN", entityType, path, value),
+    renderFailed: comparisonTerm("zh-CN", "loadFailed"),
+    comparisonFailed: comparisonTerm("zh-CN", "comparisonFailed"),
+    incompletePage: comparisonTerm("zh-CN", "incompletePage"),
     wholeItem: "整个对象",
     present: "存在",
     itemCount: (count: number): string => `${count} 项`,
@@ -207,6 +251,7 @@ export const ZH_CN_MESSAGES: Messages = {
     workbook: "工作簿",
     content: "内容",
     formatting: "格式",
+    showFormulas: "显示公式",
     searchChanges: "搜索差异",
     noItems: "此范围内没有差异项。",
     selectItemHint: "选择一个差异项，查看受影响的工作表内容。",

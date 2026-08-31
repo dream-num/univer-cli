@@ -54,7 +54,13 @@ describe("agent comparison context HTTP endpoint", () => {
         detail: "changes",
         page: { offset: 0, limit: 1, matched: 2, hasMore: true },
         items: [
-          { entityType: "cell", kind: "insert", changes: [{ path: ["value"], kind: "insert" }] },
+          {
+            entityType: "cell",
+            kind: "insert",
+            changes: expect.arrayContaining([
+              { path: ["value"], kind: "insert", after: "One", valueType: "text" },
+            ]),
+          },
         ],
       },
     });

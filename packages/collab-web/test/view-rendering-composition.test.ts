@@ -28,7 +28,7 @@ describe("authoritative Browser View rendering composition", () => {
     expectInOrder(preset, [
       "registerBasePlugins(",
       "registerDocPlugins(univer);",
-      "registerSheetPlugins(univer);",
+      "registerSheetPlugins(univer, options.sheetTableUI);",
       "registerSlidePlugins(univer);",
       "registerBaseUnitPlugins(univer, collaborationOwnsAssetIo);",
       "registerBoardPlugins(univer);",
@@ -76,6 +76,20 @@ describe("authoritative Browser View rendering composition", () => {
     expect(human).toContain(
       "univer.__getInjector().get(ThemeService).setDarkMode(isDarkMode)"
     );
+  });
+
+  it("hides native table editing anchors only in read-only Sheet comparison panes", async () => {
+    const preset = await read("render-preset/src/index.ts");
+    const comparison = await read("collab-web/src/ui/readonly-univer-workbook-view.tsx");
+    const viewer = await read("collab-web/src/core/viewer.ts");
+
+    expect(preset).toContain('sheetTableUI?: Pick<IUniverSheetsTableUIConfig, "hideAnchor">;');
+    expect(preset).toContain("registerSheetPlugins(univer, options.sheetTableUI);");
+    expect(preset).toContain("univer.registerPlugin(UniverSheetsTableUIPlugin, tableUI);");
+    expect(comparison).toContain("sheetTableUI: { hideAnchor: true }");
+    expect(viewer).not.toContain("sheetTableUI:");
+    expect(comparison).toContain("highlightSheet.highlightRanges(ranges,");
+    expect(comparison).toContain("attachReadonlyPaneEvents({");
   });
 
   it("owns the shared Browser View facade surface", async () => {

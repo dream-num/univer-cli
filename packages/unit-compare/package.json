@@ -2,7 +2,7 @@
   "name": "@univer/unit-compare",
   "version": "0.1.0",
   "private": true,
-  "description": "Pure stable-ID structural diff models for Doc, Slide, Base, and Board, suitable for UI, SDK, and agent consumers.",
+  "description": "Private Compare presentation models used by the Univer CLI Web application.",
   "type": "module",
   "types": "./src/index.ts",
   "exports": {
@@ -12,16 +12,11 @@
     }
   },
   "scripts": {
-    "benchmark:five-product": "tsx test/five-product-benchmark.ts",
     "clean": "rm -rf dist *.tsbuildinfo",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.test.json --noEmit --pretty false"
   },
   "dependencies": {
-    "@univer/collab-gateway-contract": "workspace:*",
-    "@univer/workbook-compare": "workspace:*",
-    "@univerjs-pro/collaboration": "1.0.0-insiders.20260829-2e3c387",
-    "@univerjs/core": "1.0.0-insiders.20260829-2e3c387",
-    "@univerjs/protocol": "1.0.0-insiders.20260829-2e3c387"
+    "@univer/collab-gateway-contract": "workspace:*"
   }
 }

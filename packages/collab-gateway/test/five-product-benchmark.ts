@@ -9,7 +9,7 @@ import {
   type UnitType,
 } from "@univer/collab-gateway-contract";
 import type { IWorkbookData } from "@univerjs/core";
-import { prepareUnitComparisonContext, queryPreparedUnitComparisonContext } from "../src/index.js";
+import { prepareGatewayUnitComparison, queryGatewayUnitComparison } from "../src/comparison/unit-comparison-runtime.js";
 
 interface Scale {
   readonly name: "medium" | "large";
@@ -59,10 +59,10 @@ for (const scale of scales) {
     globalThis.gc?.();
     const beforeHeap = process.memoryUsage().heapUsed;
     const prepareSamplesMs: number[] = [];
-    let prepared: ReturnType<typeof prepareUnitComparisonContext> | undefined;
+    let prepared: ReturnType<typeof prepareGatewayUnitComparison> | undefined;
     for (let iteration = 0; iteration < 3; iteration += 1) {
       const prepareStarted = performance.now();
-      prepared = prepareUnitComparisonContext({
+      prepared = prepareGatewayUnitComparison({
         comparisonId: `benchmark-${scale.name}-${benchmarkCase.product}`,
         unit: {
           unitId: `unit-${benchmarkCase.type}`,
@@ -74,15 +74,18 @@ for (const scale of scales) {
         stale: false,
         leftData: benchmarkCase.left,
         rightData: benchmarkCase.right,
+        leftChangesets: [],
+        rightChangesets: [],
       });
       prepareSamplesMs.push(rounded(performance.now() - prepareStarted));
     }
     if (prepared === undefined) throw new Error("benchmark did not prepare a context");
     const prepareMs = median(prepareSamplesMs);
     const queryStarted = performance.now();
-    const page = queryPreparedUnitComparisonContext(prepared, {
-      offset: Math.max(0, Math.floor(prepared.items.length / 2) - 50),
+    const page = queryGatewayUnitComparison(prepared, {
+      offset: Math.max(0, Math.floor(prepared.prepared.adapterResult.items.length / 2) - 50),
       limit: 100,
+      contextLimit: 100,
       includeValues: false,
     });
     const queryMs = performance.now() - queryStarted;
@@ -93,7 +96,7 @@ for (const scale of scales) {
       scale: scale.name,
       product: benchmarkCase.product,
       sourceEntities: benchmarkCase.sourceEntities,
-      changes: prepared.summary.total,
+      changes: page.summary.total,
       prepareMs: rounded(prepareMs),
       prepareSamplesMs,
       queryMs: rounded(queryMs),

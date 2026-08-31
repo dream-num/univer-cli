@@ -37,7 +37,10 @@ export function structuralDiffItemLabel(
   const position = (item.position.right ?? item.position.left ?? 0) + 1;
   const displayCategory = structuralDiffItemDisplayCategory(item);
   const entity = t().diff.entity(displayCategory);
-  const readable = candidate.length > 0 && candidate !== item.stableId
+  // A transition reference contains another entity's ID, not a user-authored display name.
+  const isReferenceId = item.entityType === "slide-transition-ref" &&
+    [item.values.left, item.values.right].some((value) => value === candidate);
+  const readable = candidate.length > 0 && candidate !== item.stableId && !isReferenceId
     ? STRUCTURED_CONTENT_CATEGORIES.has(item.category)
       ? `${entity} · ${candidate}`
       : candidate

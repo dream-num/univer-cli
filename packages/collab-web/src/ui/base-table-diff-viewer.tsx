@@ -8,10 +8,10 @@ import {
   type ReactNode,
   type UIEvent
 } from "react";
-import { UNIT_TYPE_BASE } from "@univer/collab-gateway-contract";
 import { Badge } from "../components/ui/badge";
 import {
   buildBaseDiffGridLayout,
+  baseDiffFieldLabel,
   buildBaseTableDiff,
   getBaseDiffCell,
   type BaseDiffCell,
@@ -20,40 +20,35 @@ import {
   type BaseTableDiff
 } from "../core/base-table-diff";
 import {
-  buildUnitStructuralDiff,
   type UnitStructuralDiffItem,
   type UnitStructuralDiffKind
 } from "@univer/unit-compare";
 import { cn } from "../lib/utils";
 import { t } from "../i18n";
 import { ComparisonPageTabs } from "./comparison-page-tabs";
-import { ComparisonChangeNavigator } from "./comparison-change-navigator";
 import {
-  structuralDiffItemEntityLabel,
   structuralDiffItemLabel
 } from "./structural-diff-item-label";
 
 export function BaseTableDiffViewer(input: {
   readonly fidelity: "history" | "snapshot";
+  readonly items: readonly UnitStructuralDiffItem[];
   readonly left: unknown;
   readonly leftLabel: string;
   readonly leftSourceControl: ReactNode;
   readonly right: unknown;
   readonly rightLabel: string;
 }): ReactElement {
-  const tables = useMemo(() => buildBaseTableDiff(input.left, input.right), [input.left, input.right]);
+  const tables = useMemo(() => buildBaseTableDiff(input.left, input.right, input.items), [input.left, input.right, input.items]);
   const items = useMemo(
     () =>
-      buildUnitStructuralDiff({ type: UNIT_TYPE_BASE, left: input.left, right: input.right }).filter(
-        (item) => isVisibleBaseDiffItem(item, tables)
-      ),
-    [input.left, input.right, tables]
+      input.items.filter((item) => isVisibleBaseDiffItem(item, tables)),
+    [input.items, tables]
   );
   const [activeTableId, setActiveTableId] = useState<string | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | undefined>(undefined);
   const activeTable = tables.find((table) => table.id === activeTableId) ?? tables[0] ?? null;
   const selectedItem = items.find((item) => item.id === selectedItemId) ?? items[0];
-  const selectedIndex = selectedItem === undefined ? -1 : items.indexOf(selectedItem);
 
   useEffect(() => {
     if (activeTable === null) setActiveTableId(null);
@@ -81,31 +76,7 @@ export function BaseTableDiffViewer(input: {
           tables={tables}
           onSelect={selectItem}
         />
-        <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] bg-card">
-          <ComparisonChangeNavigator
-            changeIndex={Math.max(0, selectedIndex)}
-            item={
-              selectedItem === undefined
-                ? null
-                : {
-                  ...selectedItem,
-                  entityLabel: structuralDiffItemEntityLabel(selectedItem),
-                  label: structuralDiffItemLabel(
-                      selectedItem,
-                      itemDisplayLabel(selectedItem, tables)
-                    )
-                  }
-            }
-            total={items.length}
-            onNext={() => {
-              const next = items[selectedIndex + 1];
-              if (next !== undefined) selectItem(next);
-            }}
-            onPrevious={() => {
-              const previous = items[selectedIndex - 1];
-              if (previous !== undefined) selectItem(previous);
-            }}
-          />
+        <div className="grid min-h-0 grid-rows-[minmax(0,1fr)] bg-card">
           <BaseDiffPanes
             activeTable={activeTable}
             activeTableId={activeTable?.id ?? null}
@@ -159,7 +130,7 @@ function BaseDiffPanes(input: {
     status: table.status
   }));
   return (
-    <div className="grid min-h-0 grid-cols-2 gap-px max-[1023px]:h-full max-[1023px]:grid-cols-1 max-[1023px]:grid-rows-2">
+    <div className="grid min-h-0 grid-cols-2 gap-px bg-border max-[1023px]:h-full max-[1023px]:grid-cols-1 max-[1023px]:grid-rows-2" data-testid="base-diff-panes">
       <BaseDiffPane
         activeTable={input.activeTable}
         activeTableId={input.activeTableId}
@@ -276,6 +247,7 @@ function BaseFieldHeader(input: {
   readonly side: "left" | "right";
 }): ReactElement {
   const field = input.field[input.side];
+  const label = baseDiffFieldLabel(input.field, input.side);
   const fieldType = getBaseFieldType(input.field, input.side);
   const status = sideStatus(input.field.left, input.field.right, input.field.status, input.side);
   return (
@@ -285,7 +257,7 @@ function BaseFieldHeader(input: {
         toneClass(status),
         field === null && "italic text-muted-foreground"
       )}
-      title={field === null ? t().diff.notPresent : input.field.label}
+      title={field === null ? t().diff.notPresent : label}
     >
       {field === null ? null : (
         <span
@@ -295,7 +267,7 @@ function BaseFieldHeader(input: {
           {fieldTypeGlyph(fieldType)}
         </span>
       )}
-      <span className="truncate">{field === null ? "—" : input.field.label}</span>
+      <span className="truncate">{field === null ? "—" : label}</span>
       {field === null ? null : (
         <span aria-hidden="true" className="ml-auto pl-2 text-[9px] text-muted-foreground/65">⌄</span>
       )}

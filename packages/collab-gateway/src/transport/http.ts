@@ -8,10 +8,13 @@ import {
   isGatewayDescriptorContentType,
   type ErrorEnvelope,
   type OptimizeUniverfileRequest,
-  type UnitComparisonContextDiffKind,
-  type UnitComparisonContextQuery,
   type UnitComparisonRefRequest,
   type UnitType,
+} from "@univer/collab-gateway-contract";
+import { UnitComparisonEntityType } from "@univerjs-pro/edit-history";
+import type {
+  UnitComparisonContextDiffKind,
+  UnitComparisonContextQuery,
 } from "@univer/collab-gateway-contract";
 import { CollabGatewayAssetScopeNotFoundError } from "../assets/errors.js";
 import { GatewaySemanticError } from "../errors.js";
@@ -28,6 +31,11 @@ import {
   UniverfileNotFoundError,
 } from "../univerfile-manager.js";
 const SHEET_TYPE = 2;
+const UNIT_COMPARISON_ENTITY_TYPES = new Set<string>(Object.values(UnitComparisonEntityType));
+
+function isUnitComparisonEntityType(value: string): boolean {
+  return UNIT_COMPARISON_ENTITY_TYPES.has(value);
+}
 
 function parseComparisonRef(
   value: { kind?: unknown; worktreeId?: unknown } | undefined,
@@ -48,11 +56,19 @@ function parseComparisonRef(
 function parseComparisonContextQuery(params: URLSearchParams): UnitComparisonContextQuery {
   const offset = parseOptionalNonNegativeInteger(params.get("offset"), "offset");
   const limit = parseOptionalPositiveInteger(params.get("limit"), "limit");
+  const contextOffset = parseOptionalNonNegativeInteger(
+    params.get("contextOffset"),
+    "contextOffset",
+  );
+  const contextLimit = parseOptionalPositiveInteger(params.get("contextLimit"), "contextLimit");
   const kinds = parseCsv(params.get("kind"));
   if (kinds.some((kind) => kind !== "delete" && kind !== "insert" && kind !== "update")) {
     throw new Error("kind must contain only delete, insert, or update");
   }
   const entityTypes = parseCsv(params.get("entityType"));
+  if (entityTypes.some((entityType) => !isUnitComparisonEntityType(entityType))) {
+    throw new Error("entityType contains an unsupported comparison entity code");
+  }
   const detail = params.get("detail");
   if (detail !== null && detail !== "summary" && detail !== "changes" && detail !== "full") {
     throw new Error("detail must be summary, changes, or full");
@@ -66,8 +82,12 @@ function parseComparisonContextQuery(params: URLSearchParams): UnitComparisonCon
   return {
     ...(offset === undefined ? {} : { offset }),
     ...(limit === undefined ? {} : { limit }),
+    ...(contextOffset === undefined ? {} : { contextOffset }),
+    ...(contextLimit === undefined ? {} : { contextLimit }),
     ...(kinds.length === 0 ? {} : { kinds: kinds as readonly UnitComparisonContextDiffKind[] }),
-    ...(entityTypes.length === 0 ? {} : { entityTypes }),
+    ...(entityTypes.length === 0
+      ? {}
+      : { entityTypes: entityTypes.filter(isUnitComparisonEntityType) }),
     ...(parentStableId === undefined || parentStableId === "" ? {} : { parentStableId }),
     ...(search === undefined || search === "" ? {} : { search }),
     ...(detail === null ? {} : { detail: detail as "summary" | "changes" | "full" }),

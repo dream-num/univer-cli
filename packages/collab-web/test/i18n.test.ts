@@ -84,6 +84,12 @@ describe("setLang / t", () => {
     const authority = shapeOf(EN_US_MESSAGES);
     for (const locale of LOCALE_MANIFEST) {
       const messages = await loadMessages(locale.tag);
+      for (const key of ["worksheet", "workbook", "scopeLabel", "displayModeLabel", "content", "formatting", "searchChanges"] as const) {
+        expect(messages.diff[key].trim(), `${locale.tag}:${key}`).not.toBe("");
+        if (locale.tag !== "en-US") expect(messages.diff[key], `${locale.tag}:${key}`).not.toBe(EN_US_MESSAGES.diff[key]);
+      }
+      expect(messages.diff.showFormulas, `${locale.tag}:formula display`).toBeTruthy();
+      if (locale.tag !== "en-US") expect(messages.diff.showFormulas).not.toBe("Show formulas");
       expect(shapeOf(messages), locale.tag).toEqual(authority);
       expect(messages.topbar.segDiff, `${locale.tag} compare label`).toBe(messages.diff.compare);
       for (const category of STRUCTURAL_ENTITY_CATEGORIES) {
@@ -107,6 +113,9 @@ describe("setLang / t", () => {
         messages.diff.entity("paragraph")
       );
       expect(messages.diff.moved, `${locale.tag}:moved`).not.toBe("");
+      for (const key of ["formulaName", "rowCount", "columnCount", "h", "w", "hd", "ia", "bg", "rgb", "cl", "fs", "bl", "it", "rangeInfo", "startRow", "endRow", "startColumn", "endColumn", "fieldsConfig"]) {
+        expect(messages.diff.changePath([key]), `${locale.tag}:${key}`).not.toBe(key);
+      }
       expect(normalizeLang(locale.tag.replace("-", "_"))).toBe(locale.tag);
     }
   });
@@ -160,6 +169,27 @@ describe("setLang / t", () => {
 
     expect(label).toBe("引用 · 发布前需要完成安全审查");
     expect(label).not.toContain("opaque-quote-id");
+    await setLang("en-US");
+  });
+
+  it("localizes a transition reference instead of displaying its target ID", async () => {
+    await setLang("zh-CN");
+    const item = {
+      id: "slide-transition-ref:update:slide-1",
+      stableId: "slide-1",
+      category: "slide-transition-ref",
+      entityType: "slide-transition-ref",
+      path: ["slide-transition-ref", "slide-1"],
+      label: "transition-private-id",
+      kind: "update" as const,
+      moved: false,
+      changes: [],
+      position: { left: 0, right: 0 },
+      values: { left: "transition-old-id", right: "transition-private-id" }
+    };
+    expect(structuralDiffItemLabel(item)).toBe("第 1 个幻灯片转场");
+    expect(structuralDiffItemLabel(item, "Launch overview")).toBe("Launch overview");
+    expect(item.values.right).toBe("transition-private-id");
     await setLang("en-US");
   });
 });

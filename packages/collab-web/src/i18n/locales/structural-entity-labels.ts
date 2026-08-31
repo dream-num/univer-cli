@@ -1,3 +1,5 @@
+import { comparisonTerm } from "./comparison-labels.js";
+
 export const STRUCTURAL_ENTITY_CATEGORIES = [
   "paragraph",
   "text-style",
@@ -148,6 +150,13 @@ export function localizedStructuralEntity(
   }
 ): string {
   const entity = category.split(":")[0] ?? "";
+  const specific = {
+    "doc-code": "code", "doc-quote": "quote", "doc-callout": "callout",
+    "column-group": "columns", header: "header", footer: "footer", "doc-hyperlink": "link",
+    "document-setting": "settings", "custom-decoration": "property",
+    "slide-layout": "layout", "slide-master": "layout",
+  } as const;
+  if (entity in specific) return comparisonTerm(locale, specific[entity as keyof typeof specific]);
   if (entity === "text-style" || entity === "document-style") return shared.styles;
   if (entity === "cell") return shared.cell;
   if (entity.includes("chart-data")) return `${shared.chart} · ${shared.content}`;

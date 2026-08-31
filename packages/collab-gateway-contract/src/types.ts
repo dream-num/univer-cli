@@ -1,6 +1,8 @@
 // API 契约类型(net-new 控制面)。Pro 兼容面(snapshot/comb)的 req/res 复用 @univerjs/protocol,
 // 不在此定义;modify 的 mutations 在契约里保持不透明(unknown[]),由 server/cli 用真实类型构造。
 
+import { UniverInstanceType } from "@univerjs/core";
+
 /** Gateway-owning business failures carried alongside the numeric SDK error code. */
 export enum GatewaySemanticErrorCode {
   OptimizeHistoryActiveWorktrees = "OPTIMIZE_HISTORY_ACTIVE_WORKTREES",
@@ -16,18 +18,19 @@ export interface ErrorEnvelope {
   };
 }
 
-// unit 类型号 = @univerjs/core `UniverInstanceType`(= @univerjs/protocol `UniverType`)的数字值。
-// 作为本地字面量保持共享契约零运行时依赖;这些是冻结的 wire 值。注意 4 = PROJECT(跳过)。
-export const UNIT_TYPE_DOC = 1;
-export const UNIT_TYPE_SHEET = 2;
-export const UNIT_TYPE_SLIDE = 3;
-/** base(多维表)= 5。注意 4 = PROJECT(跳过)。 */
-export const UNIT_TYPE_BASE = 5;
-/** board（无限画板）= 6。 */
-export const UNIT_TYPE_BOARD = 6;
+export const UNIT_TYPE_DOC = UniverInstanceType.UNIVER_DOC;
+export const UNIT_TYPE_SHEET = UniverInstanceType.UNIVER_SHEET;
+export const UNIT_TYPE_SLIDE = UniverInstanceType.UNIVER_SLIDE;
+export const UNIT_TYPE_BASE = UniverInstanceType.UNIVER_BASE;
+export const UNIT_TYPE_BOARD = UniverInstanceType.UNIVER_BOARD;
 
-/** 当前网关支持的 unit 类型号(doc / sheet / slide / base / board)。 */
-export type UnitType = 1 | 2 | 3 | 5 | 6;
+/** 当前网关支持的 Univer Unit 类型。 */
+export type UnitType =
+  | UniverInstanceType.UNIVER_DOC
+  | UniverInstanceType.UNIVER_SHEET
+  | UniverInstanceType.UNIVER_SLIDE
+  | UniverInstanceType.UNIVER_BASE
+  | UniverInstanceType.UNIVER_BOARD;
 
 /** 当前支持的类型集合(运行时校验用)。 */
 export const SUPPORTED_UNIT_TYPES: readonly UnitType[] = [
@@ -39,7 +42,7 @@ export const SUPPORTED_UNIT_TYPES: readonly UnitType[] = [
 ];
 
 /** 是否为当前网关支持的 unit 类型。 */
-export function isSupportedUnitType(type: number): type is UnitType {
+export function isSupportedUnitType(type: UniverInstanceType): type is UnitType {
   return (
     type === UNIT_TYPE_DOC ||
     type === UNIT_TYPE_SHEET ||
@@ -311,9 +314,10 @@ export type UnitComparisonContextDiffKind = "delete" | "insert" | "update";
 /**
  * Controls how much changed content is returned for every comparison item.
  *
- * - `summary` keeps semantic property paths but removes before/after values and inline segments.
+ * - `summary` keeps entity identities and locations but removes leaf changes and full values.
  * - `changes` returns normalized leaf changes and inline text/formula segments without the
- *   duplicate `item.values` projections. Whole-entity insert/delete changes use an empty path.
+ *   duplicate `item.values` projections. Object insertions/deletions are expanded into readable
+ *   leaf paths; scalar or empty values may use an empty path.
  * - `full` additionally returns each product's original projected entity in `item.values`.
  */
 export type UnitComparisonContextDetailLevel = "summary" | "changes" | "full";
@@ -347,6 +351,8 @@ export interface UnitComparisonContextSegment {
  */
 export interface UnitComparisonContextChange {
   readonly path: readonly string[];
+  /** Original SDK entity-value path when it differs from the human-facing semantic path. */
+  readonly sourcePath?: readonly string[];
   readonly kind: UnitComparisonContextDiffKind;
   readonly valueType: UnitComparisonContextValueType;
   readonly before?: unknown;
@@ -359,9 +365,13 @@ export interface UnitComparisonContextChange {
 }
 
 export interface UnitComparisonContextQuery {
+  /** Independent offset into SDK-owned product context, such as Doc alignment rows. */
+  readonly contextOffset?: number;
+  /** Product context page size, capped at 1000 independently of changed items. */
+  readonly contextLimit?: number;
   /** Zero-based offset inside the filtered, deterministic item order. */
   readonly offset?: number;
-  /** Page size, clamped by the server to at most 500. */
+  /** Page size, clamped by the semantic comparison service to at most 1000. */
   readonly limit?: number;
   /** Keep only the requested symmetric change kinds. */
   readonly kinds?: readonly UnitComparisonContextDiffKind[];
@@ -433,6 +443,12 @@ export interface UnitComparisonContextItem {
   };
 }
 
+export interface UnitComparisonAxisAlignment {
+  readonly leftStart: number | null;
+  readonly rightStart: number | null;
+  readonly count: number;
+}
+
 export type UnitComparisonProductContext =
   | {
       readonly kind: "sheet";
@@ -441,13 +457,17 @@ export type UnitComparisonProductContext =
         readonly name: string;
         readonly status: UnitComparisonContextDiffKind | "unchanged";
         readonly changeCount: number;
+        /** SDK-owned native index runs; never recomputed from mutations by the client. */
+        readonly rows?: readonly UnitComparisonAxisAlignment[];
+        readonly columns?: readonly UnitComparisonAxisAlignment[];
       }[];
     }
   | {
       readonly kind: "doc";
       readonly paragraphAlignment: {
         readonly total: number;
-        /** Alignment rows corresponding to paragraph items in the current page. */
+        readonly page: UnitComparisonContextPage;
+        /** SDK alignment rows, paged independently from changed items. */
         readonly rows: readonly {
           readonly id: string;
           readonly stableId: string;
@@ -455,6 +475,9 @@ export type UnitComparisonProductContext =
           readonly moved: boolean;
           readonly leftIndex: number | null;
           readonly rightIndex: number | null;
+          readonly leftNativeStableId: string | null;
+          readonly rightNativeStableId: string | null;
+          readonly segmentPath?: readonly string[];
         }[];
       };
     }
@@ -480,8 +503,9 @@ export interface UnitComparisonContextPage {
 }
 
 /**
- * Versioned, UI-independent diff context. The same payload is suitable for CLI SDKs, agents, and
- * the Compare UI; paths and semantic locations are stable navigation anchors.
+ * Versioned, UI-independent Server API projection of Pro History semantic comparison. The same
+ * payload is suitable for CLI clients, agents, and the Compare UI; paths and semantic locations
+ * are stable navigation anchors.
  */
 export interface UnitComparisonContext {
   readonly schemaVersion: 1;

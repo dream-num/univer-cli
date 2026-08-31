@@ -1,10 +1,10 @@
 import { UNIT_TYPE_DOC, UNIT_TYPE_SLIDE } from "@univer/collab-gateway-contract";
 import { describe, expect, it } from "vitest";
-import { buildDocumentComparisonModel, buildUnitStructuralDiffModel } from "../src/index.js";
+import { compareSnapshots } from "./helpers/comparison-context.js";
 
 describe("agent-facing Unit structural diff model", () => {
   it("provides a versioned summary, stable path, positions, and both values", () => {
-    const model = buildUnitStructuralDiffModel({
+    const model = compareSnapshots({
       type: UNIT_TYPE_SLIDE,
       left: {
         slideOrder: ["page-1"],
@@ -37,7 +37,7 @@ describe("agent-facing Unit structural diff model", () => {
           entityType: "slide-element",
           parentStableId: "page-1",
           path: ["slide-element", "page-1", "shape-1"],
-          position: { left: 0, right: 0 },
+          locations: { left: expect.objectContaining({ position: 0 }), right: expect.objectContaining({ position: 0 }) },
           stableId: "shape-1",
           values: {
             left: { id: "shape-1", x: 1 },
@@ -46,7 +46,7 @@ describe("agent-facing Unit structural diff model", () => {
         }),
       ]),
     );
-    expect(model.itemById["slide-element:page-1:update:shape-1"]).toBeDefined();
+    expect(new Set(model.items.map((item) => item.id)).size).toBe(model.items.length);
   });
 
   it("aligns Doc paragraphs with explicit placeholders and represents moves as delete plus insert", () => {
@@ -60,24 +60,30 @@ describe("agent-facing Unit structural diff model", () => {
         { paragraphId: "sentinel", startIndex: ids.join("\r").length + 1 },
       ],
     });
-    const model = buildDocumentComparisonModel({
+    const model = compareSnapshots({
+      type: UNIT_TYPE_DOC,
       left: { body: body(["alpha", "beta", "gamma"]) },
       right: { body: body(["beta", "alpha", "inserted", "gamma"]) },
     });
 
-    expect(model.rows.map((row) => [row.stableId, row.kind, row.moved])).toEqual([
-      ["alpha", "delete", true],
-      ["beta", "equal", false],
-      ["alpha", "insert", true],
-      ["inserted", "insert", false],
-      ["gamma", "equal", false],
-    ]);
-    expect(model.rows[0]).toMatchObject({ left: { stableId: "alpha" }, right: null });
-    expect(model.rows[2]).toMatchObject({ left: null, right: { stableId: "alpha" } });
+    if (model.productContext.kind !== "doc") throw new Error("Expected Doc context");
+    const rows = model.productContext.paragraphAlignment.rows;
+    expect(rows.filter((row) => row.leftIndex !== null).map((row) => row.stableId))
+      .toEqual(["alpha", "beta", "gamma"]);
+    expect(rows.filter((row) => row.rightIndex !== null).map((row) => row.stableId))
+      .toEqual(["beta", "alpha", "inserted", "gamma"]);
+    expect(rows).toEqual(expect.arrayContaining([
+      expect.objectContaining({ stableId: "inserted", kind: "insert", leftIndex: null }),
+    ]));
+    const movedGhost = rows.find((row) => row.moved && row.leftIndex === null);
+    expect(movedGhost).toBeDefined();
+    expect(rows).toEqual(expect.arrayContaining([
+      expect.objectContaining({ stableId: movedGhost!.stableId, moved: true, rightIndex: null }),
+    ]));
   });
 
   it("exposes Doc table, block range, custom range, and drawing changes", () => {
-    const model = buildUnitStructuralDiffModel({
+    const model = compareSnapshots({
       type: UNIT_TYPE_DOC,
       left: {
         body: {
@@ -107,7 +113,7 @@ describe("agent-facing Unit structural diff model", () => {
       },
     });
 
-    expect(model.summary.byCategory).toMatchObject({
+    expect(model.summary.byEntityType).toMatchObject({
       "block-range": 1,
       "custom-range": 1,
       table: 1,
@@ -135,18 +141,18 @@ describe("agent-facing Unit structural diff model", () => {
         },
       ],
     });
-    const model = buildUnitStructuralDiffModel({
+    const model = compareSnapshots({
       type: UNIT_TYPE_DOC,
       left: snapshot("before", "javascript"),
       right: snapshot("after", "typescript"),
     });
 
-    expect(model.items.find((item) => item.category === "block-range")?.label).toBe(
+    expect(model.items.find((item) => item.entityType === "block-range")?.title).toBe(
       "Launch criteria",
     );
-    expect(model.items.find((item) => item.category === "column-group")?.label).toBe(
+    expect(model.items.find((item) => item.entityType === "column-group")?.title).toBe(
       "Launch criteria",
     );
-    expect(model.items.find((item) => item.category === "doc-code")?.label).toBe("typescript");
+    expect(model.items.find((item) => item.entityType === "doc-code")?.title).toBe("typescript");
   });
 });

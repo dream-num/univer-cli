@@ -78,11 +78,13 @@ import {
 } from "./preview-comparison-focus";
 import {
   decorateDocumentComparisonSide,
+  type DocumentComparisonInput,
   type ComparisonSide
 } from "./document-comparison-decoration";
 import { createNativeComparisonHighlightController } from "./native-comparison-highlights";
 import type { UnitStructuralDiffItem } from "@univer/unit-compare";
 import { EMPTY } from "rxjs";
+import { initializeDocumentViewPosition } from "./document-view-position";
 
 export type { PreviewFocusTarget } from "./preview-comparison-focus";
 
@@ -269,6 +271,9 @@ export async function createViewer(opts: ViewerOptions): Promise<ViewerHandle> {
     throw new Error(`Unsupported viewer unit type: ${String(opts.unitType)}`);
   }
 
+  const documentViewPosition = opts.unitType === UNIT_TYPE_DOC
+    ? initializeDocumentViewPosition(univer, opts.unitId)
+    : undefined;
   await materializeHostEmbedChildren(univer, opts.unitId);
   const disposeDebugEndpoint = exposeDebugEndpoint(univer, api);
 
@@ -298,6 +303,7 @@ export async function createViewer(opts: ViewerOptions): Promise<ViewerHandle> {
       api.setLocale(locale);
     },
     dispose: () => {
+      documentViewPosition?.dispose();
       formulaResultAppliedSubscription.unsubscribe();
       sheetResourceRefDataProvider.dispose();
       disposeDebugEndpoint();
@@ -332,6 +338,7 @@ export interface PreviewViewerOptions {
     readonly side: ComparisonSide;
     readonly peerData: unknown;
     readonly items: readonly UnitStructuralDiffItem[];
+    readonly alignment: DocumentComparisonInput["alignment"];
   };
   /** Slide page selected by the comparison shell before the read-only viewer mounts. */
   initialSlideId?: string;
@@ -380,7 +387,8 @@ export async function createPreviewViewer(opts: PreviewViewerOptions): Promise<P
         : decorateDocumentComparisonSide(
             source,
             opts.comparison.peerData as IDocumentData,
-            opts.comparison.side
+            opts.comparison.side,
+            opts.comparison
           );
     unitId = data.id ?? "";
     docPageWidth = data.documentStyle.pageSize?.width;

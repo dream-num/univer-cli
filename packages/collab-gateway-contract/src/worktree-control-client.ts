@@ -174,6 +174,8 @@ export class WorktreeControlClient {
     const params = new URLSearchParams();
     if (query.offset !== undefined) params.set("offset", String(query.offset));
     if (query.limit !== undefined) params.set("limit", String(query.limit));
+    if (query.contextOffset !== undefined) params.set("contextOffset", String(query.contextOffset));
+    if (query.contextLimit !== undefined) params.set("contextLimit", String(query.contextLimit));
     if (query.kinds !== undefined && query.kinds.length > 0) {
       params.set("kind", query.kinds.join(","));
     }

@@ -49,7 +49,7 @@ describe("collab-web worktree actions", () => {
     expect(discard).toHaveBeenCalledOnce();
   });
 
-  it("centers the view and diff switch in the worktree topbar", () => {
+  it("gives view and compare a full-width narrow row and a compact wide-screen slot", () => {
     const { app } = createApp("draft");
     render(app);
 
@@ -58,10 +58,11 @@ describe("collab-web worktree actions", () => {
       (button) => button.textContent === "Compare"
     );
     expect(switcher).not.toBeNull();
-    expect(switcher?.classList.contains("left-1/2")).toBe(true);
-    expect(switcher?.classList.contains("-translate-x-1/2")).toBe(true);
-    expect(switcher?.firstElementChild?.classList.contains("h-8")).toBe(true);
-    expect(compareButton?.classList.contains("h-7")).toBe(true);
+    expect(switcher?.classList.contains("w-full")).toBe(true);
+    expect(switcher?.classList.contains("@min-[1100px]/workbench:w-auto")).toBe(true);
+    expect(switcher?.firstElementChild?.classList.contains("h-12")).toBe(true);
+    expect(compareButton?.classList.contains("h-11")).toBe(true);
+    expect(compareButton?.classList.contains("@min-[1100px]/workbench:h-7")).toBe(true);
     expect(compareButton?.classList.contains("px-5")).toBe(true);
     expect(document.querySelector(".topbar select")).toBeNull();
   });

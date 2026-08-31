@@ -20,12 +20,12 @@ const { worktreeId } = await control.createWorktree({ agentId: "a1" });
 await control.ready(worktreeId);
 ```
 
-Pinned comparisons expose the same normalized context to SDK, Agent, and Viewer consumers:
+Pinned comparisons expose the same normalized Server API context to CLI, Agent, and Viewer consumers:
 
 ```ts
 const comparison = await control.createUnitComparison(worktreeId);
 const page = await control.getUnitComparisonContext(worktreeId, comparison.comparisonId, unitId, {
-  entityTypes: ["cell", "formula"],
+  entityTypes: ["cell"], // Formula changes are leaf changes of a cell, not a separate entity.
   parentStableId: sheetId,
   limit: 100,
   detail: "changes",
@@ -46,19 +46,23 @@ for (const item of page.context.items) {
 - `item` 是可定位的 changed entity，包含 `stableId`、`parentStableId`、Unit-root `path`、
   `kind`、左右 `locations` 与 `moved`；
 - `item.changes` 是 entity 内的 leaf change，包含相对 `path`、`valueType`、`before`、`after`，
-  文本和公式还可以包含左右 `segments`；
+  文本和公式还可以包含左右 `segments`。语义 `path` 与产品原始路径不同时，`sourcePath` 保留精确位置，
+  例如嵌套表格的行/单元格索引；
 - `summary`、`coverage` 和 `diagnostics` 让 Agent 区分“没有变化”“当前版本不覆盖”和“已降级”；
-- `productContext` 只补充产品特有的导航数据，例如 Doc paragraph alignment 与 Sheet 列表。
+- `productContext` 补充 SDK 计算的导航与对齐数据：Doc paragraph alignment 包含两侧原生段落 ID，
+  Sheet 提供紧凑的行列索引区间。应用不根据 snapshot 或 mutation 重算这些关系。
 
 `detail` 控制 payload，而不改变 item identity 或分页顺序：
 
 | detail    | 返回内容                                                                 | 推荐用途                      |
 | --------- | ------------------------------------------------------------------------ | ----------------------------- |
-| `summary` | change path/kind/valueType；不返回值、segment 与 raw entity              | 发现、筛选和规划              |
+| `summary` | entity identity、kind、location；不返回 leaf change 或 raw entity        | 发现、筛选和规划              |
 | `changes` | 再返回 leaf before/after 与文本/公式 segment；不返回重复的 `item.values` | Agent 理解、解释与 Compare UI |
 | `full`    | 再返回 `item.values.left/right` 原始产品 projection                      | 深度诊断与兼容旧 consumer     |
 
 `includeValues=false|true` 仍作为 `summary|full` 的兼容别名；新 consumer 应显式使用 `detail`。
+`offset/limit` 只控制变更项；`contextOffset/contextLimit` 独立控制 Doc 对齐行（每页最多 1000）。
+即使变更项已读完，渲染完整 Doc 仍需读取 `paragraphAlignment.page.hasMore` 指向的后续对齐页。
 颜色只是上述对称语义的 UI 表达：insert 为绿色、delete 为红色、update/move 为蓝色。交换左右侧时，
 insert/delete 互换、before/after 与 location 互换，update 保持 update。
 

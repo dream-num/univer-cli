@@ -42,6 +42,7 @@ export type {
   UnitComparisonContextSummary,
   UnitComparisonContextPage,
   UnitComparisonContext,
+  UnitComparisonAxisAlignment,
   UnitComparisonContextResponse,
   OptimizeHistoryActiveWorktreeDetails,
   OptimizeUniverfileHistory,

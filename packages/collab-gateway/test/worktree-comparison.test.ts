@@ -4,8 +4,9 @@ import {
   type IBaseSnapshot,
 } from "@univerjs/core";
 import type { IMutation } from "@univerjs/protocol";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { CollabService } from "../src/collab-service.js";
+import { decodeComparisonUnitData } from "../src/comparison-unit-data.js";
 import { changeWorktree } from "./change-worktree.js";
 
 function setCell(unitId: string, row: number, value: string): IMutation[] {
@@ -22,6 +23,74 @@ function setCell(unitId: string, row: number, value: string): IMutation[] {
 }
 
 describe("pinned Worktree Unit comparisons", () => {
+  it("retries a pinned comparison after a transient storage read failure", async () => {
+    const service = new CollabService();
+    try {
+      const unit = await service.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "Retry" });
+      const branch = service.createWorktree("retry");
+      const session = service.createUnitComparison(branch.worktreeId);
+      const storageRead = vi.spyOn(service.runtime.trunkAdapter, "getSnapshot");
+      storageRead.mockRejectedValueOnce(new Error("Transient snapshot storage failure"));
+      const args = [branch.worktreeId, session.comparisonId, unit.unitId] as const;
+      await expect(service.getUnitComparisonContext(...args)).rejects.toThrow("Database Adapter failed");
+      storageRead.mockRestore();
+      expect((await service.getUnitComparisonContext(...args)).items).toEqual([]);
+      expect((await service.getUnitComparison(...args)).comparisonId).toBe(session.comparisonId);
+    } finally {
+      vi.restoreAllMocks();
+      await service.dispose();
+    }
+  });
+
+  it("expires materialized and pending contexts together when the session window advances", async () => {
+    const service = new CollabService();
+    try {
+      const unit = await service.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "Eviction" });
+      const branch = service.createWorktree("eviction");
+      const first = service.createUnitComparison(branch.worktreeId);
+      await service.getUnitComparison(branch.worktreeId, first.comparisonId, unit.unitId);
+      const pending = service.getUnitComparisonContext(branch.worktreeId, first.comparisonId, unit.unitId);
+      const expired = expect(pending).rejects.toThrow(/expired|not found/u);
+      let last = first;
+      for (let index = 0; index < 65; index++) last = service.createUnitComparison(branch.worktreeId);
+      await expired;
+      await expect(service.getUnitComparison(branch.worktreeId, first.comparisonId, unit.unitId)).rejects.toThrow(/expired|not found/u);
+      await expect(service.getUnitComparisonContext(branch.worktreeId, first.comparisonId, unit.unitId)).rejects.toThrow(/expired|not found/u);
+      expect((await service.getUnitComparisonContext(branch.worktreeId, last.comparisonId, unit.unitId)).items).toEqual([]);
+      await service.dispose();
+      await expect(service.getUnitComparisonContext(branch.worktreeId, last.comparisonId, unit.unitId)).rejects.toThrow(/not found/u);
+    } finally {
+      await service.dispose();
+    }
+  });
+
+  it("shares concurrent materialization without leaking consumed Sheet blocks to later readers", async () => {
+    const service = new CollabService();
+    try {
+      const sheet = await service.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "Shared" });
+      const branch = service.createWorktree("shared");
+      await changeWorktree(service, branch.worktreeId, "edit", {
+        modify: { [sheet.unitId]: setCell(sheet.unitId, 0, "Pinned value") },
+      });
+      const session = service.createUnitComparison(branch.worktreeId);
+      const args = [branch.worktreeId, session.comparisonId, sheet.unitId] as const;
+      const [first, second, context] = await Promise.all([
+        service.getUnitComparison(...args), service.getUnitComparison(...args), service.getUnitComparisonContext(...args),
+      ]);
+      expect(first).toEqual(second);
+      expect(first.right.snapshot).not.toBe(second.right.snapshot);
+      const canonical = structuredClone(first);
+      const decoded = await decodeComparisonUnitData(UniverInstanceType.UNIVER_SHEET, first.right.snapshot, first.right.sheetBlocks);
+      expect(first).toEqual(canonical);
+      const again = await service.getUnitComparison(...args);
+      expect(again).toEqual(canonical);
+      expect(await decodeComparisonUnitData(UniverInstanceType.UNIVER_SHEET, again.right.snapshot, again.right.sheetBlocks)).toEqual(decoded);
+      expect(context.items).toEqual((await service.getUnitComparisonContext(...args)).items);
+    } finally {
+      await service.dispose();
+    }
+  });
+
   it("materializes both branch heads and keeps them pinned after either side advances", async () => {
     const service = new CollabService();
     try {

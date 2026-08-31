@@ -1,11 +1,14 @@
 // @vitest-environment jsdom
 import type {
   CreateUnitComparisonResponse,
+  UnitComparisonContextResponse,
   UnitComparisonRefRequest,
   UnitComparisonResponse,
 } from "@univer/collab-gateway-contract";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/ui/app";
+import { attachLinkedWheelNavigation } from "../src/ui/app-view";
+import { UniverInstanceType } from "@univerjs/core";
 
 vi.mock("../src/core/viewer", () => ({
   createPreviewViewer: vi.fn(),
@@ -16,6 +19,7 @@ vi.mock("../src/core/viewer", () => ({
 interface ComparisonControl {
   createUnitComparison: ReturnType<typeof vi.fn>;
   getUnitComparison: ReturnType<typeof vi.fn>;
+  getUnitComparisonContext: ReturnType<typeof vi.fn>;
 }
 
 interface AppInternals {
@@ -35,6 +39,60 @@ describe("comparison request races", () => {
   afterEach(() => {
     for (const app of apps.splice(0)) app.dispose();
     document.body.innerHTML = "";
+  });
+
+  it("relays wheel gestures inside the peer viewport without echoing, and detaches on disposal", () => {
+    const left = document.createElement("div");
+    const right = document.createElement("div");
+    const canvas = document.createElement("canvas");
+    right.append(canvas);
+    vi.spyOn(canvas, "getBoundingClientRect").mockReturnValue(new DOMRect(500, 600, 300, 200));
+    const leftEvents = vi.fn();
+    const rightEvents = vi.fn();
+    left.addEventListener("wheel", leftEvents);
+    right.addEventListener("wheel", rightEvents);
+    const dispose = attachLinkedWheelNavigation(left, right);
+    left.dispatchEvent(new WheelEvent("wheel", { deltaY: 120, ctrlKey: true, bubbles: true }));
+    expect(leftEvents).toHaveBeenCalledTimes(1);
+    expect(rightEvents).toHaveBeenCalledTimes(1);
+    expect(rightEvents.mock.calls[0]?.[0]).toMatchObject({ deltaY: 120, ctrlKey: true, clientX: 650, clientY: 700 });
+    dispose();
+    left.dispatchEvent(new WheelEvent("wheel", { deltaY: 20 }));
+    expect(rightEvents).toHaveBeenCalledTimes(1);
+  });
+
+  it("finishes Doc alignment pagination even when there are no more changed items", async () => {
+    const { app, control } = createComparisonApp(apps, "wt-right");
+    const session = comparisonSession("cmp-current", "wt-right", { kind: "trunk" }, true);
+    control.createUnitComparison.mockResolvedValue({ ...session, units: [
+      { unitId: "unit-1", type: UniverInstanceType.UNIVER_DOC, name: "Doc", presence: "paired" },
+    ] });
+    const source = unitComparison("cmp-current");
+    control.getUnitComparison.mockResolvedValue({ ...source, unit: { ...source.unit, type: UniverInstanceType.UNIVER_DOC } });
+    const context = unitComparisonContext().context!;
+    const row = (index: number) => ({
+      id: String(index), stableId: `p${index}`, kind: "equal" as const, moved: false,
+      leftIndex: index, rightIndex: index, leftNativeStableId: `p${index}`, rightNativeStableId: `p${index}`,
+    });
+    for (const offset of [0, 1000]) {
+      const rows = Array.from({ length: offset === 0 ? 1000 : 3 }, (_, index) => row(offset + index));
+      control.getUnitComparisonContext.mockResolvedValueOnce({
+        error: { code: 1, message: "" },
+        context: { ...context, productContext: {
+          kind: "doc", paragraphAlignment: {
+            total: 1003, rows, page: { offset, limit: 1000, matched: 1003, hasMore: offset === 0 },
+          },
+        } },
+      });
+    }
+    await app.refreshUnitComparison();
+    expect(control.getUnitComparisonContext).toHaveBeenCalledTimes(2);
+    expect(control.getUnitComparisonContext.mock.calls[1]?.[3]).toMatchObject({ offset: 0, contextOffset: 1000 });
+    const product = app.getSnapshot().comparisonData?.context.productContext;
+    expect(product?.kind).toBe("doc");
+    if (product?.kind !== "doc") throw new Error("Expected Doc context");
+    expect(product.paragraphAlignment.rows).toHaveLength(1003);
+    expect(product.paragraphAlignment.page.hasMore).toBe(false);
   });
 
   it("keeps the newest source session busy when an older create request succeeds", async () => {
@@ -191,12 +249,33 @@ function createComparisonApp(
   const control: ComparisonControl = {
     createUnitComparison: vi.fn(),
     getUnitComparison: vi.fn(),
+    getUnitComparisonContext: vi.fn().mockResolvedValue(unitComparisonContext()),
   };
   const internals = app as unknown as AppInternals;
   internals.control = control;
   internals.view = { kind: "worktree", worktreeId };
   internals.comparisonMode = true;
   return { app, control, internals };
+}
+
+function unitComparisonContext(): UnitComparisonContextResponse {
+  return {
+    error: { code: 1, message: "" },
+    context: {
+      schemaVersion: 1,
+      comparisonId: "cmp-current",
+      unit: { unitId: "unit-1", type: 2, name: "Sheet", presence: "paired" },
+      fidelity: "history",
+      stale: false,
+      detail: "full",
+      summary: { total: 0, insert: 0, delete: 0, update: 0, moved: 0, byEntityType: {} },
+      coverage: { supportedEntityTypes: [] },
+      page: { offset: 0, limit: 1000, matched: 0, hasMore: false },
+      items: [],
+      diagnostics: { readiness: "ready", unsupportedMutationIds: [], notes: [] },
+      productContext: { kind: "sheet", sheets: [] },
+    },
+  };
 }
 
 function comparisonSession(

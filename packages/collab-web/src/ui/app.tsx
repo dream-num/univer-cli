@@ -6,16 +6,13 @@ import {
   type MergePreviewUnitResponse,
   type CreateUnitComparisonResponse,
   type UnitComparisonRefRequest,
+  type UnitComparisonContext,
   type UnitComparisonResponse,
   type Worktree,
   type WorktreeLifecycleEvent,
   type UnitSummary,
 } from "@univer/collab-gateway-contract";
 import type { LocaleType } from "@univerjs/core";
-import {
-  buildSymmetricWorkbookCompareChangesets,
-  type ProtocolWorkbookCompareChangeset,
-} from "@univer/workbook-compare/branch-reconcile";
 import { flushSync } from "react-dom";
 import { createRoot, type Root } from "react-dom/client";
 import {
@@ -77,9 +74,9 @@ type ViewerJob =
 
 export interface ComparisonViewData {
   readonly response: UnitComparisonResponse;
+  readonly context: UnitComparisonContext;
   readonly leftUnitData?: unknown;
   readonly rightUnitData?: unknown;
-  readonly orderedChangesetStream: ReturnType<typeof buildSymmetricWorkbookCompareChangesets>;
 }
 
 /** Immutable snapshot of everything the React shell renders; rebuilt on every state change. */
@@ -459,9 +456,19 @@ export class App {
 
   /** Publish the current state to React and mirror it into the address bar. */
   private emit(): void {
+    const remountViewer = this.snapshot.comparisonMode && !this.comparisonMode;
     this.snapshot = this.collectSnapshot();
-    for (const listener of this.listeners) {
-      listener();
+    const notify = (): void => {
+      for (const listener of this.listeners) {
+        listener();
+      }
+    };
+    if (remountViewer) {
+      // Compare unmounts the View host. Commit its replacement (and bindContent ref)
+      // before any caller creates a viewer, including sidebar/trunk navigation.
+      flushSync(notify);
+    } else {
+      notify();
     }
     this.syncUrl();
   }
@@ -990,12 +997,7 @@ export class App {
         unitId,
       );
       if (response.error.code !== 1) throw new Error(response.error.message || "Comparison failed");
-      const orderedChangesetStream = buildSymmetricWorkbookCompareChangesets({
-        fidelity: response.fidelity,
-        leftChangesets: response.leftChangesets as readonly ProtocolWorkbookCompareChangeset[],
-        rightChangesets: response.rightChangesets as readonly ProtocolWorkbookCompareChangeset[],
-      });
-      const [leftUnitData, rightUnitData] = await Promise.all([
+      const [leftUnitData, rightUnitData, context] = await Promise.all([
         response.left.snapshot === undefined
           ? Promise.resolve(undefined)
           : decodeComparisonUnitData(
@@ -1010,11 +1012,12 @@ export class App {
               response.right.snapshot,
               response.right.sheetBlocks ?? [],
             ),
+        this.loadAllUnitComparisonContext(worktreeId, session.comparisonId, unitId),
       ]);
       if (!this.isCurrentComparisonRequest(request)) return;
       this.comparisonData = {
         response,
-        orderedChangesetStream,
+        context,
         ...(leftUnitData === undefined ? {} : { leftUnitData }),
         ...(rightUnitData === undefined ? {} : { rightUnitData }),
       };
@@ -1026,6 +1029,67 @@ export class App {
     } finally {
       this.completeComparisonRequest(request);
     }
+  }
+
+  private async loadAllUnitComparisonContext(
+    worktreeId: string,
+    comparisonId: string,
+    unitId: string,
+  ): Promise<UnitComparisonContext> {
+    const items: UnitComparisonContext["items"][number][] = [];
+    let offset = 0;
+    let contextOffset = 0;
+    const alignmentRows: Extract<UnitComparisonContext["productContext"], { kind: "doc" }>["paragraphAlignment"]["rows"][number][] = [];
+    let context: UnitComparisonContext | undefined;
+
+    do {
+      const response = await this.control.getUnitComparisonContext(
+        worktreeId,
+        comparisonId,
+        unitId,
+        { detail: "full", limit: 1000, offset, contextOffset, contextLimit: 1000 },
+      );
+      if (response.error.code !== 1 || response.context === undefined) {
+        throw new Error(response.error.message || t().diff.comparisonFailed);
+      }
+      context ??= response.context;
+      items.push(...response.context.items);
+      offset += response.context.items.length;
+      const product = response.context.productContext;
+      const alignment = product.kind === "doc" ? product.paragraphAlignment : undefined;
+      if (alignment !== undefined) {
+        alignmentRows.push(...alignment.rows);
+        contextOffset += alignment.rows.length;
+      }
+      if (!response.context.page.hasMore && !alignment?.page.hasMore) break;
+      if (response.context.page.hasMore && response.context.items.length === 0) {
+        throw new Error(t().diff.incompletePage);
+      }
+      if (alignment?.page.hasMore && alignment.rows.length === 0) {
+        throw new Error(t().diff.incompletePage);
+      }
+    } while (true);
+
+    return {
+      ...context,
+      page: {
+        offset: 0,
+        limit: items.length,
+        matched: context.page.matched,
+        hasMore: false,
+      },
+      items,
+      ...(context.productContext.kind === "doc" ? {
+        productContext: {
+          ...context.productContext,
+          paragraphAlignment: {
+            total: alignmentRows.length,
+            rows: alignmentRows,
+            page: { offset: 0, limit: alignmentRows.length, matched: alignmentRows.length, hasMore: false },
+          },
+        },
+      } : {}),
+    };
   }
 
   private beginComparisonRequest(

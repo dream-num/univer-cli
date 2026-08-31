@@ -1,6 +1,7 @@
 import { messagesFromVocabulary, type MessageVocabulary } from "./from-vocabulary";
 
 const vocabulary = {
+  showFormulas: "Zobraziť vzorce",
   title: "Prehliadač spolupráce",
   file: "súbor",
   modification: "úprava",

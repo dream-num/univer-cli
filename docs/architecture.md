@@ -89,9 +89,14 @@ Gateway 为 trunk revision 组合 Collaboration SDK History Service 与 Endpoint
 
 Viewer 的 Unit comparison 在创建时固定左右 ref、Unit 集合和各自 head。Gateway 通过 Collaboration SDK
 把每侧物化为最终 snapshot；history 连续时同时返回从共同 Trunk revision 到两侧 head 的 changeset path，
-否则显式降级为 snapshot fidelity。比较只读且不生成 mutation。Sheet 使用双侧 changeset 做对称坐标投影；
-Doc、Slide、Base 和 Board 以稳定对象 ID 对齐最终状态。后续 head 或 Unit presence 变化只将 session 标为
+否则显式降级为 snapshot fidelity。比较只读且不生成 mutation。语义计算归属 Univer Pro 的现有 History
+模块，由其 Facade 和可复用 service 提供，不依赖 CLI SDK。Sheet 的双侧 changeset 坐标对齐、Doc 的段落
+与文字对齐，以及 Slide、Base、Board 的稳定 ID/属性差异均由 SDK 计算。后续 head 或 Unit presence 变化只将 session 标为
 stale，不会改变已固定的结果。
+
+Sheet 公式原文显示由应用通过已发布 SDK 的 `SheetInterceptorService` 与 `FormulaDataModel` 实现，
+适配器返回可释放的渲染覆盖。Viewer 同步两侧的开关状态，
+不改写 snapshot、mutation 或公式结果，也不为显示切换重建 Unit。此显示能力不属于 History 的语义差异计算。
 
 同一 session 通过 `WorktreeControlClient.getUnitComparisonContext()` 和对应的 `/diff` route 暴露
 `schemaVersion: 1` 的 UI-independent context。Gateway 只在首次请求时准备 pinned diff，之后在同一固定结果上做
@@ -99,7 +104,9 @@ filter、search 与 paging。item 使用统一的 insert/delete/update 语义、
 `changes` 再以相对语义 path、value type、before/after 和可选文本/公式 segment 描述 leaf difference。
 `summary | changes | full` projection 只改变 payload 详情，不改变 item identity。Compare UI 的紧凑差异导航
 直接消费同一 changes 语义；coverage 与 diagnostics 明确声明当前 product family 支持范围和降级原因。这个
-contract 是 CLI SDK / Agent 入口的复用边界，不能从 Viewer DOM 反向提取差异。
+contract 是 CLI SDK / Agent 入口的复用边界，不能从 Viewer DOM 反向提取差异。Doc 对齐行和普通 item
+分别分页；Sheet 用紧凑行列区间返回映射，避免按整张表的尺寸展开。物化状态在 session 内共享，向消费者
+返回副本，防止解码或展示阶段影响后续分页。应用只映射 i18n、树形菜单、原生画布着色与联动，不重复计算差异。
 
 headless collaboration runtime 只拥有一个可写 Host Unit。Embed 遇到 `self` ResourceRef 时，application-owned
 Local provider 通过当前 `.univer` 与 Worktree 已限定的 Snapshot endpoint 按需物化 child Unit，并透传 Embed
@@ -124,9 +131,9 @@ packages/collab-web/                # Collaboration browser application
 packages/importrange-formula/       # cross-unit formula plugin
 packages/render-preset/             # shared browser Univer composition
 packages/render-runtime-client/     # CLI SDK Render Page bundle entry
-packages/unit-compare/              # SDK/Agent-ready stable-ID structural diff model
+packages/unit-compare/              # 私有 Compare 展示类型与页签投影；不计算语义差异
 packages/univerfile-sqlite/         # .univer persistence 与安全升级
-packages/workbook-compare/          # Sheet 双侧 mutation/snapshot diff 与 agent report
+packages/workbook-compare/          # Sheet 只读展示和坐标联动；仅消费 Pro History 的差异与对齐结果，无算法回退
 ```
 
 Skill Markdown 是 application asset，保持在 `apps/cli/src/skills`；build 将其复制到 `dist/skills`，runtime 不读取

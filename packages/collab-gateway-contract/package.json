@@ -16,5 +16,8 @@
     "example:agent-diff": "node examples/agent-diff-context.mjs",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.test.json --noEmit --pretty false"
+  },
+  "dependencies": {
+    "@univerjs/core": "1.0.0-insiders.20260831-796c4f4"
   }
 }

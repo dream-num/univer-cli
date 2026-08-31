@@ -1,6 +1,7 @@
 import { messagesFromVocabulary, type MessageVocabulary } from "./from-vocabulary";
 
 const vocabulary = {
+  showFormulas: "数式を表示",
   title: "共同編集ビューアー",
   file: "ファイル",
   modification: "変更",

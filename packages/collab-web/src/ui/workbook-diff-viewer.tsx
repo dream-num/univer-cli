@@ -1,17 +1,16 @@
 import { useEffect, useMemo, useState, type ReactElement, type ReactNode } from "react";
 import type { IWorkbookData } from "@univerjs/core";
-import { BookOpen, ChevronRight, Table2 } from "lucide-react";
-import { buildWorkbookItemSemanticChanges } from "@univer/unit-compare";
+import type { UnitComparisonContext } from "@univer/collab-gateway-contract";
+import { BookOpen, ChevronRight, FunctionSquare, Table2 } from "lucide-react";
+import { isWorkbookCompareDetailVisible, workbookComparisonFromContext } from "../core/workbook-comparison-context.js";
 import {
-  buildWorkbookCompareModel,
-  buildWorkbookCompareFxDiffPanes,
   buildWorkbookCompareSidebarTree,
   collectWorkbookCompareSidebarItemIds,
   createWorkbookComparePaneFxStates,
   mapScrollTargetAcrossPanes,
   mapSelectionTargetAcrossPanes,
+  WorkbookCompareTitleCode,
   type WorkbookCompareCategory,
-  type WorkbookCompareChangeset,
   type WorkbookCompareFxDiffPane,
   type WorkbookCompareItem,
   type WorkbookCompareMode,
@@ -22,13 +21,14 @@ import {
   type WorkbookCompareRangeTarget,
   type WorkbookCompareScrollTarget,
   type WorkbookCompareSheetGapConfig,
+  type WorkbookCompareRangeHighlight,
   type WorkbookCompareSidebarTreeLabels,
   type WorkbookCompareSidebarTreeNode
 } from "@univer/workbook-compare";
 import { cn } from "../lib/utils.js";
 import { t } from "../i18n/index.js";
 import { ComparisonPageTabs } from "./comparison-page-tabs.js";
-import { ComparisonChangeNavigator } from "./comparison-change-navigator.js";
+import { formatComparisonValue } from "./comparison-value.js";
 import { WorkbookDiffFxStrip } from "./workbook-diff-fx-strip.js";
 import {
   ReadonlyUniverWorkbookView,
@@ -75,7 +75,7 @@ export function WorkbookDiffViewer(input: {
     readonly leftWorkbookData: IWorkbookData | null;
     readonly rightLabel: string;
     readonly rightWorkbookData: IWorkbookData | null;
-    readonly orderedChangesetStream: readonly unknown[];
+    readonly context: UnitComparisonContext;
     readonly degradedReason?: string;
   };
   readonly leftSourceControl: ReactNode;
@@ -85,6 +85,7 @@ export function WorkbookDiffViewer(input: {
   const sidebarTreeLabels = useMemo(() => createSidebarTreeLabels(), [messages]);
   const targetWorkbookData = input.compare.rightWorkbookData;
   const [displayMode, setDisplayMode] = useState<DisplayMode>("value");
+  const [showFormulaText, setShowFormulaText] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>("worksheet");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeSheetId, setActiveSheetId] = useState<string | null>(null);
@@ -96,17 +97,17 @@ export function WorkbookDiffViewer(input: {
   const [fxByPane, setFxByPane] = useState<WorkbookComparePaneFxStates>(EMPTY_PANE_FX_STATES);
   const diffModel = useMemo(
     () =>
-      targetWorkbookData === null
+      targetWorkbookData === null && input.compare.leftWorkbookData === null
         ? null
-        : buildWorkbookCompareModel({
-            baseSnapshot: input.compare.leftWorkbookData,
+        : workbookComparisonFromContext({
+            left: input.compare.leftWorkbookData,
             mode: displayMode,
-            orderedChangesetStream: input.compare.orderedChangesetStream.filter(isCompareChangeset),
-            targetSnapshot: targetWorkbookData
+            context: input.compare.context,
+            right: targetWorkbookData
           }),
     [displayMode, input.compare, targetWorkbookData]
   );
-  if (targetWorkbookData === null || diffModel === null) {
+  if (diffModel === null) {
     return (
       <section className="grid min-h-0 content-center gap-3 rounded-lg border border-border bg-card p-8 text-center">
         <p className="m-0 text-[11px] font-bold uppercase text-muted-foreground">{messages.workbookTitle}</p>
@@ -139,8 +140,8 @@ export function WorkbookDiffViewer(input: {
     [diffModel.items, displayMode, messages, searchQuery, selectedSheetId, sidebarTab]
   );
   const localizedItemById = useMemo(
-    () => Object.fromEntries(diffModel.items.map(localizeWorkbookCompareItem).map((item) => [item.id, item])),
-    [diffModel.items, messages]
+    () => Object.fromEntries(projectSidebarItemsForDisplayMode(diffModel.items, displayMode).map(localizeWorkbookCompareItem).map((item) => [item.id, item])),
+    [diffModel.items, displayMode, messages]
   );
   const sidebarTree = useMemo(
     () =>
@@ -162,20 +163,6 @@ export function WorkbookDiffViewer(input: {
     selectedItemId !== null && visibleItemIds.has(selectedItemId)
       ? (localizedItemById[selectedItemId] ?? null)
       : (localizedItemById[[...visibleItemIds][0] ?? ""] ?? null);
-  const visibleItems = [...visibleItemIds]
-    .map((itemId) => localizedItemById[itemId])
-    .filter((item): item is WorkbookCompareItem => item !== undefined);
-  const selectedIndex = selectedItem === null ? -1 : visibleItems.findIndex((item) => item.id === selectedItem.id);
-  const rawSelectedItem = selectedItem === null ? null : (diffModel.itemById[selectedItem.id] ?? null);
-  const navigatorItem =
-    selectedItem === null
-      ? null
-      : {
-          changes: rawSelectedItem === null ? [] : buildWorkbookItemSemanticChanges(rawSelectedItem),
-          entityLabel: t().diff.entity(selectedItem.category),
-          kind: selectedItem.kind,
-          label: selectedItem.title
-        };
   const changeCounts = diffModel.items.reduce(
     (counts, item) => ({ ...counts, [item.kind]: counts[item.kind] + 1 }),
     { delete: 0, insert: 0, update: 0 }
@@ -190,12 +177,8 @@ export function WorkbookDiffViewer(input: {
   );
   const fxDiffByPane = useMemo(
     () =>
-      buildWorkbookCompareFxDiffPanes({
-        base: fxByPane.base,
-        comparable: true,
-        current: fxByPane.current
-      }),
-    [fxByPane]
+      projectFxPanes(fxByPane, input.compare.context, selectedSheetId),
+    [fxByPane, input.compare.context, selectedSheetId]
   );
 
   useEffect(() => {
@@ -261,7 +244,7 @@ export function WorkbookDiffViewer(input: {
     role: WorkbookComparePaneRole,
     payload: ReadonlyWorkbookScrollPayload
   ): void => {
-    if (payload.sheetId !== selectedSheetId || displayMode !== "value") {
+    if (payload.sheetId !== selectedSheetId) {
       return;
     }
     const target = mapScrollTargetAcrossPanes({
@@ -279,7 +262,7 @@ export function WorkbookDiffViewer(input: {
   };
 
   return (
-    <section className="grid h-full min-h-0 grid-rows-[auto_auto_minmax(0,1fr)] overflow-hidden rounded-xl border border-border bg-card shadow-[0_12px_32px_rgb(15_23_42/0.08),0_1px_2px_rgb(15_23_42/0.06)]">
+    <section className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-xl border border-border bg-card shadow-[0_12px_32px_rgb(15_23_42/0.08),0_1px_2px_rgb(15_23_42/0.06)]">
       <header className="grid min-h-16 gap-2 border-b border-border bg-[linear-gradient(180deg,var(--color-card),color-mix(in_srgb,var(--color-muted)_38%,var(--color-card)))] px-4 py-2.5">
         <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
           <div className="flex min-w-0 items-start gap-3">
@@ -301,17 +284,6 @@ export function WorkbookDiffViewer(input: {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <CompactSegmentedControl
-              ariaLabel={messages.scopeLabel}
-              options={[
-                { label: messages.worksheet, value: "worksheet" },
-                { label: messages.workbook, value: "workbook" }
-              ]}
-              value={sidebarTab}
-              onChange={(value) => {
-                setSidebarTab(value as SidebarTab);
-              }}
-            />
-            <CompactSegmentedControl
               ariaLabel={messages.displayModeLabel}
               options={[
                 { label: messages.content, value: "value" },
@@ -324,30 +296,41 @@ export function WorkbookDiffViewer(input: {
                 setSelectionSync(null);
               }}
             />
+            <button
+              aria-pressed={showFormulaText}
+              className={cn(
+                "inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-[12px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                showFormulaText
+                  ? "border-primary/30 bg-primary/10 text-primary"
+                  : "border-border bg-card text-muted-foreground hover:bg-muted"
+              )}
+              type="button"
+              onClick={() => setShowFormulaText((previous) => !previous)}
+            >
+              <FunctionSquare aria-hidden="true" size={15} />
+              {messages.showFormulas}
+            </button>
           </div>
         </div>
-        {input.compare.degradedReason !== undefined || diffModel.message !== null ? (
+        {input.compare.degradedReason !== undefined || !diffModel.summary.hasChanges ? (
           <div className="rounded-md border border-warning/25 bg-warning-muted px-3 py-1.5 text-[12px] leading-tight text-warning">
-            {input.compare.degradedReason ?? diffModel.message}
+            {input.compare.degradedReason ?? messages.noItems}
           </div>
         ) : null}
       </header>
-      <ComparisonChangeNavigator
-        changeIndex={Math.max(0, selectedIndex)}
-        item={navigatorItem}
-        total={visibleItems.length}
-        onNext={() => {
-          const next = visibleItems[selectedIndex + 1];
-          if (next !== undefined) setSelectedItemId(next.id);
-        }}
-        onPrevious={() => {
-          const previous = visibleItems[selectedIndex - 1];
-          if (previous !== undefined) setSelectedItemId(previous.id);
-        }}
-      />
       <div className="grid min-h-0 grid-cols-[268px_minmax(0,1fr)_minmax(0,1fr)] gap-px overflow-hidden bg-border max-[1023px]:grid-cols-1 max-[1023px]:grid-rows-2">
         <aside className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] bg-[color-mix(in_srgb,var(--color-muted)_52%,var(--color-card))] max-[1023px]:hidden">
-          <label className="grid h-14 items-center border-b border-border px-3">
+          <header className="grid gap-2 border-b border-border px-3 py-2.5">
+            <CompactSegmentedControl
+              ariaLabel={messages.scopeLabel}
+              fullWidth
+              options={[
+                { label: messages.worksheet, value: "worksheet" },
+                { label: messages.workbook, value: "workbook" }
+              ]}
+              value={sidebarTab}
+              onChange={(value) => setSidebarTab(value as SidebarTab)}
+            />
             <input
               aria-label={messages.searchChanges}
               className="h-9 w-full rounded-lg border border-input bg-card px-3 text-[12px] text-foreground shadow-xs outline-none transition-[border-color,box-shadow] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20"
@@ -358,7 +341,7 @@ export function WorkbookDiffViewer(input: {
                 setSearchQuery(event.target.value);
               }}
             />
-          </label>
+          </header>
           <div className="min-h-0 overflow-auto px-3 py-3">
             {sidebarTree.length === 0 ? (
               <div className="grid content-center gap-2 rounded-lg border border-dashed border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">
@@ -392,9 +375,11 @@ export function WorkbookDiffViewer(input: {
           fx={fxByPane.base}
           fxDiff={fxDiffByPane.base}
           pane="base"
+          highlights={selectedSheetId === null ? [] : diffModel.compareInfo.worksheets[selectedSheetId]?.presentation.baseRangeHighlights ?? []}
           selectedRange={selectedItem?.selection?.base ?? selectedItem?.range ?? null}
           selectedItem={selectedItem}
           snapshot={diffModel.displayedSnapshots.base}
+          showFormulaText={showFormulaText}
           sheetOptions={changedSheetOptions}
           onPaneScrollChange={(payload) => {
             handlePaneScrollChange("base", payload);
@@ -419,9 +404,11 @@ export function WorkbookDiffViewer(input: {
           fx={fxByPane.current}
           fxDiff={fxDiffByPane.current}
           pane="target"
+          highlights={selectedSheetId === null ? [] : diffModel.compareInfo.worksheets[selectedSheetId]?.presentation.currentRangeHighlights ?? []}
           selectedRange={selectedItem?.selection?.current ?? selectedItem?.range ?? null}
           selectedItem={selectedItem}
           snapshot={diffModel.displayedSnapshots.current}
+          showFormulaText={showFormulaText}
           sheetOptions={changedSheetOptions}
           onPaneScrollChange={(payload) => {
             handlePaneScrollChange("current", payload);
@@ -437,6 +424,7 @@ export function WorkbookDiffViewer(input: {
 }
 
 function DiffPane(input: {
+  readonly highlights: readonly WorkbookCompareRangeHighlight[];
   readonly activeSheetId: string | null;
   readonly controlledScroll: ReadonlyWorkbookControlledScroll | null;
   readonly controlledSelection: ReadonlyWorkbookControlledSelection | null;
@@ -448,6 +436,7 @@ function DiffPane(input: {
   readonly selectedRange: WorkbookCompareItem["range"] | null;
   readonly selectedItem: WorkbookCompareItem | null;
   readonly snapshot: unknown;
+  readonly showFormulaText: boolean;
   readonly sourceControl: ReactNode | undefined;
   readonly sheetOptions: WorkbookCompareModel["sheetOptions"];
   readonly onPaneScrollChange: (payload: ReadonlyWorkbookScrollPayload) => void;
@@ -494,10 +483,12 @@ function DiffPane(input: {
             controlledScroll={input.controlledScroll}
             controlledSelection={input.controlledSelection}
             gapConfig={input.gapConfig}
+            highlights={input.highlights}
             onScrollChange={input.onPaneScrollChange}
             onSelectionChange={input.onPaneSelectionChange}
             selectedRange={input.selectedRange ?? null}
             showFooter={false}
+            showFormulaText={input.showFormulaText}
             snapshot={input.snapshot}
           />
         )}
@@ -515,7 +506,7 @@ function SheetTabStrip(input: {
   return (
     <ComparisonPageTabs
       activeId={input.activeSheetId}
-      ariaLabel={`${input.pane} changed sheets`}
+      ariaLabel={`${t().diff.side[input.pane === "base" ? "left" : "right"]} · ${t().diff.worksheet}`}
       options={input.sheetOptions.flatMap((worksheet) =>
         worksheet.status === "default"
           ? []
@@ -558,6 +549,7 @@ function DiffPaneRefLabel(input: {
 
 function CompactSegmentedControl<T extends string>(input: {
   readonly ariaLabel: string;
+  readonly fullWidth?: boolean;
   readonly onChange: (value: T) => void;
   readonly options: readonly { readonly label: string; readonly value: T }[];
   readonly value: T;
@@ -565,7 +557,7 @@ function CompactSegmentedControl<T extends string>(input: {
   return (
     <div
       aria-label={input.ariaLabel}
-      className="inline-grid rounded-md border border-border bg-muted p-0.5 shadow-xs"
+      className={cn("inline-grid rounded-md border border-border bg-muted p-0.5 shadow-xs", input.fullWidth && "w-full min-w-0")}
       role="tablist"
     >
       <div className="flex items-center gap-1">
@@ -575,6 +567,7 @@ function CompactSegmentedControl<T extends string>(input: {
             aria-selected={input.value === option.value}
             className={cn(
               "rounded-[7px] px-2.5 py-1.5 text-[12px] font-medium text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/25",
+              input.fullWidth && "min-w-0 flex-1 text-center",
               input.value === option.value && "bg-card text-foreground shadow-xs"
             )}
             role="tab"
@@ -650,7 +643,7 @@ function renderSidebarTreeNode(input: {
         {input.node.details.length > 0 ? (
           <span className="col-start-2 grid min-w-0 gap-0.5 text-[11px] text-muted-foreground">
             {input.node.details.slice(0, 4).map((detail, index) => (
-              <span className="truncate" key={`${input.node.id}:${detail.label}:${index}`}>
+              <span className="truncate" title={detail.semanticPath.join(".")} key={`${input.node.id}:${detail.label}:${index}`}>
                 {detail.label}: {formatDetailTransition(detail)}
               </span>
             ))}
@@ -783,9 +776,7 @@ function isDetailVisibleForDisplayMode(
   detail: WorkbookCompareItem["detailLines"][number],
   displayMode: DisplayMode
 ): boolean {
-  const normalizedLabel = detail.label.toLowerCase();
-  const isContentDetail = normalizedLabel === "formula" || normalizedLabel === "value";
-  return displayMode === "value" ? isContentDetail : !isContentDetail;
+  return isWorkbookCompareDetailVisible(detail.semanticPath, displayMode);
 }
 
 function resolveSelectedWorksheetId(
@@ -912,50 +903,51 @@ function formatDetailTransition(detail: WorkbookCompareItem["detailLines"][numbe
 }
 
 function localizeWorkbookCompareItem(item: WorkbookCompareItem): WorkbookCompareItem {
-  const tree = t().diff.sheetTree;
-  const detailLabels: Record<string, string> = {
-    Background: tree.terms.background,
-    Bold: tree.terms.bold,
-    Count: tree.terms.count,
-    "Font size": tree.terms.fontSize,
-    Formula: tree.terms.formula,
-    Italic: tree.terms.italic,
-    Name: tree.terms.name,
-    "Number format": tree.terms.numberFormat,
-    Position: tree.terms.position,
-    Start: tree.terms.start,
-    "Text color": tree.terms.textColor,
-    Value: tree.terms.value
-  };
-  const fixedTitles: Record<string, string> = {
-    "Columns moved": tree.titles.columnsMoved,
-    "Deleted columns": tree.titles.deletedColumns,
-    "Deleted rows": tree.titles.deletedRows,
-    "Inserted columns": tree.titles.insertedColumns,
-    "Inserted rows": tree.titles.insertedRows,
-    "Rows moved": tree.titles.rowsMoved,
-    "Sheet renamed": tree.titles.sheetRenamed,
-    "Workbook renamed": tree.titles.workbookRenamed
-  };
-  const rowChanged = /^Row (\d+) changed$/u.exec(item.title);
-  const columnChanged = /^Column (\d+) changed$/u.exec(item.title);
-  const sheetAdded = /^Sheet added: (.+)$/u.exec(item.title);
-  const sheetDeleted = /^Sheet deleted: (.+)$/u.exec(item.title);
-  const title =
-    fixedTitles[item.title] ??
-    (rowChanged === null ? null : tree.titles.rowChanged(Number(rowChanged[1]))) ??
-    (columnChanged === null ? null : tree.titles.columnChanged(Number(columnChanged[1]))) ??
-    (sheetAdded === null ? null : tree.titles.sheetAdded(sheetAdded[1] ?? "")) ??
-    (sheetDeleted === null ? null : tree.titles.sheetDeleted(sheetDeleted[1] ?? "")) ??
-    item.title;
+  const title = localizeWorkbookCompareTitle(item);
   return {
     ...item,
     title,
     detailLines: item.detailLines.map((detail) => ({
       ...detail,
-      label: detailLabels[detail.label] ?? detail.label
+      ...(detail.before === undefined ? {} : { before: detail.before === null ? null : formatComparisonValue(detail.before, ["value", "formula"].includes(detail.semanticPath[0] ?? "") ? "text" : "unknown", { entityType: item.category, path: detail.semanticPath }) }),
+      ...(detail.after === undefined ? {} : { after: detail.after === null ? null : formatComparisonValue(detail.after, ["value", "formula"].includes(detail.semanticPath[0] ?? "") ? "text" : "unknown", { entityType: item.category, path: detail.semanticPath }) }),
+      label: t().diff.changePath(detail.semanticPath)
     }))
   };
+}
+
+function localizeWorkbookCompareTitle(item: WorkbookCompareItem): string {
+  const title = t().diff.sheetTree.titles;
+  const index = Number(item.titleParameters?.index ?? 0);
+  const name = String(item.titleParameters?.name ?? item.sheetName ?? "");
+  switch (item.titleCode) {
+    case WorkbookCompareTitleCode.ColumnsMoved:
+      return title.columnsMoved;
+    case WorkbookCompareTitleCode.ColumnChanged:
+      return title.columnChanged(index);
+    case WorkbookCompareTitleCode.DeletedColumns:
+      return title.deletedColumns;
+    case WorkbookCompareTitleCode.DeletedRows:
+      return title.deletedRows;
+    case WorkbookCompareTitleCode.InsertedColumns:
+      return title.insertedColumns;
+    case WorkbookCompareTitleCode.InsertedRows:
+      return title.insertedRows;
+    case WorkbookCompareTitleCode.RowsMoved:
+      return title.rowsMoved;
+    case WorkbookCompareTitleCode.RowChanged:
+      return title.rowChanged(index);
+    case WorkbookCompareTitleCode.SheetAdded:
+      return title.sheetAdded(name);
+    case WorkbookCompareTitleCode.SheetDeleted:
+      return title.sheetDeleted(name);
+    case WorkbookCompareTitleCode.SheetRenamed:
+      return title.sheetRenamed;
+    case WorkbookCompareTitleCode.WorkbookRenamed:
+      return title.workbookRenamed;
+    default:
+      return item.title || (item.category === "worksheet" ? item.sheetName : undefined) || t().diff.entity(item.category);
+  }
 }
 
 function formatSelectedItemText(item: WorkbookCompareItem | null, pane: "base" | "target"): string {
@@ -972,30 +964,15 @@ function formatSelectedItemText(item: WorkbookCompareItem | null, pane: "base" |
   return value ? `${detail.label}: ${value}` : item.title;
 }
 
-function isCompareChangeset(value: unknown): value is WorkbookCompareChangeset {
-  const record = asSnapshotRecord(value);
-  if (
-    record === null ||
-    typeof record["streamOrder"] !== "number" ||
-    !Array.isArray(record["mutations"])
-  ) {
-    return false;
-  }
-
-  return record["mutations"].every(isCompareMutation);
-}
-
-function isCompareMutation(value: unknown): value is WorkbookCompareChangeset["mutations"][number] {
-  const record = asSnapshotRecord(value);
-  return (
-    record !== null &&
-    typeof record["mutationId"] === "string" &&
-    asSnapshotRecord(record["params"]) !== null
-  );
-}
-
-function asSnapshotRecord(value: unknown): Record<string, unknown> | null {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
+function projectFxPanes(states: WorkbookComparePaneFxStates, context: UnitComparisonContext, sheetId: string | null): { base: WorkbookCompareFxDiffPane; current: WorkbookCompareFxDiffPane } {
+  const source = context.items.find((item) => item.entityType === "cell" && item.parentStableId === sheetId && (item.locations.left === null || item.locations.left.stableId === states.base.activeCellLabel) && (item.locations.right === null || item.locations.right.stableId === states.current.activeCellLabel));
+  const pane = (role: "base" | "current"): WorkbookCompareFxDiffPane => {
+    const state = states[role];
+    const kind = state.formula ? "formula" : "value";
+    const text = state.formula || state.displayValue;
+    const segments = source?.changes.find((change) => change.path[0] === kind)?.segments?.[role === "base" ? "left" : "right"];
+    // Formatted cell display may differ from raw SDK text: don't apply offsets to a different string.
+    return { kind, text, segments: segments?.map((segment) => segment.text).join("") === text ? segments : null };
+  };
+  return { base: pane("base"), current: pane("current") };
 }

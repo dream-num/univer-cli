@@ -1,19 +1,21 @@
 import { randomUUID } from "node:crypto";
 import {
   type PinnedUnitComparisonRef,
-  type UnitComparisonContext,
-  type UnitComparisonContextQuery,
   type UnitComparisonRefRequest,
   type UnitComparisonSession,
-  type UnitComparisonSummary,
   type UnitType,
 } from "@univer/collab-gateway-contract";
+import type {
+  UnitComparisonContext,
+  UnitComparisonContextQuery,
+  UnitComparisonSummary,
+} from "@univer/collab-gateway-contract";
+import { decodeComparisonUnitData } from "./comparison-unit-data.js";
 import {
-  decodeComparisonUnitData,
-  prepareUnitComparisonContext,
-  queryPreparedUnitComparisonContext,
-  type PreparedUnitComparisonContext,
-} from "@univer/unit-compare";
+  prepareGatewayUnitComparison,
+  queryGatewayUnitComparison,
+  type PreparedGatewayUnitComparison,
+} from "./comparison/unit-comparison-runtime.js";
 import type {
   CollabMemberContext,
   CreateUnitFromDataInput,
@@ -125,9 +127,10 @@ export class CollabService {
 
   private readonly _lock = new KeyedLock();
   private readonly _comparisons = new Map<string, PinnedComparisonRecord>();
+  private readonly _materializedComparisons = new Map<string, Promise<UnitComparisonData>>();
   private readonly _preparedComparisonContexts = new Map<
     string,
-    Promise<PreparedUnitComparisonContext>
+    Promise<PreparedGatewayUnitComparison>
   >();
 
   public constructor(options: CollabServiceOptions = {}) {
@@ -342,13 +345,45 @@ export class CollabService {
       throw new Error(`Unit ${unitId} is not part of comparison ${comparisonId}`);
     }
 
-    const [left, right] = await Promise.all([
-      this._materializeComparisonSide(comparison.left, unitId),
-      this._materializeComparisonSide(comparison.right, unitId),
+    const cacheKey = `${comparisonId}:${unitId}`;
+    let materialized = this._materializedComparisons.get(cacheKey);
+    if (materialized === undefined) {
+      materialized = this._materializeUnitComparison(comparison, unit);
+      this._materializedComparisons.set(cacheKey, materialized);
+      materialized.catch(() => {
+        if (this._materializedComparisons.get(cacheKey) === materialized) {
+          this._materializedComparisons.delete(cacheKey);
+        }
+      });
+      while (this._materializedComparisons.size > MAX_PREPARED_COMPARISON_CONTEXTS) {
+        const oldest = this._materializedComparisons.keys().next().value;
+        if (oldest === undefined) break;
+        // Expire the entire pinned session: replaying just an evicted Unit can regenerate native IDs
+        // while an already delivered snapshot or semantic result still refers to the old identities.
+        const expiredId = oldest.slice(0, oldest.indexOf(":"));
+        this._comparisons.delete(expiredId);
+        this._deletePreparedComparisonContexts(expiredId);
+      }
+    }
+    const data = await materialized;
+    if (this._comparisons.get(comparisonId) !== comparison) {
+      throw new Error(`Comparison ${comparisonId} has expired`);
+    }
+    // Native Sheet decoding consumes its block buffers; never expose the cached canonical payload.
+    return { ...structuredClone(data), stale: this._isComparisonStale(comparison) };
+  }
+
+  private async _materializeUnitComparison(
+    comparison: PinnedComparisonRecord,
+    unit: UnitComparisonSummary,
+  ): Promise<UnitComparisonData> {
+    const [left, right, history] = await Promise.all([
+      this._materializeComparisonSide(comparison.left, unit.unitId),
+      this._materializeComparisonSide(comparison.right, unit.unitId),
+      this._comparisonHistory(comparison, unit.unitId),
     ]);
-    const history = await this._comparisonHistory(comparison, unitId);
     return {
-      comparisonId,
+      comparisonId: comparison.session.comparisonId,
       unit,
       fidelity: history.fidelity,
       ...(history.commonBaseRevision === undefined
@@ -378,7 +413,11 @@ export class CollabService {
     if (preparedPromise === undefined) {
       preparedPromise = this._prepareUnitComparisonContext(rightWorktreeId, comparisonId, unitId);
       this._preparedComparisonContexts.set(cacheKey, preparedPromise);
-      preparedPromise.catch(() => this._preparedComparisonContexts.delete(cacheKey));
+      preparedPromise.catch(() => {
+        if (this._preparedComparisonContexts.get(cacheKey) === preparedPromise) {
+          this._preparedComparisonContexts.delete(cacheKey);
+        }
+      });
       while (this._preparedComparisonContexts.size > MAX_PREPARED_COMPARISON_CONTEXTS) {
         const oldest = this._preparedComparisonContexts.keys().next().value as string | undefined;
         if (oldest === undefined) break;
@@ -386,8 +425,11 @@ export class CollabService {
       }
     }
     const prepared = await preparedPromise;
+    if (this._comparisons.get(comparisonId) !== record) {
+      throw new Error(`Comparison ${comparisonId} expired; create a new comparison`);
+    }
     return {
-      ...queryPreparedUnitComparisonContext(prepared, query),
+      ...queryGatewayUnitComparison(prepared, query),
       stale: this._isComparisonStale(record),
     };
   }
@@ -396,7 +438,7 @@ export class CollabService {
     rightWorktreeId: string,
     comparisonId: string,
     unitId: string,
-  ): Promise<PreparedUnitComparisonContext> {
+  ): Promise<PreparedGatewayUnitComparison> {
     const comparison = await this.getUnitComparison(rightWorktreeId, comparisonId, unitId);
     const [leftData, rightData] = await Promise.all([
       comparison.left.snapshot === undefined
@@ -414,7 +456,7 @@ export class CollabService {
             comparison.right.sheetBlocks ?? [],
           ),
     ]);
-    return prepareUnitComparisonContext({
+    return prepareGatewayUnitComparison({
       comparisonId,
       unit: comparison.unit,
       fidelity: comparison.fidelity,
@@ -422,8 +464,8 @@ export class CollabService {
         ? {}
         : { commonBaseRevision: comparison.commonBaseRevision }),
       stale: comparison.stale,
-      ...(leftData === undefined ? {} : { leftData }),
-      ...(rightData === undefined ? {} : { rightData }),
+      leftData,
+      rightData,
       leftChangesets: comparison.leftChangesets,
       rightChangesets: comparison.rightChangesets,
     });
@@ -431,6 +473,9 @@ export class CollabService {
 
   private _deletePreparedComparisonContexts(comparisonId: string): void {
     const prefix = `${comparisonId}:`;
+    for (const key of this._materializedComparisons.keys()) {
+      if (key.startsWith(prefix)) this._materializedComparisons.delete(key);
+    }
     for (const key of this._preparedComparisonContexts.keys()) {
       if (key.startsWith(prefix)) this._preparedComparisonContexts.delete(key);
     }
@@ -783,6 +828,9 @@ export class CollabService {
   }
 
   public async dispose(): Promise<void> {
+    this._comparisons.clear();
+    this._materializedComparisons.clear();
+    this._preparedComparisonContexts.clear();
     await this.exchange.dispose();
     await this.runtime.dispose();
   }

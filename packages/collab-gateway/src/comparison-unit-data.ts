@@ -1,11 +1,3 @@
-import {
-  UNIT_TYPE_BASE,
-  UNIT_TYPE_BOARD,
-  UNIT_TYPE_DOC,
-  UNIT_TYPE_SHEET,
-  UNIT_TYPE_SLIDE,
-  type UnitType,
-} from "@univer/collab-gateway-contract";
 import type {
   IBaseSnapshot,
   ICellData,
@@ -13,6 +5,7 @@ import type {
   ITableSnapshot,
   IWorkbookData,
 } from "@univerjs/core";
+import { UniverInstanceType } from "@univerjs/core";
 import {
   transformSnapshotToDocumentData,
   transformSnapshotToSlideData,
@@ -20,23 +13,23 @@ import {
 } from "@univerjs-pro/collaboration";
 import type { IDeserializedSheetBlock, ISheetBlock, ISnapshot } from "@univerjs/protocol";
 
-/** Decode a materialized comparison side into the native Unit model consumed by diff engines. */
+/** Application adapter from Collaboration Protocol snapshots to final UnitData. */
 export async function decodeComparisonUnitData(
-  unitType: UnitType,
+  unitType: UniverInstanceType,
   snapshot: unknown,
   sheetBlocks: readonly unknown[] = [],
 ): Promise<unknown> {
   const decoded = decodeSnapshotFromWire(snapshot) as ISnapshot;
-  if (unitType === UNIT_TYPE_DOC) return transformSnapshotToDocumentData(decoded);
-  if (unitType === UNIT_TYPE_SLIDE) return transformSnapshotToSlideData(decoded);
-  if (unitType === UNIT_TYPE_BASE) {
+  if (unitType === UniverInstanceType.UNIVER_DOC) return transformSnapshotToDocumentData(decoded);
+  if (unitType === UniverInstanceType.UNIVER_SLIDE) return transformSnapshotToSlideData(decoded);
+  if (unitType === UniverInstanceType.UNIVER_BASE) {
     return decodeBaseSnapshotData(
       decoded,
       sheetBlocks as readonly (IDeserializedSheetBlock | ISheetBlock)[],
     );
   }
-  if (unitType === UNIT_TYPE_BOARD) return decodeBoardSnapshotData(decoded);
-  if (unitType === UNIT_TYPE_SHEET) {
+  if (unitType === UniverInstanceType.UNIVER_BOARD) return decodeBoardSnapshotData(decoded);
+  if (unitType === UniverInstanceType.UNIVER_SHEET) {
     return decodeComparisonWorkbookData(snapshot, sheetBlocks);
   }
   throw new Error(`Unsupported comparison unit type: ${String(unitType)}`);
@@ -48,7 +41,7 @@ export async function decodeComparisonWorkbookData(
 ): Promise<IWorkbookData> {
   return transformSnapshotToWorkbookData(
     decodeSnapshotFromWire(snapshot) as ISnapshot,
-    sheetBlocks as Parameters<typeof transformSnapshotToWorkbookData>[1],
+    structuredClone(sheetBlocks) as Parameters<typeof transformSnapshotToWorkbookData>[1],
   );
 }
 
@@ -104,8 +97,9 @@ function decodeBaseSnapshotData(
     const cellData: IObjectMatrixPrimitiveType<ICellData> = {};
     for (const blockId of meta.blockMeta?.[tableId]?.blocks ?? []) {
       const block = blockById.get(blockId);
-      if (block === undefined)
+      if (block === undefined) {
         throw new Error(`decodeBaseSnapshotData: missing base block ${blockId}`);
+      }
       Object.assign(cellData, decodeJsonData(block.data));
     }
     tables[tableId] = {

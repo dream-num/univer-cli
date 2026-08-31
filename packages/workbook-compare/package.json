@@ -2,17 +2,13 @@
   "name": "@univer/workbook-compare",
   "version": "0.1.0",
   "private": true,
-  "description": "Pure Sheet compare model, pane projections, structural mappings, and read-only diff presentation data.",
+  "description": "Read-only Sheet presentation and pane navigation from Pro History comparison results.",
   "type": "module",
   "types": "./src/index.ts",
   "exports": {
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
-    },
-    "./branch-reconcile": {
-      "types": "./src/branch-reconcile.ts",
-      "default": "./src/branch-reconcile.ts"
     }
   },
   "scripts": {
@@ -21,6 +17,6 @@
     "typecheck": "tsc -p tsconfig.test.json --noEmit --pretty false"
   },
   "dependencies": {
-    "@univerjs/core": "1.0.0-insiders.20260829-2e3c387"
+    "@univerjs/core": "1.0.0-insiders.20260831-796c4f4"
   }
 }

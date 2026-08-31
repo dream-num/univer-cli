@@ -8,17 +8,13 @@ import {
 } from "@univer/collab-gateway-contract";
 import type { IWorkbookData } from "@univerjs/core";
 import { describe, expect, it } from "vitest";
-import {
-  buildUnitComparisonContext,
-  buildSemanticChanges,
-  buildUnitStructuralDiffModel,
-  prepareUnitComparisonContext,
-  queryPreparedUnitComparisonContext,
-} from "../src/index.js";
+import { buildSemanticLeafChanges } from "@univerjs-pro/edit-history";
+import { prepareGatewayUnitComparison, queryGatewayUnitComparison } from "../src/comparison/unit-comparison-runtime.js";
+import { compareContext } from "./helpers/comparison-context.js";
 
 describe("agent-facing five-product comparison context", () => {
-  it("collapses product text mirrors and favors semantic business fields over metadata", () => {
-    const changes = buildSemanticChanges(
+  it("retains exact source paths when multiple native properties share a semantic label", () => {
+    const changes = buildSemanticLeafChanges(
       {
         text: "Baseline",
         textData: { body: { dataStream: "Baseline\r\n" } },
@@ -33,12 +29,14 @@ describe("agent-facing five-product comparison context", () => {
       },
     );
 
-    expect(changes.filter((change) => change.path.join(".") === "text")).toHaveLength(1);
-    expect(changes.map((change) => change.path)).toEqual([
-      ["text"],
-      ["field", "field1"],
-      ["updatedAt"],
-    ]);
+    const textChanges = changes.filter((change) => change.path.join(".") === "text");
+    expect(textChanges).toHaveLength(2);
+    expect(textChanges.map((change) => change.sourcePath ?? change.path)).toEqual(
+      expect.arrayContaining([["text"], ["textData", "body", "dataStream"]]),
+    );
+    expect(changes.map((change) => change.sourcePath ?? change.path)).toEqual(
+      expect.arrayContaining([["values", "field1"], ["updatedAt"]]),
+    );
   });
 
   it("normalizes Sheet, Doc, Slide, Base, and Board changes into stable paths", () => {
@@ -60,7 +58,7 @@ describe("agent-facing five-product comparison context", () => {
       entityType: "cell",
       kind: "update",
       stableId: "A1",
-      path: ["sheet", "sheet1", "cell", "A1"],
+      path: ["cell", "sheet1", "A1"],
     });
     expect(doc.items[0]).toMatchObject({ entityType: "paragraph", path: ["paragraph", "p1"] });
     expect(slide.items[0]).toMatchObject({
@@ -71,7 +69,7 @@ describe("agent-facing five-product comparison context", () => {
       expect.arrayContaining([
         expect.objectContaining({
           entityType: "cell",
-          path: ["cell", "table1", "record1", "field1"],
+          path: ["cell", "table1", "record1:field1"],
         }),
       ]),
     );
@@ -88,10 +86,13 @@ describe("agent-facing five-product comparison context", () => {
     left.tables.table1.records.record1.updatedAt = 1;
     right.tables.table1.records.record1.updatedAt = 2;
 
-    const model = buildUnitStructuralDiffModel({ type: UNIT_TYPE_BASE, left, right });
-    const record = model.items.find((item) => item.entityType === "record");
-
-    expect(record?.changes.map((change) => change.path)).toEqual([["field", "field1"]]);
+    const model = context(UNIT_TYPE_BASE, left, right);
+    expect(model.items).toHaveLength(1);
+    expect(model.items[0]).toMatchObject({
+      entityType: "cell", stableId: "record1:field1",
+      changes: [expect.objectContaining({ path: [], before: "Draft", after: "Ready" })],
+    });
+    expect(model.items.some((item) => item.changes.some((change) => change.path.includes("updatedAt")))).toBe(false);
   });
 
   it("mirrors insert/delete locations and preserves blue updates", () => {
@@ -133,7 +134,7 @@ describe("agent-facing five-product comparison context", () => {
       one: { id: "one", text: "Changed Alpha" },
       two: { id: "two", text: "Changed Beta" },
     });
-    const result = buildUnitComparisonContext({
+    const result = compareContext({
       ...contextInput(UNIT_TYPE_SLIDE, left, right),
       query: {
         entityTypes: ["slide-element"],
@@ -151,15 +152,15 @@ describe("agent-facing five-product comparison context", () => {
   });
 
   it("filters by either containing parent identity or nested location parent", () => {
-    const prepared = prepareUnitComparisonContext(
+    const prepared = prepareGatewayUnitComparison(
       contextInput(UNIT_TYPE_BASE, baseSnapshot("Before"), baseSnapshot("After")),
     );
 
-    const table = queryPreparedUnitComparisonContext(prepared, {
+    const table = queryGatewayUnitComparison(prepared, {
       entityTypes: ["cell"],
       parentStableId: "table1",
     });
-    const record = queryPreparedUnitComparisonContext(prepared, {
+    const record = queryGatewayUnitComparison(prepared, {
       entityTypes: ["cell"],
       parentStableId: "record1",
     });
@@ -173,14 +174,14 @@ describe("agent-facing five-product comparison context", () => {
   });
 
   it("omits values from both the value payload and detail lines", () => {
-    const result = buildUnitComparisonContext({
+    const result = compareContext({
       ...contextInput(UNIT_TYPE_BASE, baseSnapshot("Before secret"), baseSnapshot("After secret")),
       query: { entityTypes: ["cell"], includeValues: false },
     });
 
     expect(result.items).toEqual([
       expect.objectContaining({
-        details: [{ label: "Value", kind: "update" }],
+        entityType: "cell", changes: [], details: [],
       }),
     ]);
     expect(JSON.stringify(result.items)).not.toContain("Before secret");
@@ -188,26 +189,22 @@ describe("agent-facing five-product comparison context", () => {
   });
 
   it("projects summary, agent changes, and full raw values without changing item identity", () => {
-    const prepared = prepareUnitComparisonContext(
+    const prepared = prepareGatewayUnitComparison(
       contextInput(
         UNIT_TYPE_SLIDE,
         slideSnapshot({ shape1: { id: "shape1", text: "Plan 2025", x: 12 } }),
         slideSnapshot({ shape1: { id: "shape1", text: "Plan 2026", x: 24 } }),
       ),
     );
-    const summary = queryPreparedUnitComparisonContext(prepared, { detail: "summary" });
-    const changes = queryPreparedUnitComparisonContext(prepared, { detail: "changes" });
-    const full = queryPreparedUnitComparisonContext(prepared, { detail: "full" });
+    const summary = queryGatewayUnitComparison(prepared, { detail: "summary" });
+    const changes = queryGatewayUnitComparison(prepared, { detail: "changes" });
+    const full = queryGatewayUnitComparison(prepared, { detail: "full" });
 
     expect(summary.detail).toBe("summary");
     expect(summary.items[0]).not.toHaveProperty("values");
-    expect(summary.items[0]?.changes).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ path: ["text"], valueType: "text" }),
-        expect.objectContaining({ path: ["geometry", "x"], valueType: "geometry" }),
-      ]),
-    );
-    expect(summary.items[0]?.changes[0]).not.toHaveProperty("before");
+    expect(summary.items[0]?.changes).toEqual([]);
+    expect(summary.items.map((item) => item.id)).toEqual(changes.items.map((item) => item.id));
+    expect(changes.items.map((item) => item.id)).toEqual(full.items.map((item) => item.id));
     expect(changes.detail).toBe("changes");
     expect(changes.items[0]).not.toHaveProperty("values");
     expect(changes.items[0]?.changes).toEqual(
@@ -268,7 +265,7 @@ describe("agent-facing five-product comparison context", () => {
       expect.arrayContaining([
         expect.objectContaining({ path: ["text"], valueType: "text" }),
         expect.objectContaining({ path: ["geometry", "x"], valueType: "geometry" }),
-        expect.objectContaining({ path: ["style", "fill"], valueType: "color" }),
+        expect.objectContaining({ path: ["style", "fill"], valueType: "style" }),
       ]),
     );
     expect(base.items).toEqual(
@@ -296,12 +293,12 @@ describe("agent-facing five-product comparison context", () => {
     expect(slide.items.find((item) => item.entityType === "slide-element")?.title).toBe(
       "Revenue 2026",
     );
-    expect(base.items.find((item) => item.entityType === "cell")?.title).toBe("Ready · Work item");
+    expect(base.items.find((item) => item.entityType === "cell")?.title).toBe("Work item");
     expect(board.items.find((item) => item.entityType === "board-element")?.title).toBe("New");
   });
 
   it("degrades only when Sheet history contains an unknown structural coordinate mutation", () => {
-    const result = buildUnitComparisonContext({
+    const result = compareContext({
       ...contextInput(UNIT_TYPE_SHEET, workbook("before"), workbook("after")),
       fidelity: "history",
       leftChangesets: [
@@ -321,7 +318,7 @@ describe("agent-facing five-product comparison context", () => {
   });
 
   it("keeps Sheet history ready for snapshot-resolved style and resource mutations", () => {
-    const result = buildUnitComparisonContext({
+    const result = compareContext({
       ...contextInput(UNIT_TYPE_SHEET, workbook("before"), workbook("after")),
       fidelity: "history",
       leftChangesets: [
@@ -346,31 +343,31 @@ describe("agent-facing five-product comparison context", () => {
     const left = workbook("same");
     const right = workbook("same");
     right.sheets.sheet1!.rowCount += 1;
-    const result = buildUnitComparisonContext(contextInput(UNIT_TYPE_SHEET, left, right));
+    const result = compareContext(contextInput(UNIT_TYPE_SHEET, left, right));
 
     expect(result.diagnostics).toEqual({
       readiness: "degraded",
       unsupportedMutationIds: [],
       notes: [
-        "Sheet snapshot axis alignment was ambiguous; row and column coordinates are best effort.",
+        "sheet-snapshot-axis-identity-ambiguous",
       ],
     });
   });
 
-  it("prepares once and limits Doc alignment metadata to the selected page", () => {
-    const prepared = prepareUnitComparisonContext(
+  it("prepares once and pages Doc alignment independently from changed items", () => {
+    const prepared = prepareGatewayUnitComparison(
       contextInput(
         UNIT_TYPE_DOC,
         docWithParagraphs(["Before one", "Before two"]),
         docWithParagraphs(["After one", "After two"]),
       ),
     );
-    const first = queryPreparedUnitComparisonContext(prepared, {
+    const first = queryGatewayUnitComparison(prepared, {
       entityTypes: ["paragraph"],
       limit: 1,
       includeValues: false,
     });
-    const second = queryPreparedUnitComparisonContext(prepared, {
+    const second = queryGatewayUnitComparison(prepared, {
       entityTypes: ["paragraph"],
       offset: 1,
       limit: 1,
@@ -379,12 +376,17 @@ describe("agent-facing five-product comparison context", () => {
 
     expect(first.productContext).toMatchObject({
       kind: "doc",
-      paragraphAlignment: { total: 2, rows: [{ stableId: "p1" }] },
+      paragraphAlignment: { total: 2, rows: [{ stableId: "p1" }, { stableId: "p2" }] },
     });
     expect(second.productContext).toMatchObject({
       kind: "doc",
-      paragraphAlignment: { total: 2, rows: [{ stableId: "p2" }] },
+      paragraphAlignment: { total: 2, rows: [{ stableId: "p1" }, { stableId: "p2" }] },
     });
+    const contextPage = queryGatewayUnitComparison(prepared, { limit: 1, contextOffset: 1, contextLimit: 1 });
+    expect(contextPage.productContext).toMatchObject({
+      kind: "doc", paragraphAlignment: { total: 2, rows: [{ stableId: "p2" }], page: { offset: 1, limit: 1, hasMore: false } },
+    });
+
   });
 
   it("keeps Doc paragraph navigation context for text-style-only pages", () => {
@@ -392,9 +394,9 @@ describe("agent-facing five-product comparison context", () => {
     const right = docSnapshot("Styled", "p1");
     left.body.textRuns = [{ st: 0, ed: 6, ts: { bl: 0 } }];
     right.body.textRuns = [{ st: 0, ed: 6, ts: { bl: 1 } }];
-    const prepared = prepareUnitComparisonContext(contextInput(UNIT_TYPE_DOC, left, right));
+    const prepared = prepareGatewayUnitComparison(contextInput(UNIT_TYPE_DOC, left, right));
 
-    const result = queryPreparedUnitComparisonContext(prepared, {
+    const result = queryGatewayUnitComparison(prepared, {
       entityTypes: ["text-style"],
       includeValues: false,
     });
@@ -455,29 +457,13 @@ describe("agent-facing five-product comparison context", () => {
   });
 
   it("covers persisted feature families beyond visible element shells", () => {
-    const doc = buildUnitStructuralDiffModel({
-      type: UNIT_TYPE_DOC,
-      left: featureDoc("before"),
-      right: featureDoc("after"),
-    });
+    const doc = context(UNIT_TYPE_DOC, featureDoc("before"), featureDoc("after"));
     const docContext = context(UNIT_TYPE_DOC, featureDoc("before"), featureDoc("after"));
-    const slide = buildUnitStructuralDiffModel({
-      type: UNIT_TYPE_SLIDE,
-      left: featureSlide("before"),
-      right: featureSlide("after"),
-    });
-    const base = buildUnitStructuralDiffModel({
-      type: UNIT_TYPE_BASE,
-      left: { ...baseSnapshot("Before"), name: "Before base" },
-      right: { ...baseSnapshot("After"), name: "After base" },
-    });
-    const board = buildUnitStructuralDiffModel({
-      type: UNIT_TYPE_BOARD,
-      left: featureBoard("before"),
-      right: featureBoard("after"),
-    });
+    const slide = context(UNIT_TYPE_SLIDE, featureSlide("before"), featureSlide("after"));
+    const base = context(UNIT_TYPE_BASE, { ...baseSnapshot("Before"), name: "Before base" }, { ...baseSnapshot("After"), name: "After base" });
+    const board = context(UNIT_TYPE_BOARD, featureBoard("before"), featureBoard("after"));
 
-    expect(Object.keys(doc.summary.byCategory)).toEqual(
+    expect(Object.keys(doc.summary.byEntityType)).toEqual(
       expect.arrayContaining([
         "paragraph",
         "text-style",
@@ -504,13 +490,13 @@ describe("agent-facing five-product comparison context", () => {
         "doc-table-resource",
       ]),
     );
-    expect(doc.items.find((item) => item.category === "table")?.label).toBe("after");
-    expect(doc.items.find((item) => item.category === "doc-callout")?.label).toBe("after");
-    expect(doc.items.find((item) => item.category === "doc-code")?.label).toBe("after");
+    expect(doc.items.find((item) => item.entityType === "table")?.title).toBe("after");
+    expect(doc.items.find((item) => item.entityType === "doc-callout")?.title).toBe("after");
+    expect(doc.items.find((item) => item.entityType === "doc-code")?.title).toBe("after");
     expect(docContext.items.find((item) => item.entityType === "table")?.title).toBe("after");
     expect(docContext.items.find((item) => item.entityType === "doc-callout")?.title).toBe("after");
     expect(docContext.items.find((item) => item.entityType === "doc-code")?.title).toBe("after");
-    expect(Object.keys(slide.summary.byCategory)).toEqual(
+    expect(Object.keys(slide.summary.byEntityType)).toEqual(
       expect.arrayContaining([
         "slide-element",
         "slide-transition",
@@ -523,8 +509,8 @@ describe("agent-facing five-product comparison context", () => {
         "slide-table",
       ]),
     );
-    expect(Object.keys(base.summary.byCategory)).toContain("base");
-    expect(Object.keys(board.summary.byCategory)).toEqual(
+    expect(Object.keys(base.summary.byEntityType)).toContain("base");
+    expect(Object.keys(board.summary.byEntityType)).toEqual(
       expect.arrayContaining([
         "board-element",
         "board-theme",
@@ -567,8 +553,7 @@ describe("agent-facing five-product comparison context", () => {
     }
   });
 
-  it("satisfies the mirror property for seeded bilateral edits across all five products", () => {
-    for (let seed = 1; seed <= 40; seed += 1) {
+  it.each(Array.from({ length: 40 }, (_, index) => index + 1))("satisfies the five-product mirror property for seed %i", (seed) => {
       const left = mutateEntities(seed * 2, "left");
       const right = mutateEntities(seed * 2 + 1, "right");
       const pairs: Array<readonly [UnitType, unknown, unknown]> = [
@@ -582,25 +567,24 @@ describe("agent-facing five-product comparison context", () => {
       for (const [type, before, after] of pairs) {
         expectMirroredContext(type, before, after, seed);
       }
-    }
   });
 
-  it("reports a Unit-level gap when one comparison side is absent", () => {
-    const result = buildUnitComparisonContext({
+  it("reports deleted native entities when one comparison side is absent", () => {
+    const result = compareContext({
       ...contextInput(UNIT_TYPE_DOC, docSnapshot("Only left", "p1"), undefined),
       query: { includeValues: false },
     });
 
-    expect(result).toMatchObject({
-      diagnostics: { readiness: "degraded" },
-      summary: { total: 1, delete: 1 },
-      items: [{ entityType: "unit", kind: "delete", locations: { right: null } }],
-    });
+    expect(result.unit.presence).toBe("left-only");
+    expect(result.items.length).toBeGreaterThan(0);
+    expect(result.summary).toMatchObject({ total: result.items.length, delete: result.items.length, insert: 0, update: 0 });
+    expect(result.items.every((item) => item.kind === "delete" && item.locations.right === null)).toBe(true);
+    expect(result.items.some((item) => item.entityType === "paragraph" && item.stableId === "p1")).toBe(true);
   });
 });
 
 function context(unitType: UnitType, leftData: unknown, rightData: unknown) {
-  return buildUnitComparisonContext(contextInput(unitType, leftData, rightData));
+  return compareContext(contextInput(unitType, leftData, rightData));
 }
 
 function contextInput(unitType: UnitType, leftData: unknown, rightData: unknown) {
@@ -614,8 +598,10 @@ function contextInput(unitType: UnitType, leftData: unknown, rightData: unknown)
     },
     fidelity: "snapshot" as const,
     stale: false,
-    ...(leftData === undefined ? {} : { leftData }),
-    ...(rightData === undefined ? {} : { rightData }),
+    leftData,
+    rightData,
+    leftChangesets: [],
+    rightChangesets: [],
   };
 }
 
@@ -941,7 +927,7 @@ function featureDoc(value: string) {
     settings: { compatibility: value },
     headers: { header1: { id: "header1", text: value } },
     footers: { footer1: { id: "footer1", text: value } },
-    tableSource: { table1: { id: "table1", rows: [[value]] } },
+    tableSource: { table1: { id: "table1", name: value, rows: [[value]] } },
     drawings: { drawing1: { id: "drawing1", source: value } },
     body: {
       dataStream: `${text}\r\0`,

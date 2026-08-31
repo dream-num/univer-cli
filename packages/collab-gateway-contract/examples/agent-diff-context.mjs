@@ -34,9 +34,18 @@ const detail = options.detail ?? "changes";
 const limit = positiveInteger(options["page-size"] ?? "100", "--page-size");
 const items = [];
 let offset = 0;
+let contextOffset = 0;
+const alignmentRows = [];
+let contextHasMore = false;
 let context;
 do {
-  const query = new URLSearchParams({ detail, limit: String(limit), offset: String(offset) });
+  const query = new URLSearchParams({
+    detail,
+    limit: String(limit),
+    offset: String(offset),
+    contextOffset: String(contextOffset),
+    contextLimit: "1000",
+  });
   appendCsv(query, "kind", options.kind);
   appendCsv(query, "entityType", options["entity-type"]);
   appendOptional(query, "parentStableId", options.parent);
@@ -49,10 +58,19 @@ do {
   context = page.context;
   items.push(...context.items);
   offset += context.items.length;
+  const alignment =
+    context.productContext?.kind === "doc" ? context.productContext.paragraphAlignment : undefined;
+  contextHasMore = alignment?.page?.hasMore ?? false;
+  if (alignment !== undefined) {
+    alignmentRows.push(...alignment.rows);
+    contextOffset += alignment.rows.length;
+    if (contextHasMore && alignment.rows.length === 0)
+      fail("Gateway reported another alignment page without rows.");
+  }
   if (context.page.hasMore && context.items.length === 0) {
     fail("Gateway reported another page without returning items.");
   }
-} while (context.page.hasMore);
+} while (context.page.hasMore || contextHasMore);
 
 // Keep the output identical to the HTTP contract, except that pagination is flattened for agents.
 process.stdout.write(
@@ -61,6 +79,23 @@ process.stdout.write(
       ...context,
       page: { offset: 0, limit: items.length, matched: context.page.matched, hasMore: false },
       items,
+      ...(context.productContext?.kind === "doc"
+        ? {
+            productContext: {
+              ...context.productContext,
+              paragraphAlignment: {
+                ...context.productContext.paragraphAlignment,
+                rows: alignmentRows,
+                page: {
+                  offset: 0,
+                  limit: alignmentRows.length,
+                  matched: alignmentRows.length,
+                  hasMore: false,
+                },
+              },
+            },
+          }
+        : {}),
     },
     null,
     2,

@@ -1,4 +1,5 @@
 import type { Messages } from "./en-US";
+import { comparisonTerm, localizedComparisonEnum, localizedComparisonPath } from "./comparison-labels.js";
 import {
   localizedStructuralEntity,
   type VocabularyLocale
@@ -13,6 +14,7 @@ export interface MessageVocabulary {
   worksheet: string;
   content: string;
   formatting: string;
+  showFormulas: string;
   search: string;
   row: string;
   styles: string;
@@ -185,43 +187,65 @@ export function messagesFromVocabulary(v: MessageVocabulary, locale: VocabularyL
       editAnyway: `${v.continue} ${v.editing}`,
       segView: v.viewOnly,
       segDiff: v.compare,
-      comparisonSource: `${v.compare} · ${v.choose}`,
-      trunk: v.currentVersion,
+      comparisonSource: `${comparisonTerm(locale, "left")} · ${comparisonTerm(locale, "source")}`,
+      trunk: comparisonTerm(locale, "mainBranch"),
       refreshComparison: `${v.modification} · ${v.updated}`
     },
     diff: {
       compare: v.compare,
       changes: v.modification,
       structuralDiff: `${v.compare} · ${v.content}`,
-      kind: { insert: v.create, delete: v.discarded, update: v.updated },
+      kind: { insert: v.sheetCategories.inserted, delete: v.sheetCategories.deleted, update: v.sheetCategories.changed },
       entity: structuralEntity,
       entityAt: (category, index) => `${structuralEntity(category)} ${index}`,
-      changePath: (path) => path.map((part) => ({
+      changePath: (path) => localizedComparisonPath(locale, path, (part) => ({
+        start: v.sheetCategories.start, count: v.sheetCategories.count, row: v.row,
+        name: v.sheetCategories.name,
+        "style.n": v.sheetCategories.numberFormat,
+        formulaName: `${v.sheetCategories.formula} · ${v.sheetCategories.name}`,
+        value: v.sheetCategories.value,
+        rowCount: `${v.row} · ${v.sheetCategories.count}`,
+        columnCount: `${v.sheetCategories.column} · ${v.sheetCategories.count}`,
+        columns: v.sheetCategories.column,
+        h: comparisonTerm(locale, "rowHeight"), w: comparisonTerm(locale, "columnWidth"),
+        hd: comparisonTerm(locale, "hidden"), ia: comparisonTerm(locale, "automaticHeight"),
+        bg: v.sheetCategories.background, rgb: v.sheetCategories.textColor,
+        cl: v.sheetCategories.textColor, fs: v.sheetCategories.fontSize,
+        bl: v.sheetCategories.bold, it: v.sheetCategories.italic,
+        geometry: v.sheetCategories.position, transform: v.sheetCategories.position,
+        left: v.sheetCategories.position, top: v.sheetCategories.position, angle: v.sheetCategories.position,
+        range: v.sheetCategories.position, ranges: v.sheetCategories.position, rangeInfo: v.sheetCategories.position,
+        startRow: `${v.row} · ${v.sheetCategories.start}`, endRow: `${v.row} · ${v.sheetCategories.position}`,
+        startColumn: `${v.sheetCategories.column} · ${v.sheetCategories.start}`, endColumn: `${v.sheetCategories.column} · ${v.sheetCategories.position}`,
+        sparklines: v.sheetCategories.sparkline, fieldsConfig: v.sheetCategories.pivot,
         text: v.content,
         formula: v.sheetCategories.formula,
-        name: v.sheetCategories.name,
         position: v.sheetCategories.position,
         style: v.styles,
         background: v.sheetCategories.background,
         bold: v.sheetCategories.bold,
         italic: v.sheetCategories.italic
-      })[part] ?? part).join(" · "),
+      })[part]),
+      changeValue: (entityType, path, value) => localizedComparisonEnum(locale, entityType, path, value),
+      renderFailed: comparisonTerm(locale, "loadFailed"),
+      comparisonFailed: comparisonTerm(locale, "comparisonFailed"),
+      incompletePage: comparisonTerm(locale, "incompletePage"),
       wholeItem: v.content,
       present: v.content,
-      itemCount: (count) => `${count} ${v.content}`,
-      propertyCount: (count) => `${count} ${v.content}`,
+      itemCount: (count) => `${count} ${comparisonTerm(locale, "item")}`,
+      propertyCount: (count) => `${count} ${comparisonTerm(locale, "property")}`,
       moved: v.sheetCategories.moved,
-      rightCurrentVersion: `${v.currentVersion} · ${v.viewOnly}`,
-      revision: (revision) => `${v.currentVersion} ${revision}`,
-      readOnly: v.viewOnly,
-      side: { left: v.compare, right: v.currentVersion },
+      rightCurrentVersion: `${comparisonTerm(locale, "right")} · ${v.currentVersion}`,
+      revision: (revision) => `${comparisonTerm(locale, "revision")} ${revision}`,
+      readOnly: comparisonTerm(locale, "readOnly"),
+      side: { left: comparisonTerm(locale, "left"), right: comparisonTerm(locale, "right") },
       changeCount: (count) => `${count} ${v.modification}`,
       changedSlides: `${v.modification} · ${v.file}`,
       changedBaseTables: `${v.modification} · ${v.sheetCategories.table}`,
       noRawTableChanges: `${v.no} ${v.sheetCategories.table} ${v.modification}`,
       rawTableData: `${v.sheetCategories.table} · ${v.content}`,
-      baseAlignmentHint: `${v.sheetCategories.table} · stable ID`,
-      checkboxState: { checked: v.confirm, unchecked: v.no },
+      baseAlignmentHint: comparisonTerm(locale, "stableAlignment"),
+      checkboxState: { checked: comparisonTerm(locale, "checked"), unchecked: comparisonTerm(locale, "unchecked") },
       comparingMaterializedSnapshots: `${v.preview} · ${v.compare}`,
       snapshot: `${v.preview} · ${v.compare}`,
       noStructuralChanges: `${v.no} ${v.modification}`,
@@ -236,6 +260,7 @@ export function messagesFromVocabulary(v: MessageVocabulary, locale: VocabularyL
       workbook: v.workbook,
       content: v.content,
       formatting: v.formatting,
+      showFormulas: v.showFormulas,
       searchChanges: `${v.search} ${v.modification}`,
       noItems: `${v.no} ${v.modification}`,
       selectItemHint: `${v.choose} ${v.modification}`,

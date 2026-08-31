@@ -1,6 +1,7 @@
 import { messagesFromVocabulary, type MessageVocabulary } from "./from-vocabulary";
 
 const vocabulary = {
+  showFormulas: "顯示公式",
   title: "協作檢視器",
   file: "檔案",
   modification: "修改",

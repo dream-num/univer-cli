@@ -1,6 +1,7 @@
 import { messagesFromVocabulary, type MessageVocabulary } from "./from-vocabulary";
 
 const vocabulary = {
+  showFormulas: "Pokaż formuły",
   title: "Przeglądarka współpracy",
   file: "plik",
   modification: "zmiana",

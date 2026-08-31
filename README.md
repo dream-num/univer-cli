@@ -88,11 +88,23 @@ Base, and Board Units. Diff compares the current Worktree with a pinned Trunk st
 left side can instead be another active Worktree. Both sides are materialized through their pinned
 heads before comparison, and a stale comparison is refreshed explicitly.
 
-The pinned result is also available as a versioned, UI-independent Agent context. SDK consumers can
-page or filter normalized insert/delete/update items by entity type, stable parent ID, or search text;
+Sheet Compare offers independent **Content / Formatting** filters and a **Show formulas** switch
+for both grids. Content uses plain display copies without original cell, rich-text, table-theme or
+conditional formatting, retaining diff colors and row/column geometry; Formatting keeps the original
+styles. Formula display resolves shared formulas without changing stored values or results;
+worksheet/workbook scope is selected in the change-tree header.
+
+Univer Pro History owns semantic diff computation. The application only maps its returned changes,
+inline segments, and native alignment to localized navigation, read-only coloring, and linked viewports.
+
+The pinned result is also available through the Server API as a versioned, UI-independent Agent
+context. CLI clients and agents can page or filter normalized insert/delete/update items by entity
+type, stable parent ID, or search text;
 each item carries stable paths and side-specific navigation targets for Sheet, Doc, Slide, Base, and
 Board. Normalized leaf changes expose semantic property paths, typed before/after values, and bounded
-inline text/formula hunks. Callers can select `summary`, `changes`, or `full` detail without changing
+inline text/formula hunks. Normalized paths retain an exact `sourcePath` when needed. Doc alignment
+has independent context pagination; Sheet row/column alignment uses compact native index runs.
+Callers can select `summary`, `changes`, or `full` detail without changing
 item identity. See the [Agent diff contract and executable example](packages/collab-gateway-contract/README.md#agent-diff-contract).
 
 The operational Skills ship with Univer CLI so their commands and Facade guidance match the installed application version.
@@ -146,6 +158,13 @@ cd univer-cli
 pnpm install --frozen-lockfile
 pnpm link:cli
 pnpm check
+```
+
+Run the five-product comparison benchmark through the SDK-backed Gateway. It checks preparation,
+pagination, serialization, and response-size budgets for medium and large fixtures:
+
+```bash
+pnpm --filter @univer/collab-gateway benchmark:five-product --enforce
 ```
 
 Stop the daemon before unlinking a local build:

@@ -62,9 +62,9 @@ import type { Appearance } from "../appearance";
 import { cn } from "../lib/utils";
 import {
   buildChangedSlidePages,
-  buildUnitStructuralDiff,
   type UnitStructuralDiffItem
 } from "@univer/unit-compare";
+import { structuralDiffItemsFromContext } from "../core/structural-diff-from-context";
 import type { PreviewViewerHandle } from "../core/viewer";
 import { structuralDiffFocusTarget } from "../core/preview-comparison-focus";
 import type { App, AppSnapshot } from "./app";
@@ -74,7 +74,6 @@ import { UnitIcon } from "./unit-icon";
 import { DiscordIcon } from "./discord-icon";
 import { BaseTableDiffViewer } from "./base-table-diff-viewer";
 import { ComparisonPageTabs, type ComparisonPageTabOption } from "./comparison-page-tabs";
-import { ComparisonChangeNavigator } from "./comparison-change-navigator";
 import {
   structuralDiffItemEntityLabel,
   structuralDiffItemLabel
@@ -298,7 +297,7 @@ export function AppView({ app }: { app: App }): ReactElement {
           }}
         />
       )}
-      <section className="relative flex min-w-0 flex-1 flex-col">
+      <section className="@container/workbench relative flex min-w-0 flex-1 flex-col">
         {standalone && <Topbar app={app} snap={snap} />}
         <ContentPane app={app} snap={snap} />
         <LoadingOverlay busy={snap.busy} />
@@ -719,7 +718,14 @@ function Topbar({ app, snap }: { app: App; snap: AppSnapshot }): ReactElement {
     <span aria-hidden="true" className="sidebar-toggle-spacer size-8 shrink-0" />
   ) : undefined;
   return (
-    <header className="topbar relative flex min-h-11 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border bg-background px-4 py-1">
+    <header
+      className={cn(
+        "topbar relative min-h-11 shrink-0 items-center gap-x-4 gap-y-2 border-b border-border bg-background px-4",
+        snap.view.kind === "worktree"
+          ? "grid grid-cols-1 py-2 @min-[1100px]/workbench:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] @min-[1100px]/workbench:py-1"
+          : "flex flex-wrap justify-between py-1"
+      )}
+    >
       {snap.view.kind === "trunk" ? (
         <TrunkTitle app={app} snap={snap} leading={leading} />
       ) : (
@@ -830,18 +836,23 @@ function WorktreeTitle({
     worktree !== undefined && unit !== undefined ? app.unitBadgeInfo(worktree, unit) : undefined;
   return (
     <>
-      <div className="flex min-w-0 items-center gap-2.5">
+      <div className="flex min-w-0 items-center gap-2.5" data-testid="worktree-title">
         {leading}
         <TitleUnitIcon
           type={unit?.type ?? 2}
           className="border-amber-200/80 bg-amber-50 text-amber-600"
         />
         <div className="flex min-w-0 items-baseline gap-1.5">
-          <span className="truncate text-sm font-semibold">
+          <span
+            className="min-w-0 truncate text-sm font-semibold"
+            title={worktree?.name || worktreeId || t().topbar.fallbackWorktreeName}
+          >
             {worktree?.name || worktreeId || t().topbar.fallbackWorktreeName}
           </span>
           {unit !== undefined && (
-            <span className="shrink-0 truncate text-xs text-muted-foreground">· {unit.name}</span>
+            <span className="min-w-0 max-w-[40%] shrink-0 truncate text-xs text-muted-foreground" title={unit.name}>
+              · {unit.name}
+            </span>
           )}
         </div>
         {previewError !== undefined ? (
@@ -863,12 +874,12 @@ function WorktreeTitle({
         )}
       </div>
       <div
-        className="absolute top-1/2 left-1/2 z-10 -translate-x-1/2 -translate-y-1/2"
+        className="min-w-0 w-full @min-[1100px]/workbench:w-auto"
         data-testid="view-diff-center"
       >
         <SegmentedToggle
-          className="h-8 bg-muted/80 p-0.5 shadow-xs"
-          itemClassName="h-7 min-w-[72px] px-5 py-0 text-[13px]"
+          className="h-12 w-full bg-muted/80 p-0.5 shadow-xs @min-[1100px]/workbench:h-8"
+          itemClassName="h-11 min-w-0 flex-1 basis-0 px-5 py-0 text-[13px] @min-[1100px]/workbench:h-7 @min-[1100px]/workbench:min-w-[72px] @min-[1100px]/workbench:flex-none"
           value={snap.comparisonMode ? "diff" : "view"}
           options={[
             { value: "view", label: t().topbar.segView },
@@ -877,7 +888,10 @@ function WorktreeTitle({
           onChange={(value) => void app.setComparisonMode(value === "diff")}
         />
       </div>
-      <div className="flex shrink-0 items-center gap-2">
+      <div
+        className="flex min-w-0 max-w-full flex-wrap items-center gap-2 empty:hidden @min-[1100px]/workbench:justify-end @min-[1100px]/workbench:justify-self-end"
+        data-testid="worktree-actions"
+      >
         {snap.comparisonMode && (
           <>
             {snap.comparisonData?.response.stale && (
@@ -903,7 +917,11 @@ function WorktreeTitle({
           />
         )}
         {worktree?.status === "draft" && (
-          <Button size="sm" onClick={() => void app.doReady(worktreeId)}>
+          <Button
+            size="sm"
+            className="h-11 min-w-0 flex-1 whitespace-normal @min-[1100px]/workbench:h-8 @min-[1100px]/workbench:flex-none"
+            onClick={() => void app.doReady(worktreeId)}
+          >
             <CircleCheck />
             {t().topbar.submitForReview}
           </Button>
@@ -911,6 +929,7 @@ function WorktreeTitle({
         {worktree?.status === "ready" && (
           <Button
             size="sm"
+            className="h-11 min-w-0 flex-1 whitespace-normal @min-[1100px]/workbench:h-8 @min-[1100px]/workbench:flex-none"
             disabled={preview !== undefined && !mergeable}
             onClick={() => {
               if (preview !== undefined && !mergeable) {
@@ -928,6 +947,7 @@ function WorktreeTitle({
           <Button
             variant="destructiveGhost"
             size="sm"
+            className="h-11 @min-[1100px]/workbench:h-8"
             onClick={() => void app.doDiscard(worktreeId)}
           >
             <Trash2 />
@@ -1033,7 +1053,7 @@ function ComparisonContent({ app, snap }: { app: App; snap: AppSnapshot }): Reac
               leftWorkbookData: (data.leftUnitData as IWorkbookData | undefined) ?? null,
               rightLabel: comparisonRevisionLabel(session.right.label, data.response.right.revision),
               rightWorkbookData: (data.rightUnitData as IWorkbookData | undefined) ?? null,
-              orderedChangesetStream: data.orderedChangesetStream,
+              context: data.context,
               ...(data.response.fidelity === "snapshot"
                 ? {
                     degradedReason: t().diff.comparingMaterializedSnapshots
@@ -1056,6 +1076,7 @@ function NativeUnitDiff({ app, snap }: { app: App; snap: AppSnapshot }): ReactEl
     return (
       <BaseTableDiffViewer
         fidelity={data.response.fidelity}
+        items={structuralDiffItemsFromContext(data.context)}
         left={data.leftUnitData}
         leftLabel={session.left.label}
         leftSourceControl={<ComparisonSourceSelect app={app} snap={snap} />}
@@ -1080,16 +1101,11 @@ function CanvasNativeUnitDiff({ app, snap }: { app: App; snap: AppSnapshot }): R
     () =>
       data === undefined
         ? []
-        : buildUnitStructuralDiff({
-            type: data.response.unit.type,
-            left: data.leftUnitData,
-            right: data.rightUnitData
-          }),
+        : structuralDiffItemsFromContext(data.context),
     [data]
   );
   const selectedItem =
     items.find((item) => item.id === selectedItemId) ?? items[0] ?? undefined;
-  const selectedIndex = selectedItem === undefined ? -1 : items.indexOf(selectedItem);
   const pageTabs = useMemo(
     () =>
       data?.response.unit.type === UNIT_TYPE_SLIDE
@@ -1138,7 +1154,10 @@ function CanvasNativeUnitDiff({ app, snap }: { app: App; snap: AppSnapshot }): R
         snapshot: source.snapshot,
         sheetBlocks: [...(source.sheetBlocks ?? [])],
         changesets: [],
-        comparison: { side: comparisonSide, peerData, items },
+        comparison: {
+          side: comparisonSide, peerData, items,
+          alignment: data.context.productContext.kind === "doc" ? data.context.productContext.paragraphAlignment.rows : [],
+        },
         ...(data.response.unit.type === UNIT_TYPE_SLIDE &&
         selectedPageId !== null &&
         slidePagePresent(
@@ -1194,7 +1213,9 @@ function CanvasNativeUnitDiff({ app, snap }: { app: App; snap: AppSnapshot }): R
       disposed = true;
       disposeLinkedNavigation();
       disposeLinkedBoardViewport();
-      for (const handle of handles) handle.dispose();
+      // Univer viewers own React roots. Effect cleanup runs during React's commit phase, so defer
+      // their synchronous teardown until the current shell commit has completed.
+      for (const handle of handles) setTimeout(() => handle.dispose(), 0);
       leftHandleRef.current = null;
       rightHandleRef.current = null;
     };
@@ -1232,29 +1253,8 @@ function CanvasNativeUnitDiff({ app, snap }: { app: App; snap: AppSnapshot }): R
           selectedItemId={selectedItem?.id}
           onSelect={focusItem}
         />
-        <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] bg-card">
-          <ComparisonChangeNavigator
-            changeIndex={Math.max(0, selectedIndex)}
-            item={
-              selectedItem === undefined
-                ? null
-                : {
-                    ...selectedItem,
-                    entityLabel: structuralDiffItemEntityLabel(selectedItem),
-                    label: structuralDiffItemLabel(selectedItem)
-                  }
-            }
-            total={items.length}
-            onNext={() => {
-              const next = items[selectedIndex + 1];
-              if (next !== undefined) focusItem(next);
-            }}
-            onPrevious={() => {
-              const previous = items[selectedIndex - 1];
-              if (previous !== undefined) focusItem(previous);
-            }}
-          />
-          <div className="grid min-h-0 grid-cols-2 gap-px max-[1023px]:h-full max-[1023px]:grid-cols-1 max-[1023px]:grid-rows-2">
+        <div className="grid min-h-0 grid-rows-[minmax(0,1fr)] bg-card">
+          <div className="grid min-h-0 grid-cols-2 gap-px bg-border max-[1023px]:h-full max-[1023px]:grid-cols-1 max-[1023px]:grid-rows-2" data-testid="native-diff-panes">
             <NativeDiffSide
               activePageId={selectedPageId}
               hostRef={leftRef}
@@ -1425,11 +1425,11 @@ function NativeDiffSidebar({
 
 /**
  * Native Unit renderers consume wheel gestures on canvases instead of exposing a shared scroll
- * container. Relay only trusted user gestures and mark the synthetic counterpart event so it
+ * container. Mark the synthetic counterpart event so it
  * cannot echo back. Product-specific stable-ID navigation is represented by the change sidebar;
  * this keeps direct pan/scroll gestures paired as well.
  */
-function attachLinkedWheelNavigation(
+export function attachLinkedWheelNavigation(
   left: HTMLDivElement | null,
   right: HTMLDivElement | null
 ): () => void {
@@ -1437,9 +1437,14 @@ function attachLinkedWheelNavigation(
   const linkedEvents = new WeakSet<Event>();
   const attach = (source: HTMLElement, target: HTMLElement): (() => void) => {
     const listener = (event: WheelEvent): void => {
-      if (linkedEvents.has(event) || !event.isTrusted) return;
+      if (linkedEvents.has(event)) return;
       const targetNode = target.querySelector("canvas") ?? target;
+      const targetBounds = targetNode.getBoundingClientRect();
       const linked = new WheelEvent("wheel", {
+        // Native renderers hit-test wheel coordinates against the target viewport.
+        // Default (0, 0) falls outside the peer pane, especially in stacked layouts.
+        clientX: targetBounds.left + targetBounds.width / 2,
+        clientY: targetBounds.top + targetBounds.height / 2,
         deltaX: event.deltaX,
         deltaY: event.deltaY,
         deltaZ: event.deltaZ,

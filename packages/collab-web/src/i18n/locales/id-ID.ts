@@ -1,6 +1,7 @@
 import { messagesFromVocabulary, type MessageVocabulary } from "./from-vocabulary";
 
 const vocabulary = {
+  showFormulas: "Tampilkan rumus",
   title: "Penampil kolaborasi",
   file: "file",
   modification: "perubahan",

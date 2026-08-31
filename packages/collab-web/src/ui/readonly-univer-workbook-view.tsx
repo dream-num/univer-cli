@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState, type MutableRefObject, type ReactElement } from "react";
-import type { WorkbookCompareSheetGapConfig } from "@univer/workbook-compare";
+import type { WorkbookCompareRangeHighlight, WorkbookCompareSheetGapConfig } from "@univer/workbook-compare";
 import {
+  getIntersectRange,
   ICommandService,
+  type IDisposable,
+  type ILanguagePack,
   type IRange,
   type IWorkbookData,
   IPermissionService,
@@ -25,6 +28,9 @@ import {
   TEST_LICENSE,
   ViewAssetIoOwner
 } from "@univer/render-preset";
+import { currentLang, sdkLocaleOf, t } from "../i18n/index.js";
+import { loadViewerLocale } from "../core/locales/generated/load.js";
+import { registerFormulaTextDisplay } from "../core/formula-text-display.js";
 
 import "@univerjs/engine-formula/facade";
 import "@univer/render-preset/facades";
@@ -42,21 +48,26 @@ export function ReadonlyUniverWorkbookView(input: {
   readonly controlledScroll?: ReadonlyWorkbookControlledScroll | null;
   readonly controlledSelection?: ReadonlyWorkbookControlledSelection | null;
   readonly gapConfig?: WorkbookCompareSheetGapConfig | null;
+  readonly highlights?: readonly WorkbookCompareRangeHighlight[];
   readonly onScrollChange?: (payload: ReadonlyWorkbookScrollPayload) => void;
   readonly onSelectionChange?: (payload: ReadonlyWorkbookSelectionPayload) => void;
   readonly selectedRange?: IRange | null;
   readonly showFooter?: boolean;
+  readonly showFormulaText?: boolean;
   readonly snapshot: unknown;
 }): ReactElement {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const activeWorkbookRef = useRef<FWorkbook | null>(null);
   const univerRef = useRef<Univer | null>(null);
+  const formulaDisplayRef = useRef<IDisposable | null>(null);
+  const showFormulaTextRef = useRef(input.showFormulaText ?? false);
   const currentWorkbookIdRef = useRef<string | null>(null);
   const lastAppliedScrollKeyRef = useRef<string | null>(null);
   const lastEmittedScrollKeyRef = useRef<string | null>(null);
   const lastAppliedSelectionKeyRef = useRef<string | null>(null);
   const lastEmittedSelectionKeyRef = useRef<string | null>(null);
   const [renderError, setRenderError] = useState<string | null>(null);
+  const locale = sdkLocaleOf(currentLang());
 
   useEffect(() => {
     const container = containerRef.current;
@@ -64,7 +75,10 @@ export function ReadonlyUniverWorkbookView(input: {
       return;
     }
 
-    container.replaceChildren();
+    const viewerHost = document.createElement("div");
+    viewerHost.style.width = "100%";
+    viewerHost.style.height = "100%";
+    container.replaceChildren(viewerHost);
     setRenderError(null);
 
     let univer: Univer | null = null;
@@ -79,10 +93,13 @@ export function ReadonlyUniverWorkbookView(input: {
     lastAppliedSelectionKeyRef.current = null;
     lastEmittedSelectionKeyRef.current = null;
 
+    const initialize = async (): Promise<void> => {
     try {
-      univer = (input.createUniver ?? createReadonlyDesktopUniver)(container, {
-        footer: input.showFooter ?? true
-      });
+      const localePack = await loadViewerLocale(locale);
+      if (disposed) return;
+      univer = input.createUniver === undefined
+        ? createReadonlyDesktopUniver(viewerHost, { footer: input.showFooter ?? true, locale, localePack })
+        : input.createUniver(viewerHost, { footer: input.showFooter ?? true });
       univer.createUnit(UniverInstanceType.UNIVER_SHEET, input.snapshot as IWorkbookData);
 
       const injector = univer.__getInjector();
@@ -100,6 +117,9 @@ export function ReadonlyUniverWorkbookView(input: {
 
       if (activeWorkbook != null) {
         univerRef.current = univer;
+        if (showFormulaTextRef.current) {
+          formulaDisplayRef.current = registerFormulaTextDisplay(univer, activeWorkbook);
+        }
         activeWorkbookRef.current = activeWorkbook;
         currentWorkbookIdRef.current = activeWorkbook.getId();
         applySelectedRange(
@@ -151,6 +171,20 @@ export function ReadonlyUniverWorkbookView(input: {
           }
 
           cleanup.push(...applySelectionRangeInteractionGuards(selectionRenderService));
+          const highlightSheet = targetSheet ?? activeWorkbook.getActiveSheet();
+          if (highlightSheet !== null) {
+            const bounds = { startRow: 0, startColumn: 0, endRow: highlightSheet.getMaxRows() - 1, endColumn: highlightSheet.getMaxColumns() - 1 };
+            for (const kind of ["delete", "insert", "update"] as const) {
+              // Diff ranges can span the larger side; render only their intersection with this sheet.
+              const ranges = (input.highlights ?? []).filter((item) => item.kind === kind)
+                .map((item) => getIntersectRange(item.range, bounds))
+                .filter((range): range is IRange => range != null)
+                .map((range) => highlightSheet.getRange(range.startRow, range.startColumn, range.endRow - range.startRow + 1, range.endColumn - range.startColumn + 1));
+              if (ranges.length === 0) continue;
+              const highlight = highlightSheet.highlightRanges(ranges, { fill: kind === "delete" ? "rgba(239,68,68,0.18)" : kind === "insert" ? "rgba(34,197,94,0.18)" : "rgba(59,130,246,0.18)", strokeWidth: 0, widgetSize: 0 });
+              cleanup.push(() => highlight.dispose());
+            }
+          }
           selectionGuardsAttached = true;
           return gapConfigApplied;
         };
@@ -170,12 +204,21 @@ export function ReadonlyUniverWorkbookView(input: {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.error("Failed to initialize read-only workbook comparison pane", error);
-      setRenderError(`Failed to render workbook: ${message}`);
+      setRenderError(`${t().diff.renderFailed}: ${message}`);
+      formulaDisplayRef.current?.dispose();
+      formulaDisplayRef.current = null;
       univer?.dispose();
+      viewerHost.remove();
       return;
     }
+    };
+    initialize().catch((error: unknown) => {
+      if (!disposed) setRenderError(String(error));
+    });
 
     return () => {
+      formulaDisplayRef.current?.dispose();
+      formulaDisplayRef.current = null;
       activeWorkbookRef.current = null;
       univerRef.current = null;
       currentWorkbookIdRef.current = null;
@@ -186,9 +229,28 @@ export function ReadonlyUniverWorkbookView(input: {
       for (const dispose of cleanup) {
         dispose();
       }
-      univer?.dispose();
+      // Univer owns a nested React root. Dispose after the comparison shell's commit finishes;
+      // the per-instance host prevents a delayed old viewer from touching its replacement.
+      setTimeout(() => {
+        univer?.dispose();
+        viewerHost.remove();
+      }, 0);
     };
-  }, [input.activeSheetId, input.gapConfig, input.showFooter, input.snapshot]);
+  }, [input.activeSheetId, input.gapConfig, input.highlights, input.showFooter, input.snapshot, locale]);
+
+  useEffect(() => {
+    showFormulaTextRef.current = input.showFormulaText ?? false;
+    try {
+      formulaDisplayRef.current?.dispose();
+      formulaDisplayRef.current = null;
+      if (showFormulaTextRef.current && univerRef.current !== null && activeWorkbookRef.current !== null) {
+        formulaDisplayRef.current = registerFormulaTextDisplay(univerRef.current, activeWorkbookRef.current);
+      }
+    } catch (error) {
+      console.error("Failed to update workbook formula display", error);
+      setRenderError(error instanceof Error ? error.message : String(error));
+    }
+  }, [input.showFormulaText]);
 
   useEffect(() => {
     applySelectedRange(
@@ -615,11 +677,11 @@ function readSelectionRenderService(
 
 function createReadonlyDesktopUniver(
   container: HTMLElement,
-  input: { readonly footer: boolean }
+  input: { readonly footer: boolean; readonly locale: LocaleType; readonly localePack: ILanguagePack }
 ): Univer {
   const univer = new Univer({
-    locale: LocaleType.EN_US,
-    locales: {},
+    locale: input.locale,
+    locales: { [input.locale]: input.localePack },
     logLevel: LogLevel.WARN
   });
 
@@ -629,6 +691,8 @@ function createReadonlyDesktopUniver(
     assetIoOwner: ViewAssetIoOwner.Local,
     license: TEST_LICENSE,
     workbenchChrome: input.footer ? "visible" : "hidden",
+    // Native table anchors include hover-to-insert row/column buttons, not comments.
+    sheetTableUI: { hideAnchor: true },
     unitType: UniverInstanceType.UNIVER_SHEET
   });
 

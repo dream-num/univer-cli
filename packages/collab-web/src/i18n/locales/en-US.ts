@@ -1,4 +1,25 @@
-const STRUCTURAL_ENTITY_LABELS: Readonly<Record<string, string>> = {
+import { UnitComparisonEntityType } from "@univerjs-pro/edit-history";
+import { comparisonTerm, localizedComparisonEnum, localizedComparisonPath } from "./comparison-labels.js";
+
+const UNIT_COMPARISON_ENTITY_TYPES = new Set<string>(Object.values(UnitComparisonEntityType));
+
+function isUnitComparisonEntityType(value: string): value is UnitComparisonEntityType {
+  return UNIT_COMPARISON_ENTITY_TYPES.has(value);
+}
+
+const STRUCTURAL_ENTITY_LABELS: Readonly<Record<UnitComparisonEntityType, string>> = {
+  unit: "Unit",
+  workbook: "Workbook",
+  worksheet: "Worksheet",
+  cell: "Cell",
+  "row-column": "Rows and columns",
+  move: "Move",
+  "condition-format": "Conditional format",
+  "data-validation": "Data validation",
+  sparkline: "Sparkline",
+  shape: "Shape",
+  chart: "Chart",
+  pivot: "Pivot table",
   paragraph: "Paragraph",
   "text-style": "Text style",
   section: "Section",
@@ -37,7 +58,6 @@ const STRUCTURAL_ENTITY_LABELS: Readonly<Record<string, string>> = {
   field: "Field",
   record: "Record",
   view: "View",
-  cell: "Cell",
   "board-page": "Board page",
   "board-element": "Board element",
   "board-theme": "Board theme",
@@ -50,17 +70,34 @@ const COMPARISON_PATH_LABELS: Readonly<Record<string, string>> = {
   text: "Text",
   value: "Value",
   formula: "Formula",
+  formulaName: "Formula name",
   name: "Name",
   type: "Type",
   language: "Language",
   config: "Settings",
-  columns: "Column layout",
+  columns: "Columns",
+  rowCount: "Row count", columnCount: "Column count",
+  h: "Row height", w: "Column width", hd: "Hidden", ia: "Automatic height",
+  bg: "Background", rgb: "Color", cl: "Text color", fs: "Font size", bl: "Bold", it: "Italic",
+  range: "Range", ranges: "Ranges", rangeInfo: "Range", rule: "Rule", operator: "Operator",
+  startRow: "Start row", endRow: "End row", startColumn: "Start column", endColumn: "End column",
+  transform: "Transform", left: "Horizontal position", top: "Vertical position", angle: "Rotation",
+  cfId: "Rule identity", uid: "Identity", id: "Identity", palette: "Palette", content: "Content", titles: "Titles", title: "Title",
+  sparklines: "Sparklines", fieldsConfig: "Pivot fields", collection: "Data source", filters: "Filters", options: "Options",
   gap: "Column spacing",
   position: "Position",
+  start: "Start",
+  count: "Count",
   geometry: "Position and size",
   "geometry.x": "Horizontal position",
   "geometry.y": "Vertical position",
   style: "Formatting",
+  "style.bg": "Background",
+  "style.bl": "Bold",
+  "style.cl": "Text color",
+  "style.fs": "Font size",
+  "style.it": "Italic",
+  "style.n": "Number format",
   "style.backgroundColor.rgb": "Background color",
   "style.background": "Background color",
   backgroundColor: "Background color",
@@ -72,9 +109,14 @@ const COMPARISON_PATH_LABELS: Readonly<Record<string, string>> = {
 };
 
 function comparisonPathLabel(path: readonly string[]): string {
-  const exact = COMPARISON_PATH_LABELS[path.join(".")];
-  if (exact !== undefined) return exact;
-  return path.map((part) => COMPARISON_PATH_LABELS[part] ?? part.replace(/([a-z])([A-Z])/g, "$1 $2")).join(" · ");
+  return localizedComparisonPath("en-US", path, (key) => COMPARISON_PATH_LABELS[key]);
+}
+
+function comparisonEntityLabel(category: string): string {
+  const entityType = category.split(":")[0] ?? "";
+  return isUnitComparisonEntityType(entityType)
+    ? STRUCTURAL_ENTITY_LABELS[entityType]
+    : "Content";
 }
 
 /** English shell copy; this table is the structural authority for every other language. */
@@ -171,11 +213,14 @@ export const EN_US_MESSAGES = {
     changes: "Changes",
     structuralDiff: "Structural diff",
     kind: { insert: "Added", delete: "Deleted", update: "Modified" },
-    entity: (category: string): string =>
-      STRUCTURAL_ENTITY_LABELS[category.split(":")[0] ?? ""] ?? "Content",
+    entity: comparisonEntityLabel,
     entityAt: (category: string, index: number): string =>
-      `${STRUCTURAL_ENTITY_LABELS[category.split(":")[0] ?? ""] ?? "Content"} ${index}`,
+      `${comparisonEntityLabel(category)} ${index}`,
     changePath: comparisonPathLabel,
+    changeValue: (entityType: string, path: readonly string[], value: unknown): string | undefined => localizedComparisonEnum("en-US", entityType, path, value),
+    renderFailed: comparisonTerm("en-US", "loadFailed"),
+    comparisonFailed: comparisonTerm("en-US", "comparisonFailed"),
+    incompletePage: comparisonTerm("en-US", "incompletePage"),
     wholeItem: "Entire item",
     present: "Present",
     itemCount: (count: number): string => `${count} item${count === 1 ? "" : "s"}`,
@@ -207,6 +252,7 @@ export const EN_US_MESSAGES = {
     workbook: "Workbook",
     content: "Content",
     formatting: "Formatting",
+    showFormulas: "Show formulas",
     searchChanges: "Search changes",
     noItems: "No comparison items in this scope.",
     selectItemHint: "Select a comparison item to inspect the affected sheet content.",
