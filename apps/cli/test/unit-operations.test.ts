@@ -35,8 +35,13 @@ describe("Local Worktree and Unit operations", () => {
       worktreeApplication: application,
     });
     const worktree = program.commands.find((command) => command.name() === "worktree");
+    const status = program.commands.find((command) => command.name() === "status");
+    const unit = program.commands.find((command) => command.name() === "unit");
+    const unitList = unit?.commands.find((command) => command.name() === "list");
     const inspect = program.commands.find((command) => command.name() === "inspect");
     const execute = program.commands.find((command) => command.name() === "execute");
+    const executeHelp: string[] = [];
+    execute?.configureOutput({ writeOut: (text) => executeHelp.push(text) }).outputHelp();
 
     expect(worktree?.commands.map((command) => command.name())).toEqual([
       "add",
@@ -52,6 +57,10 @@ describe("Local Worktree and Unit operations", () => {
     expect(inspect?.helpInformation()).toContain("--trunk");
     expect(inspect?.helpInformation()).toContain("--worktree <id>");
     expect(execute?.helpInformation()).toContain("-e, --code <code>");
+    expect(execute?.helpInformation()).toContain("use --script for multiline code");
+    expect(executeHelp.join("")).toContain("Explicitly return readback values");
+    expect(status?.helpInformation()).toContain("--trunk");
+    expect(unitList?.helpInformation()).toContain("--trunk");
   });
 
   it("exposes Worktree and Unit lifecycle results without a success wrapper", async () => {
@@ -115,6 +124,10 @@ describe("Local Worktree and Unit operations", () => {
     );
     expect(unit.exitCode).toBe(0);
     expect(JSON.parse(unit.stdout)).toMatchObject({ unitId: "unit-1", kind: "sheet" });
+
+    const units = await invoke(["unit", "list", "book.univer", "--trunk", "--json"], editing);
+    expect(units.exitCode).toBe(0);
+    expect(JSON.parse(units.stdout)).toMatchObject({ scope: "trunk", units: [] });
     expect(calls).toEqual([
       { name: "agent work", path: "book.univer" },
       { kind: "sheet", name: "Plan", path: "book.univer", worktreeId: "wt-1" },
@@ -138,6 +151,8 @@ describe("Local Worktree and Unit operations", () => {
       },
       async inspect(input) {
         inspection = input;
+        if (input.query.kind === "base") return baseInspection();
+        if (input.query.kind === "board") return boardInspection();
         return rangeInspection();
       },
     });
@@ -190,6 +205,32 @@ describe("Local Worktree and Unit operations", () => {
         ranges: [{ range: "A1:B2", worksheet: { name: "Plan" } }],
       },
       unitId: "unit-1",
+      worktreeId: "wt-1",
+    });
+
+    const inspectedBase = await invoke(
+      ["inspect", "base", "book.univer", "--unit", "base-1", "--worktree", "wt-1", "--json"],
+      editing,
+    );
+    expect(inspectedBase.exitCode).toBe(0);
+    expect(JSON.parse(inspectedBase.stdout)).toEqual(baseInspection());
+    expect(inspection).toEqual({
+      path: "book.univer",
+      query: { kind: "base" },
+      unitId: "base-1",
+      worktreeId: "wt-1",
+    });
+
+    const inspectedBoard = await invoke(
+      ["inspect", "board", "book.univer", "--unit", "board-1", "--worktree", "wt-1", "--json"],
+      editing,
+    );
+    expect(inspectedBoard.exitCode).toBe(0);
+    expect(JSON.parse(inspectedBoard.stdout)).toEqual(boardInspection());
+    expect(inspection).toEqual({
+      path: "book.univer",
+      query: { kind: "board" },
+      unitId: "board-1",
       worktreeId: "wt-1",
     });
   });
@@ -321,5 +362,57 @@ function rangeInspection(): ContentInspectionResult {
       },
     ],
     unitId: "unit-1",
+  };
+}
+
+function baseInspection(): ContentInspectionResult {
+  return {
+    kind: "base",
+    name: "Customer orders",
+    tables: [
+      {
+        fields: [
+          {
+            config: {},
+            id: "customer-name",
+            index: 0,
+            isReadonly: false,
+            name: "Customer name",
+            type: "text",
+          },
+        ],
+        formulaName: "Customers",
+        id: "customers",
+        index: 0,
+        name: "Customers",
+        primaryFieldId: "customer-name",
+        recordCount: 1,
+        views: [{ id: "customer-grid", index: 0, name: "All customers", type: "grid" }],
+      },
+    ],
+    unitId: "base-1",
+  };
+}
+
+function boardInspection(): ContentInspectionResult {
+  return {
+    elementCounts: { byType: { shape: 1 }, total: 1 },
+    elements: [
+      {
+        bounds: { height: 100, left: 80, top: 80, width: 180 },
+        id: "shape-1",
+        locked: false,
+        orderIndex: 0,
+        selectable: true,
+        text: "Review",
+        transform: { height: 100, left: 80, top: 80, width: 180 },
+        type: "shape",
+        visible: true,
+      },
+    ],
+    kind: "board",
+    name: "Planning Board",
+    themeData: {},
+    unitId: "board-1",
   };
 }

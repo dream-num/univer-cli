@@ -55,10 +55,13 @@ export function parseInspectRequest(payload: JsonValue): {
     kind !== "workbook" &&
     kind !== "worksheet" &&
     kind !== "worksheet-range" &&
+    kind !== "document" &&
+    kind !== "paragraph" &&
     kind !== "presentation" &&
     kind !== "slide" &&
-    kind !== "document" &&
-    kind !== "paragraph"
+    kind !== "base" &&
+    kind !== "board" &&
+    kind !== "board-element"
   ) {
     throw codedError("INSPECTION_REQUEST_INVALID", "content inspection query kind is invalid");
   }

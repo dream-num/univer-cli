@@ -269,6 +269,34 @@ describe("univer local CLI composition", () => {
     expect(JSON.parse(output.join(""))).toEqual({ filePath: "/tmp/book.univer" });
   });
 
+  it("accepts an explicit trunk scope for status", async () => {
+    const output: string[] = [];
+    let statusInput: unknown;
+    const exitCode = await runCli(["status", "book.univer", "--trunk", "--json"], {
+      program: {
+        univerfileApplication: fakeApplication({
+          async status(input) {
+            statusInput = input;
+            return {
+              filePath: input.path,
+              scope: "trunk",
+              units: [],
+              upgrade: { status: "unchanged", format: "v2" },
+            };
+          },
+        }),
+      },
+      streams: {
+        writeErr: (text) => output.push(text),
+        writeOut: (text) => output.push(text),
+      },
+    });
+
+    expect(exitCode).toBe(0);
+    expect(statusInput).toEqual({ path: "book.univer" });
+    expect(JSON.parse(output.join(""))).toMatchObject({ scope: "trunk", units: [] });
+  });
+
   it("writes one machine failure document to stderr", async () => {
     const stdout: string[] = [];
     const stderr: string[] = [];

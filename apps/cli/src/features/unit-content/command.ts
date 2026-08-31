@@ -30,10 +30,13 @@ const INSPECTION_TARGETS = [
   "workbook",
   "worksheet",
   "range",
-  "presentation",
-  "slide",
   "document",
   "paragraph",
+  "presentation",
+  "slide",
+  "base",
+  "board",
+  "board-element",
 ] as const;
 
 type InspectionTarget = (typeof INSPECTION_TARGETS)[number];
@@ -50,9 +53,19 @@ function createExecuteCommand(application: LocalUnitContentApplication): Command
     .argument("<file.univer>", "local .univer file path")
     .requiredOption("--worktree <id>", "writable Worktree ID")
     .requiredOption("--unit <id>", "Unit ID")
-    .option("-e, --code <code>", "inline Facade code")
-    .option("--script <path>", "read Facade code from a local file")
+    .option("-e, --code <code>", "inline Facade code; use --script for multiline code")
+    .option("--script <path>", "read multiline Facade code from a local file")
     .option("--json", "write structured JSON")
+    .addHelpText(
+      "after",
+      [
+        "",
+        "Execution notes:",
+        "  Explicitly return readback values; bare expressions and console.log do not populate value.",
+        "  Read-only code creates no revision.",
+        "",
+      ].join("\n"),
+    )
     .action(async (path: string, options: ExecuteOptions) => {
       const code = await run(command, async () => await readCode(options));
       const result = await run(command, async () =>

@@ -89,11 +89,16 @@ univer worktree merge ./book.univer --worktree <worktree-id>
 ```
 
 Unit mutation 和 `execute` 只允许在 `draft` Worktree；`ready` 后必须 `reopen` 才能继续写。`execute` 使用 CLI
-SDK content-execution prelude，执行前 pull，捕获 mutation 后自动提交，并报告 Collaboration revision。只读代码
-不创建 revision。
+SDK content-execution prelude，执行前 pull，捕获 mutation 后自动提交，并报告 Collaboration revision。单行代码使用
+`-e`，多行代码使用 `--script`。读回值必须显式 `return`；裸表达式和 `console.log` 不会填充 `value`。只读代码不创建
+revision。
 
-`inspect` 使用 CLI SDK selector grammar：`name:`、`id:`、`index:`，其中 index 为 1-based。读取 Sheet range
-时使用 `--worksheet`。每次 inspection 必须通过 `--trunk` 或 `--worktree <id>` 明确选择一个 scope。
+`status` 和 `unit list` 默认读取 trunk，也接受显式 `--trunk`；使用 `--worktree <id>` 读取 Worktree。
+
+`inspect` 按 Sheet workbook/worksheet/range、Doc document/paragraph、Slide presentation/slide、
+Base overview、Board overview/element detail 的顺序支持各类 Unit。它使用 CLI SDK selector
+grammar：`name:`、`id:`、1-based `index:`。读取 Sheet range 时使用 `--worksheet`；Board element
+detail 使用 `id:` selector。每次 inspection 必须通过 `--trunk` 或 `--worktree <id>` 明确选择一个 scope。
 
 ## Import and export
 
