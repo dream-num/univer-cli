@@ -30,10 +30,13 @@ const INSPECTION_TARGETS = [
   "workbook",
   "worksheet",
   "range",
-  "presentation",
-  "slide",
   "document",
   "paragraph",
+  "presentation",
+  "slide",
+  "base",
+  "board",
+  "board-element",
 ] as const;
 
 type InspectionTarget = (typeof INSPECTION_TARGETS)[number];

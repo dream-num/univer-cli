@@ -138,6 +138,8 @@ describe("Local Worktree and Unit operations", () => {
       },
       async inspect(input) {
         inspection = input;
+        if (input.query.kind === "base") return baseInspection();
+        if (input.query.kind === "board") return boardInspection();
         return rangeInspection();
       },
     });
@@ -190,6 +192,32 @@ describe("Local Worktree and Unit operations", () => {
         ranges: [{ range: "A1:B2", worksheet: { name: "Plan" } }],
       },
       unitId: "unit-1",
+      worktreeId: "wt-1",
+    });
+
+    const inspectedBase = await invoke(
+      ["inspect", "base", "book.univer", "--unit", "base-1", "--worktree", "wt-1", "--json"],
+      editing,
+    );
+    expect(inspectedBase.exitCode).toBe(0);
+    expect(JSON.parse(inspectedBase.stdout)).toEqual(baseInspection());
+    expect(inspection).toEqual({
+      path: "book.univer",
+      query: { kind: "base" },
+      unitId: "base-1",
+      worktreeId: "wt-1",
+    });
+
+    const inspectedBoard = await invoke(
+      ["inspect", "board", "book.univer", "--unit", "board-1", "--worktree", "wt-1", "--json"],
+      editing,
+    );
+    expect(inspectedBoard.exitCode).toBe(0);
+    expect(JSON.parse(inspectedBoard.stdout)).toEqual(boardInspection());
+    expect(inspection).toEqual({
+      path: "book.univer",
+      query: { kind: "board" },
+      unitId: "board-1",
       worktreeId: "wt-1",
     });
   });
@@ -321,5 +349,57 @@ function rangeInspection(): ContentInspectionResult {
       },
     ],
     unitId: "unit-1",
+  };
+}
+
+function baseInspection(): ContentInspectionResult {
+  return {
+    kind: "base",
+    name: "Customer orders",
+    tables: [
+      {
+        fields: [
+          {
+            config: {},
+            id: "customer-name",
+            index: 0,
+            isReadonly: false,
+            name: "Customer name",
+            type: "text",
+          },
+        ],
+        formulaName: "Customers",
+        id: "customers",
+        index: 0,
+        name: "Customers",
+        primaryFieldId: "customer-name",
+        recordCount: 1,
+        views: [{ id: "customer-grid", index: 0, name: "All customers", type: "grid" }],
+      },
+    ],
+    unitId: "base-1",
+  };
+}
+
+function boardInspection(): ContentInspectionResult {
+  return {
+    elementCounts: { byType: { shape: 1 }, total: 1 },
+    elements: [
+      {
+        bounds: { height: 100, left: 80, top: 80, width: 180 },
+        id: "shape-1",
+        locked: false,
+        orderIndex: 0,
+        selectable: true,
+        text: "Review",
+        transform: { height: 100, left: 80, top: 80, width: 180 },
+        type: "shape",
+        visible: true,
+      },
+    ],
+    kind: "board",
+    name: "Planning Board",
+    themeData: {},
+    unitId: "board-1",
   };
 }
