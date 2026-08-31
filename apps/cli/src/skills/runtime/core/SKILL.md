@@ -51,10 +51,6 @@ univer inspect range A1:C9 wb.univer --worksheet name:Sheet1 \
   --worktree <id> --unit <u> --json
 ```
 
-Use `-e` for short one-line code and `--script` for multiline code. Explicitly `return` readback
-values; bare expressions and `console.log` do not populate the CLI `value`. The execution sandbox
-has no Node.js `require`, and read-only code creates no revision.
-
 After the readback is correct, follow "Finish the task" below.
 
 ## Finish the task
