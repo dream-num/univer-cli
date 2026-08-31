@@ -1,5 +1,8 @@
 @import "tailwindcss" source("..");
 @import "tw-animate-css";
+@import "@univerjs-pro/bases-history-ui/lib/index.css";
+@import "@univerjs-pro/boards-history-ui/lib/index.css";
+@import "@univerjs-pro/edit-history-ui/lib/index.css";
 @import "@univerjs-pro/sheets-history-ui/lib/index.css";
 
 /*

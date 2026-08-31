@@ -206,6 +206,39 @@ describe("authoritative Browser View rendering composition", () => {
     ]);
   });
 
+  it("registers the standard SDK history UI for every trunk Unit type", async () => {
+    const human = await read("collab-web/src/core/viewer.ts");
+    const styles = await read("collab-web/src/styles.css");
+    const locale = await read("collab-web/src/core/locales/generated/en-US.ts");
+    const manifest = await read("collab-web/package.json");
+
+    expect(occurrences(human, "if (opts.worktreeId === undefined) {")).toBe(1);
+    expectInOrder(human, [
+      "if (opts.worktreeId === undefined) {",
+      "univer.registerPlugin(UniverDocsHistoryUIPlugin, historyConfig)",
+      "univer.registerPlugin(UniverSlidesHistoryUIPlugin, historyConfig)",
+      "univer.registerPlugin(UniverBasesHistoryUIPlugin, historyConfig)",
+      "univer.registerPlugin(UniverBoardsHistoryUIPlugin, historyConfig)",
+      "univer.registerPlugin(UniverSheetsHistoryUIPlugin, historyConfig)"
+    ]);
+    expect(human).toContain("historyServerUrl: urls.historyListServerUrl");
+    expect(human).not.toContain("historyListServerUrl: urls.historyListServerUrl");
+
+    for (const packageName of [
+      "bases-history-ui",
+      "boards-history-ui",
+      "docs-history-ui",
+      "edit-history-ui",
+      "sheets-history-ui",
+      "slides-history-ui"
+    ]) {
+      expect(`${manifest}\n${locale}`).toContain(`@univerjs-pro/${packageName}`);
+    }
+    for (const packageName of ["bases-history-ui", "boards-history-ui", "edit-history-ui", "sheets-history-ui"]) {
+      expect(styles).toContain(`@univerjs-pro/${packageName}/lib/index.css`);
+    }
+  });
+
   it("locks document scrolling around the Human viewer shell", async () => {
     const styles = await read("collab-web/src/styles.css");
 

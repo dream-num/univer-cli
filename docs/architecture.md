@@ -85,7 +85,7 @@ daemon 只管理本地服务和 runtime lifecycle。它为 render operation 物�
 
 Gateway 按 `.univer` runtime 隔离 Viewer Ribbon 使用的 `source=1` exchange 上传、异步 import/export task 与临时 artifact；导入在当前 trunk 创建新 Unit，导出物化 trunk head。Worktree 路径不暴露 exchange。嵌入资源继续使用按 Unit/worktree 授权的 `source=3` 文件协议，不能与 exchange artifact 混用。
 
-Gateway 为 trunk revision 组合 Collaboration SDK History Service 与 Endpoint。`@univer/univerfile-sqlite` 在共享文件 connection 上实现 History persistence contract；History 表只是由 core Unit/changeset 重建的派生索引。每个文件 runtime 启动时先把索引 reconcile 到 trunk head，再开放 SDK transport。Viewer 只为 trunk Sheet 注册 History Loader；Worktree、merge preview 和其他 Unit 不呈现这项能力。
+Gateway 为 trunk revision 组合 Collaboration SDK History Service 与 Endpoint。`@univer/univerfile-sqlite` 在共享文件 connection 上实现 History persistence contract；History 表只是由 core Unit/changeset 重建的派生索引。每个文件 runtime 启动时先把索引 reconcile 到 trunk head，再开放 SDK transport。Viewer 按 Unit 类型为 trunk Sheet、Doc、Slide、Base 和 Board 注册各自的标准 SDK History UI 插件；Worktree 与 merge preview 不呈现这项能力。
 
 Viewer 的 Unit comparison 在创建时固定左右 ref、Unit 集合和各自 head。Gateway 通过 Collaboration SDK
 把每侧物化为最终 snapshot；history 连续时同时返回从共同 Trunk revision 到两侧 head 的 changeset path，

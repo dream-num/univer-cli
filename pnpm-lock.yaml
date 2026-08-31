@@ -8,12 +8,14 @@ overrides:
   '@univerjs-pro/bases': 1.0.0-insiders.20260831-796c4f4
   '@univerjs-pro/bases-exchange-client': 1.0.0-insiders.20260831-796c4f4
   '@univerjs-pro/bases-history': 1.0.0-insiders.20260831-796c4f4
+  '@univerjs-pro/bases-history-ui': 1.0.0-insiders.20260831-796c4f4
   '@univerjs-pro/bases-thread-comment': 1.0.0-insiders.20260831-796c4f4
   '@univerjs-pro/bases-ui': 1.0.0-insiders.20260831-796c4f4
   '@univerjs-pro/boards': 1.0.0-insiders.20260831-796c4f4
   '@univerjs-pro/boards-chart': 1.0.0-insiders.20260831-796c4f4
   '@univerjs-pro/boards-chart-ui': 1.0.0-insiders.20260831-796c4f4
   '@univerjs-pro/boards-history': 1.0.0-insiders.20260831-796c4f4
+  '@univerjs-pro/boards-history-ui': 1.0.0-insiders.20260831-796c4f4
   '@univerjs-pro/boards-mind': 1.0.0-insiders.20260831-796c4f4
   '@univerjs-pro/boards-mind-ui': 1.0.0-insiders.20260831-796c4f4
   '@univerjs-pro/boards-print': 1.0.0-insiders.20260831-796c4f4
@@ -37,6 +39,7 @@ overrides:
   '@univerjs-pro/docs-column-ui': 1.0.0-insiders.20260831-796c4f4
   '@univerjs-pro/docs-exchange-client': 1.0.0-insiders.20260831-796c4f4
   '@univerjs-pro/docs-history': 1.0.0-insiders.20260831-796c4f4
+  '@univerjs-pro/docs-history-ui': 1.0.0-insiders.20260831-796c4f4
   '@univerjs-pro/docs-latex': 1.0.0-insiders.20260831-796c4f4
   '@univerjs-pro/docs-latex-ui': 1.0.0-insiders.20260831-796c4f4
   '@univerjs-pro/docs-list': 1.0.0-insiders.20260831-796c4f4
@@ -49,6 +52,7 @@ overrides:
   '@univerjs-pro/docs-table': 1.0.0-insiders.20260831-796c4f4
   '@univerjs-pro/docs-table-ui': 1.0.0-insiders.20260831-796c4f4
   '@univerjs-pro/edit-history': 1.0.0-insiders.20260831-796c4f4
+  '@univerjs-pro/edit-history-ui': 1.0.0-insiders.20260831-796c4f4
   '@univerjs-pro/embed': 1.0.0-insiders.20260831-796c4f4
   '@univerjs-pro/embed-ui': 1.0.0-insiders.20260831-796c4f4
   '@univerjs-pro/embed-unit-ui': 1.0.0-insiders.20260831-796c4f4
@@ -84,6 +88,7 @@ overrides:
   '@univerjs-pro/slides-chart-ui': 1.0.0-insiders.20260831-796c4f4
   '@univerjs-pro/slides-exchange-client': 1.0.0-insiders.20260831-796c4f4
   '@univerjs-pro/slides-history': 1.0.0-insiders.20260831-796c4f4
+  '@univerjs-pro/slides-history-ui': 1.0.0-insiders.20260831-796c4f4
   '@univerjs-pro/slides-print': 1.0.0-insiders.20260831-796c4f4
   '@univerjs-pro/slides-table': 1.0.0-insiders.20260831-796c4f4
   '@univerjs-pro/slides-table-ui': 1.0.0-insiders.20260831-796c4f4
@@ -438,6 +443,9 @@ importers:
       '@univerjs-pro/bases':
         specifier: 1.0.0-insiders.20260831-796c4f4
         version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/bases-history-ui':
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/bases-ui':
         specifier: 1.0.0-insiders.20260831-796c4f4
         version: 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
@@ -448,6 +456,9 @@ importers:
         specifier: 1.0.0-insiders.20260831-796c4f4
         version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/boards-chart-ui':
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/boards-history-ui':
         specifier: 1.0.0-insiders.20260831-796c4f4
         version: 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/boards-mind':
@@ -501,6 +512,9 @@ importers:
       '@univerjs-pro/docs-column-ui':
         specifier: 1.0.0-insiders.20260831-796c4f4
         version: 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/docs-history-ui':
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/docs-latex':
         specifier: 1.0.0-insiders.20260831-796c4f4
         version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
@@ -531,6 +545,9 @@ importers:
       '@univerjs-pro/edit-history':
         specifier: 1.0.0-insiders.20260831-796c4f4
         version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/edit-history-ui':
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/embed':
         specifier: 1.0.0-insiders.20260831-796c4f4
         version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
@@ -607,6 +624,9 @@ importers:
         specifier: 1.0.0-insiders.20260831-796c4f4
         version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/slides-chart-ui':
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/slides-history-ui':
         specifier: 1.0.0-insiders.20260831-796c4f4
         version: 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/slides-table':
@@ -3125,10 +3145,25 @@ packages:
   '@univer-cli/univer-render-runtime@1.0.0-insiders.20260829-2e3c387':
     resolution: {integrity: sha512-x2JSa5b3WOVEkxtVP29APLWNJ8EOx+zuSvkJ0R7EEmLs7QGpqQs2ifZcmQ0q+uDVlK8YN/BFfGCPeEGzUGwxOw==}
 
+  '@univerjs-pro/bases-dashboard-ui@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-ajbZ26I08NJ9zCwqRuP79rp9lGMZlhbsRaeNS7dVjyl3b8E1h1ywRU64gBuzq8oPI/hTHljOesR0bDWALIP0aA==}
+    peerDependencies:
+      react: ^16.9.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc
+      rxjs: '>=7.0.0'
+
+  '@univerjs-pro/bases-dashboard@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-M1zedXhYzsBAynF6kMVUPIxaINVZHxHnxeHmWtIRB2JrSEzI4vHv8oIVY11qaL0lZuGqJFnP8SjFLBfdo9MhCQ==}
+
   '@univerjs-pro/bases-exchange-client@1.0.0-insiders.20260831-796c4f4':
     resolution: {integrity: sha512-UpWoqx/PO1y2s5V6HB+MSO1REP4ckAYU8fJBo8JwoUSA5Wm/vS3VX+D/LOLiOP8HCfiD2B3kD57ceCrWODIfwA==}
     peerDependencies:
       react: ^16.9.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc
+
+  '@univerjs-pro/bases-history-ui@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-k4zqtT2HMKbHcpchzF/BcCg6HFTBIjQlSiEro6GqTpGS8+Zzq2LdQEoZzK7G5ELQvLCJxiw0eanB1UI9UthUQQ==}
+    peerDependencies:
+      react: ^16.9.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc
+      rxjs: '>=7.0.0'
 
   '@univerjs-pro/bases-history@1.0.0-insiders.20260831-796c4f4':
     resolution: {integrity: sha512-hIdOsJE3YacC6cBf5TmmN+FMYfrhROFjvDJEiKGWkOqx7nb8fJ5jcEotIHd924h6rRXBU9pNWpZWVVsxq/ul9Q==}
@@ -3155,6 +3190,12 @@ packages:
   '@univerjs-pro/boards-chart@1.0.0-insiders.20260831-796c4f4':
     resolution: {integrity: sha512-YXPn8Kyl7ILIrLggrtkJGME2UncCnoLQg6bIDFBwcQ040O3dY/0OOtkuEGROIwC3LbRfw9bOz/UwOn9uLwlD6A==}
     peerDependencies:
+      rxjs: '>=7.0.0'
+
+  '@univerjs-pro/boards-history-ui@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-0gBxYU09FZ9tLtwT9eHDx1mWEgHlBdL7YCJpYwYV7utKEZmWsbqKDIgJp/4gPzVHAGTkSBOYt7U5nh7Iq0mqZQ==}
+    peerDependencies:
+      react: ^16.9.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc
       rxjs: '>=7.0.0'
 
   '@univerjs-pro/boards-history@1.0.0-insiders.20260831-796c4f4':
@@ -3326,6 +3367,23 @@ packages:
   '@univerjs-pro/docs-exchange-client@1.0.0-insiders.20260831-796c4f4':
     resolution: {integrity: sha512-zN4qdp6zAPKA9Bh5LctO3PEDkzYCo07irSxhTVKPr+p9hL0Sxys3Qg5qHkbs/TAYsjH5Ovg5tLAcYWSqwwEyGA==}
 
+  '@univerjs-pro/docs-formula-ui@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-wKl5sHLNqXbQ2MtOJVYwa3bEBnHTLNt6jbqVfYBFui3q6LWkR9x4Z/6S3ung8FSqHVVWA2nrzxQMm73Xf1exvg==}
+    peerDependencies:
+      react: ^16.9.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc
+      rxjs: '>=7.0.0'
+
+  '@univerjs-pro/docs-formula@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-RXafSc1Sla6rKOiLbOWf+pojucho9dRx4kWBMIRzuw0YWY4PWjqPloEoSGKzsFZMD/tLSfbRyUbVfYje7SCpgg==}
+    peerDependencies:
+      rxjs: '>=7.0.0'
+
+  '@univerjs-pro/docs-history-ui@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-5QSJVfAtyO6xC+8P+AzT97AdBEmKiLxu9UOMRPbKSd3NfljCtKGrln04izc2E8JtSCizJT3joUEC77r0l1F5Iw==}
+    peerDependencies:
+      react: ^16.9.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc
+      rxjs: '>=7.0.0'
+
   '@univerjs-pro/docs-history@1.0.0-insiders.20260831-796c4f4':
     resolution: {integrity: sha512-F0ASPveHPTFufuPcJXJbbeWPKkKfXebN00BpsL47LcadYoOiBv0P54JKYdHfUw0Rest1IuKZj6A7dXokcdClSQ==}
 
@@ -3382,6 +3440,12 @@ packages:
   '@univerjs-pro/docs-table@1.0.0-insiders.20260831-796c4f4':
     resolution: {integrity: sha512-QlKm3EfD3Il0YPiHmHnBCycH9QbI6P75ZUaouMu6kGkBtN5a8PTu0xa/z/0VJ2zXgKcoindIUwMwR6/hWK/rxg==}
     peerDependencies:
+      rxjs: '>=7.0.0'
+
+  '@univerjs-pro/edit-history-ui@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-z7kvxEnLiLQeQO07vy1memiuSFpSylT57cvjwjkAV2XlOTSXzKwc0esIQKA/YFI6v2QOh31pSU21mhga8Po2/A==}
+    peerDependencies:
+      react: ^16.9.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc
       rxjs: '>=7.0.0'
 
   '@univerjs-pro/edit-history@1.0.0-insiders.20260831-796c4f4':
@@ -3653,6 +3717,12 @@ packages:
 
   '@univerjs-pro/slides-exchange-client@1.0.0-insiders.20260831-796c4f4':
     resolution: {integrity: sha512-h/zgidayUEkTZEIfohSt1ZkyyRLEvPwiLQoR6wRecD/p4CDD4To3mfqp7qCaWzJCXwJseMC5UTNA0Y0QqRHBeQ==}
+
+  '@univerjs-pro/slides-history-ui@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-WLbYNnstoE6J6eg9/bhgmKZDvE5A0NjB6v0Id3tNkCjvLyk3S7Jm0h47VQvj0kp22jeUdBHN2+cjpjhfjWJCuQ==}
+    peerDependencies:
+      react: ^16.9.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc
+      rxjs: '>=7.0.0'
 
   '@univerjs-pro/slides-history@1.0.0-insiders.20260831-796c4f4':
     resolution: {integrity: sha512-7GPJD3q06P/pBJlZqlNA39DKqCJ8ICMh6lMkgcQ2VA0xKHYMidCaDiKLtY7+xXhJu+1dMMGIWyvLPSoU1B241Q==}
@@ -6711,6 +6781,43 @@ snapshots:
       - utf-8-validate
       - yauzl
 
+  '@univerjs-pro/bases-dashboard-ui@1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)':
+    dependencies:
+      '@univerjs-pro/bases-dashboard': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)
+      '@univerjs-pro/bases-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/chart-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/collaboration-client': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/engine-chart': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/engine-pivot': 1.0.0-insiders.20260831-796c4f4
+      '@univerjs-pro/engine-shape': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/license': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/shape-editor': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/core': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/design': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@univerjs/docs-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/icons': 1.38.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@univerjs/ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      react: 19.2.8
+      rxjs: 7.8.2
+    transitivePeerDependencies:
+      - '@types/react'
+      - '@types/react-dom'
+      - react-dom
+
+  '@univerjs-pro/bases-dashboard@1.0.0-insiders.20260831-796c4f4(react@19.2.8)':
+    dependencies:
+      '@univerjs-pro/bases': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/engine-chart': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/engine-pivot': 1.0.0-insiders.20260831-796c4f4
+      '@univerjs-pro/engine-shape': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/license': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/shape-editor': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/core': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/rpc': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      rxjs: 7.8.2
+    transitivePeerDependencies:
+      - react
+
   '@univerjs-pro/bases-exchange-client@1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)':
     dependencies:
       '@univerjs-pro/bases-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
@@ -6727,6 +6834,33 @@ snapshots:
       - '@types/react-dom'
       - react-dom
       - rxjs
+
+  '@univerjs-pro/bases-history-ui@1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)':
+    dependencies:
+      '@univerjs-pro/bases': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/bases-dashboard': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)
+      '@univerjs-pro/bases-dashboard-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/bases-history': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/bases-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/collaboration': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/collaboration-client': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/edit-history': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/edit-history-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/engine-formula': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/license': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/core': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/design': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@univerjs/engine-render': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/icons': 1.38.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@univerjs/network': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/protocol': 1.0.0-insiders.20260831-796c4f4
+      '@univerjs/ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      react: 19.2.8
+      rxjs: 7.8.2
+    transitivePeerDependencies:
+      - '@types/react'
+      - '@types/react-dom'
+      - react-dom
 
   '@univerjs-pro/bases-history@1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)':
     dependencies:
@@ -6810,6 +6944,41 @@ snapshots:
       rxjs: 7.8.2
     transitivePeerDependencies:
       - react
+
+  '@univerjs-pro/boards-history-ui@1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)':
+    dependencies:
+      '@univerjs-pro/boards': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/boards-chart': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/boards-chart-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/boards-history': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/boards-mind': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/boards-mind-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/boards-table': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/boards-table-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/boards-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/collaboration': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/collaboration-client': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/docs-latex': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/docs-latex-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/edit-history': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/edit-history-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/ink': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/ink-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/license': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/core': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/docs': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/docs-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/drawing': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/engine-render': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/icons': 1.38.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@univerjs/network': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      react: 19.2.8
+      rxjs: 7.8.2
+    transitivePeerDependencies:
+      - '@types/react'
+      - '@types/react-dom'
+      - react-dom
 
   '@univerjs-pro/boards-history@1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)':
     dependencies:
@@ -7332,6 +7501,86 @@ snapshots:
       - react-dom
       - rxjs
 
+  '@univerjs-pro/docs-formula-ui@1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)':
+    dependencies:
+      '@univerjs-pro/docs-formula': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/license': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/shape-editor-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/core': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/design': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@univerjs/docs': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/docs-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/engine-render': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/icons': 1.38.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@univerjs/ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      react: 19.2.8
+      rxjs: 7.8.2
+    transitivePeerDependencies:
+      - '@types/react'
+      - '@types/react-dom'
+      - react-dom
+
+  '@univerjs-pro/docs-formula@1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)':
+    dependencies:
+      '@univerjs-pro/engine-formula': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/license': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/core': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/docs': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/engine-formula': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      rxjs: 7.8.2
+    transitivePeerDependencies:
+      - react
+
+  '@univerjs-pro/docs-history-ui@1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)':
+    dependencies:
+      '@univerjs-pro/collaboration': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/collaboration-client': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/docs-callout': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/docs-callout-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/docs-chart': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/docs-chart-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/docs-code': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/docs-code-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/docs-column': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/docs-column-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/docs-formula': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/docs-formula-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/docs-history': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/docs-latex': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/docs-latex-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/docs-list': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/docs-list-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/docs-quote': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/docs-quote-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/docs-shape': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/docs-shape-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/docs-table': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/docs-table-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/edit-history': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/edit-history-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/engine-formula': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/license': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/shape-editor-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/core': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/docs': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/docs-drawing': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/docs-drawing-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/docs-hyper-link': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/docs-hyper-link-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/docs-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/drawing': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/drawing-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/engine-render': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/icons': 1.38.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@univerjs/network': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      react: 19.2.8
+      rxjs: 7.8.2
+    transitivePeerDependencies:
+      - '@types/react'
+      - '@types/react-dom'
+      - react-dom
+
   '@univerjs-pro/docs-history@1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)':
     dependencies:
       '@univerjs-pro/collaboration': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
@@ -7505,6 +7754,22 @@ snapshots:
       rxjs: 7.8.2
     transitivePeerDependencies:
       - react
+
+  '@univerjs-pro/edit-history-ui@1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)':
+    dependencies:
+      '@univerjs-pro/edit-history': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/license': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/core': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/design': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@univerjs/engine-render': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/icons': 1.38.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@univerjs/ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      react: 19.2.8
+      rxjs: 7.8.2
+    transitivePeerDependencies:
+      - '@types/react'
+      - '@types/react-dom'
+      - react-dom
 
   '@univerjs-pro/edit-history@1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)':
     dependencies:
@@ -8166,6 +8431,35 @@ snapshots:
       - react
       - react-dom
       - rxjs
+
+  '@univerjs-pro/slides-history-ui@1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)':
+    dependencies:
+      '@univerjs-pro/collaboration': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/collaboration-client': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/edit-history': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/edit-history-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/license': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/slides': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/slides-chart': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/slides-chart-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/slides-history': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/slides-table': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)
+      '@univerjs-pro/slides-table-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@univerjs-pro/slides-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/core': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/docs': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/docs-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/drawing': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/engine-render': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/icons': 1.38.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@univerjs/network': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+      react: 19.2.8
+      rxjs: 7.8.2
+    transitivePeerDependencies:
+      - '@types/react'
+      - '@types/react-dom'
+      - react-dom
 
   '@univerjs-pro/slides-history@1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)':
     dependencies:

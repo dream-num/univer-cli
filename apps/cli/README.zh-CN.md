@@ -111,7 +111,7 @@ Sheet/Base → XLSX/CSV/TSV、Doc → DOCX、Slide → PPTX。CSV/TSV 使用 `--
 对象。`--formula-calculation forced|when_empty|no` 控制 Sheet converter 的公式计算策略；未指定时保持
 `forced` 兼容默认值。
 
-`univer open` 的可编辑 Viewer 支持通过 Ribbon 导入和导出：导入会在当前 `.univer` 中新建 Unit。Sheet 可查看按提交时间聚合的版本历史；只读 Viewer 只能查看，可编辑 Viewer 可以显式恢复历史版本。只读 Sheet 中不提供保护和打印。Worktree 与合并预览不提供导入、导出或版本历史；其他受支持的 Unit 仍可打印，Board 仅支持打印。
+`univer open` 的可编辑 Viewer 支持通过 Ribbon 导入和导出：导入会在当前 `.univer` 中新建 Unit。trunk Sheet、Doc、Slide、Base 和 Board 均提供对应的标准 SDK 版本历史 UI；只读 Viewer 只能查看，可编辑 Viewer 可以显式恢复历史版本。只读 Sheet 中不提供保护和打印。Worktree 与合并预览不提供导入、导出或版本历史；其他受支持的 Unit 仍可打印，Board 仅支持打印。
 
 `optimize` 是 copy-only operation；除 `--dry-run` 外必须提供 `--out`，不会覆盖 source。
 
