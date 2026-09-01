@@ -31,6 +31,8 @@ export type {
   UnitComparisonResponse,
   UnitComparisonContextDiffKind,
   UnitComparisonContextDetailLevel,
+  UnitComparisonReadiness,
+  UnitComparisonDiagnosticCode,
   UnitComparisonContextValueType,
   UnitComparisonContextSegment,
   UnitComparisonContextChange,

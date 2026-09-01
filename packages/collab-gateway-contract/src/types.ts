@@ -322,6 +322,14 @@ export type UnitComparisonContextDiffKind = "delete" | "insert" | "update";
  */
 export type UnitComparisonContextDetailLevel = "summary" | "changes" | "full";
 
+/** Whether the SDK produced a complete comparison or a safe degraded projection. */
+export type UnitComparisonReadiness = "ready" | "degraded";
+
+/** Stable SDK diagnostic codes serialized for agents and UI consumers. */
+export type UnitComparisonDiagnosticCode =
+  | "sheet-snapshot-axis-identity-ambiguous"
+  | "sheet-structural-history-partially-falls-back-to-snapshot-coordinates";
+
 /** Coarse value family that lets an agent choose an appropriate explanation or renderer. */
 export type UnitComparisonContextValueType =
   | "array"
@@ -524,9 +532,9 @@ export interface UnitComparisonContext {
   readonly page: UnitComparisonContextPage;
   readonly items: readonly UnitComparisonContextItem[];
   readonly diagnostics: {
-    readonly readiness: "ready" | "degraded";
+    readonly readiness: UnitComparisonReadiness;
     readonly unsupportedMutationIds: readonly string[];
-    readonly notes: readonly string[];
+    readonly codes: readonly UnitComparisonDiagnosticCode[];
   };
   readonly productContext: UnitComparisonProductContext;
 }

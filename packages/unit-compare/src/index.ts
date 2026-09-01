@@ -39,6 +39,37 @@ export interface UnitDiffPageOption {
   readonly status: UnitStructuralDiffKind;
 }
 
+/** Return the stable Slide page containing a structural diff item. */
+export function slidePageIdOfDiffItem(item: UnitStructuralDiffItem): string | null {
+  if (item.entityType === "slide") return item.stableId;
+  if (item.entityType === "slide-element") {
+    return item.parentStableId ?? legacyParentStableId(item.category, "slide-element");
+  }
+  return null;
+}
+
+/** Return only changes rendered by the selected Slide page. */
+export function filterSlidePageDiffItems(
+  items: readonly UnitStructuralDiffItem[],
+  pageId: string,
+): UnitStructuralDiffItem[] {
+  return items.filter((item) => slidePageIdOfDiffItem(item) === pageId);
+}
+
+/** Return the stable Base table containing a structural diff item. */
+export function baseTableIdOfDiffItem(item: UnitStructuralDiffItem): string | null {
+  if (item.entityType === "table") return item.stableId;
+  return item.parentStableId ?? legacyParentStableId(item.category, item.entityType);
+}
+
+/** Return only changes rendered by the selected Base table. */
+export function filterBaseTableDiffItems(
+  items: readonly UnitStructuralDiffItem[],
+  tableId: string,
+): UnitStructuralDiffItem[] {
+  return items.filter((item) => baseTableIdOfDiffItem(item) === tableId);
+}
+
 export type DocumentComparisonRowKind = "delete" | "equal" | "insert" | "update";
 
 export interface DocumentComparisonParagraph {
@@ -84,10 +115,8 @@ export function buildChangedSlidePages(input: {
   const orderedPageIds = alignStableOrder(leftOrder, rightOrder);
   const changedPageIds = new Set(
     input.items.flatMap((item) => {
-      if (item.category === "slide") return [item.stableId];
-      return item.category.startsWith("slide-element:")
-        ? [item.category.slice("slide-element:".length)]
-        : [];
+      const pageId = slidePageIdOfDiffItem(item);
+      return pageId === null ? [] : [pageId];
     }),
   );
   return orderedPageIds.flatMap((pageId, index) => {
@@ -104,6 +133,11 @@ export function buildChangedSlidePages(input: {
       },
     ];
   });
+}
+
+function legacyParentStableId(category: string, entityType: string): string | null {
+  const prefix = `${entityType}:`;
+  return category.startsWith(prefix) ? category.slice(prefix.length) : null;
 }
 
 function orderedRecordIds(record: Record<string, unknown>, orderValue: unknown): string[] {

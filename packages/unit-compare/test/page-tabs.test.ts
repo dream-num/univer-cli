@@ -60,7 +60,7 @@ describe("SDK-driven Slide tabs", () => {
   it("shows the containing page for an SDK element change", () => {
     const item = {
       ...pageItem("shape", "update"),
-      category: "slide-element:changed",
+      category: "slide-element:legacy-page",
       entityType: "slide-element",
       parentStableId: "changed",
     };

@@ -5,10 +5,9 @@ import type {
   IUnitComparisonResult,
 } from "@univerjs-pro/edit-history";
 import {
-  UnitComparisonAdapterRegistryService,
+  createUnitComparisonEngine,
   UnitComparisonDetailLevel,
   UnitComparisonFidelity,
-  UnitComparisonService,
 } from "@univerjs-pro/edit-history";
 import { BasesUnitComparisonAdapter } from "@univerjs-pro/bases-history";
 import { BoardsUnitComparisonAdapter } from "@univerjs-pro/boards-history";
@@ -29,13 +28,13 @@ export interface PreparedGatewayUnitComparison {
   readonly unit: UnitComparisonSummary;
 }
 
-const registry = new UnitComparisonAdapterRegistryService();
-registry.register(new DocsUnitComparisonAdapter());
-registry.register(new SheetsUnitComparisonAdapter());
-registry.register(new SlidesUnitComparisonAdapter());
-registry.register(new BasesUnitComparisonAdapter());
-registry.register(new BoardsUnitComparisonAdapter());
-const comparisonService = new UnitComparisonService(registry);
+const comparison = createUnitComparisonEngine([
+  new DocsUnitComparisonAdapter(),
+  new SheetsUnitComparisonAdapter(),
+  new SlidesUnitComparisonAdapter(),
+  new BasesUnitComparisonAdapter(),
+  new BoardsUnitComparisonAdapter(),
+]);
 
 export function prepareGatewayUnitComparison(input: {
   readonly comparisonId: string;
@@ -50,7 +49,7 @@ export function prepareGatewayUnitComparison(input: {
 }): PreparedGatewayUnitComparison {
   return {
     unit: input.unit,
-    prepared: comparisonService.prepare({
+    prepared: comparison.prepare({
       comparisonId: input.comparisonId,
       unitId: input.unit.unitId,
       unitName: input.unit.name,
@@ -75,7 +74,7 @@ export function queryGatewayUnitComparison(
   prepared: PreparedGatewayUnitComparison,
   query: UnitComparisonContextQuery,
 ): UnitComparisonContext {
-  const result = comparisonService.query(prepared.prepared, toSdkQuery(query));
+  const result = comparison.query(prepared.prepared, toSdkQuery(query));
   return {
     ...result,
     unit: prepared.unit,

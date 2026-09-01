@@ -405,12 +405,12 @@ export function mapScrollTargetAcrossPanes(input: {
 }): WorkbookCompareScrollTarget | null {
   const mapping = input.compareInfo.worksheets[input.target.sheetId]?.selectionMapping;
   if (mapping === undefined) return input.target;
-  const sheetViewStartRow = mapAlignedAxis(
+  const sheetViewStartRow = mapScrollAlignedAxis(
     mapping.rowAlignment,
     input.sourceRole,
     input.target.sheetViewStartRow,
   );
-  const sheetViewStartColumn = mapAlignedAxis(
+  const sheetViewStartColumn = mapScrollAlignedAxis(
     mapping.columnAlignment,
     input.sourceRole,
     input.target.sheetViewStartColumn,
@@ -418,6 +418,40 @@ export function mapScrollTargetAcrossPanes(input: {
   return sheetViewStartRow === null || sheetViewStartColumn === null
     ? null
     : { ...input.target, sheetViewStartRow, sheetViewStartColumn };
+}
+
+/**
+ * Scroll remains continuous while crossing an inserted/deleted gap. Unlike a cell selection,
+ * a viewport origin does not require an exact peer cell, so use the nearest aligned boundary.
+ */
+function mapScrollAlignedAxis(
+  runs: readonly WorkbookCompareAxisAlignment[] | undefined,
+  role: WorkbookComparePaneRole,
+  index: number,
+): number | null {
+  if (runs === undefined) return index;
+
+  for (let runIndex = 0; runIndex < runs.length; runIndex += 1) {
+    const run = runs[runIndex]!;
+    const source = role === "base" ? run.leftStart : run.rightStart;
+    const target = role === "base" ? run.rightStart : run.leftStart;
+    if (source === null || index < source || index >= source + run.count) continue;
+    if (target !== null) return target + index - source;
+
+    for (let nextIndex = runIndex + 1; nextIndex < runs.length; nextIndex += 1) {
+      const next = runs[nextIndex]!;
+      const nextTarget = role === "base" ? next.rightStart : next.leftStart;
+      if (nextTarget !== null) return nextTarget;
+    }
+    for (let previousIndex = runIndex - 1; previousIndex >= 0; previousIndex -= 1) {
+      const previous = runs[previousIndex]!;
+      const previousTarget = role === "base" ? previous.rightStart : previous.leftStart;
+      if (previousTarget !== null) return Math.max(0, previousTarget + previous.count - 1);
+    }
+    return null;
+  }
+
+  return null;
 }
 
 export function createEmptyWorkbookCompareFxState(): WorkbookCompareFxState {
@@ -515,7 +549,11 @@ export function buildWorkbookCompareSidebarTree(input: {
   const buckets = groupItemsByCategoryFilled(items);
   const categories = input.tab === "workbook" ? (["workbook"] as const) : WORKSHEET_CATEGORIES;
   const categoryNodes = categories.flatMap((category) => {
-    const children = (buckets[category] ?? []).map((item) => buildItemTreeNode(item));
+    const categoryItems = buckets[category] ?? [];
+    const children =
+      category === "cell"
+        ? buildCellRowTreeNodes(categoryItems, input.activeSheetId, input.labels)
+        : categoryItems.map((item) => buildItemTreeNode(item));
     if (children.length === 0) {
       return [];
     }
@@ -526,7 +564,7 @@ export function buildWorkbookCompareSidebarTree(input: {
         id: `category:${category}`,
         itemId: null,
         kind: "update" as const,
-        label: `${input.labels.categories[category] ?? category} (${children.length})`,
+        label: `${input.labels.categories[category] ?? category} (${categoryItems.length})`,
         type: "group" as const,
       },
     ];
@@ -552,6 +590,43 @@ export function buildWorkbookCompareSidebarTree(input: {
           : activeWorksheet?.sheetName || input.labels.noActiveSheetLabel,
       type: "root",
     },
+  ];
+}
+
+function buildCellRowTreeNodes(
+  items: readonly WorkbookCompareItem[],
+  activeSheetId: string | null,
+  labels: WorkbookCompareSidebarTreeLabels,
+): WorkbookCompareSidebarTreeNode[] {
+  const itemsByRow = new Map<number, WorkbookCompareItem[]>();
+  const ungroupedItems: WorkbookCompareItem[] = [];
+
+  for (const item of items) {
+    const row = item.selection?.current?.startRow ?? item.selection?.base?.startRow;
+    if (row === undefined) {
+      ungroupedItems.push(item);
+      continue;
+    }
+    const rowItems = itemsByRow.get(row) ?? [];
+    rowItems.push(item);
+    itemsByRow.set(row, rowItems);
+  }
+
+  return [
+    ...[...itemsByRow.entries()]
+      .sort(([left], [right]) => left - right)
+      .map(
+        ([row, rowItems]): WorkbookCompareSidebarTreeNode => ({
+          children: rowItems.map((item) => buildItemTreeNode(item)),
+          details: [],
+          id: `${activeSheetId ?? "none"}:cell:row:${row}`,
+          itemId: null,
+          kind: "update",
+          label: `${labels.rowLabel(row + 1)} (${rowItems.length})`,
+          type: "group",
+        }),
+      ),
+    ...ungroupedItems.map((item) => buildItemTreeNode(item)),
   ];
 }
 
