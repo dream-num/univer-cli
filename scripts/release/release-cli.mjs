@@ -168,7 +168,7 @@ async function assertSourceManifest() {
 
 function assertStrictReleaseSource(baseBranch, sourceStatus) {
   if (sourceStatus.length > 0) {
-    throw new Error("alpha and insiders releases require a clean Git worktree.");
+    throw new Error("alpha, insiders, and stable releases require a clean Git worktree.");
   }
   const baseRef = `refs/remotes/origin/${baseBranch}`;
   const result = spawnSync("git", ["merge-base", "--is-ancestor", "HEAD", baseRef], {
