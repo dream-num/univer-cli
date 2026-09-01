@@ -34,6 +34,8 @@ export interface StartApplicationDaemonOptions {
   readonly runtimeWorkerEntry?: string | URL;
   readonly socketPath?: string;
   readonly viewAssetsRoot: string;
+  /** HTML entry served at the gateway root (defaults to the assets root's own index.html). */
+  readonly viewIndexFile?: string;
 }
 
 export async function startApplicationDaemon(
@@ -45,6 +47,7 @@ export async function startApplicationDaemon(
   const gateway = await startServer({
     port: options.gatewayPort ?? (await resolveGatewayPort(config, env)),
     viewAssetsRoot: options.viewAssetsRoot,
+    ...(options.viewIndexFile === undefined ? {} : { viewIndexFile: options.viewIndexFile }),
   });
   const origin = `http://127.0.0.1:${String(gateway.port)}`;
   const info = { origin, port: gateway.port, viewUrl: `${origin}/collab-web/` } as JsonValue;

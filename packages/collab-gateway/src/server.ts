@@ -1,4 +1,5 @@
 import type { AddressInfo } from "node:net";
+import { readFileSync } from "node:fs";
 import { stat } from "node:fs/promises";
 import http from "node:http";
 import { resolve } from "node:path";
@@ -19,6 +20,12 @@ export interface StartServerOptions {
   readonly idleTtlMs?: number;
   /** Static browser assets served from the same HTTP listener as the Gateway API. */
   readonly viewAssetsRoot?: string;
+  /**
+   * HTML entry served at `/` (and `/index.html`) in place of the assets root's own
+   * index.html — lets the served root keep a non-Viewer index.html (e.g. the render page)
+   * while the root URL still opens the Viewer.
+   */
+  readonly viewIndexFile?: string;
 }
 
 export interface StartedServer {
@@ -32,6 +39,12 @@ export async function startServer(options: StartServerOptions = {}): Promise<Sta
   if (options.viewAssetsRoot !== undefined) {
     await assertViewAssetsRoot(options.viewAssetsRoot);
   }
+  if (options.viewIndexFile !== undefined) {
+    const indexStat = await stat(resolve(options.viewIndexFile));
+    if (!indexStat.isFile()) {
+      throw new Error(`Gateway view index file is missing: ${options.viewIndexFile}`);
+    }
+  }
   const managerOptions: UniverfileManagerOptions = {
     ...(options.allowedRoot === undefined ? {} : { allowedRoot: options.allowedRoot }),
     ...(options.idleTtlMs === undefined ? {} : { idleTtlMs: options.idleTtlMs }),
@@ -39,7 +52,7 @@ export async function startServer(options: StartServerOptions = {}): Promise<Sta
   const manager = new UniverfileManager(managerOptions);
   const apiRequestListener = createRequestListener(manager);
   const httpServer = http.createServer(
-    createGatewayRequestListener(apiRequestListener, options.viewAssetsRoot),
+    createGatewayRequestListener(apiRequestListener, options.viewAssetsRoot, options.viewIndexFile),
   );
   const wss = attachGatewayWebSockets(httpServer, manager);
 
@@ -81,9 +94,23 @@ async function assertViewAssetsRoot(viewAssetsRoot: string): Promise<void> {
 function createGatewayRequestListener(
   apiRequestListener: (req: http.IncomingMessage, res: http.ServerResponse) => void,
   viewAssetsRoot: string | undefined,
+  viewIndexFile: string | undefined,
 ): (req: http.IncomingMessage, res: http.ServerResponse) => void {
   const serveViewAsset =
     viewAssetsRoot === undefined ? undefined : createViewAssetHandler(viewAssetsRoot);
+  // The served index file is a static build artifact; read it once.
+  const viewerIndexHtml = viewIndexFile === undefined ? undefined : readFileSync(viewIndexFile);
+  const serveViewerIndex = (res: http.ServerResponse, method: string): void => {
+    res.writeHead(200, {
+      "cache-control": "no-cache",
+      "content-type": "text/html; charset=utf-8",
+    });
+    if (method === "HEAD") {
+      res.end();
+      return;
+    }
+    res.end(viewerIndexHtml);
+  };
   return (req, res): void => {
     const pathname = new URL(req.url ?? "/", "http://localhost").pathname;
     if (isGatewayApiPath(pathname) || (req.method ?? "GET") === "OPTIONS") {
@@ -92,6 +119,14 @@ function createGatewayRequestListener(
     }
 
     const method = req.method ?? "GET";
+    if (viewIndexFile !== undefined && (pathname === "/" || pathname === "/index.html")) {
+      if (method === "GET" || method === "HEAD") {
+        serveViewerIndex(res, method);
+      } else {
+        sendStaticNotFound(res);
+      }
+      return;
+    }
     if (serveViewAsset === undefined || (method !== "GET" && method !== "HEAD")) {
       sendStaticNotFound(res);
       return;
