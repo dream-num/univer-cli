@@ -8,6 +8,7 @@ const EXACT_SEMVER_PATTERN =
 const CHANNEL_TO_TAG = new Map([
   ["alpha", "alpha"],
   ["insiders", "insiders"],
+  ["stable", "latest"],
   ["dev", "dev"],
 ]);
 
@@ -30,8 +31,11 @@ export function npmTagForRelease(channel, version) {
   if (channel === "alpha" && !/^\d+\.\d+\.\d+-alpha\..+$/u.test(version)) {
     throw new Error(`alpha requires 0.5.x-alpha.<suffix>, got ${version}`);
   }
-  if (channel === "insiders" && !/^\d+\.\d+\.\d+-insider\..+$/u.test(version)) {
-    throw new Error(`insiders requires 0.5.x-insider.<suffix>, got ${version}`);
+  if (channel === "insiders" && !/^\d+\.\d+\.\d+-insiders\..+$/u.test(version)) {
+    throw new Error(`insiders requires 0.5.x-insiders.<suffix>, got ${version}`);
+  }
+  if (channel === "stable" && !/^\d+\.\d+\.\d+$/u.test(version)) {
+    throw new Error(`stable requires 0.5.x without a prerelease suffix, got ${version}`);
   }
   if (channel === "dev" && !/^\d+\.\d+\.\d+-dev\..+$/u.test(version)) {
     throw new Error(`dev requires 0.5.x-dev.<suffix>, got ${version}`);
@@ -58,11 +62,11 @@ export function assertReleaseContext(channel, version, env) {
   }
   if (channel === "alpha") {
     if (
-      env.GITHUB_EVENT_NAME !== "push" ||
-      env.GITHUB_REF_TYPE !== "tag" ||
-      env.GITHUB_REF_NAME !== `v${version}`
+      env.GITHUB_EVENT_NAME !== "workflow_dispatch" ||
+      env.GITHUB_REF_TYPE !== "branch" ||
+      env.GITHUB_REF_NAME !== baseBranch
     ) {
-      throw new Error(`alpha must be triggered by pushing git tag v${version}.`);
+      throw new Error(`alpha must be manually dispatched from ${baseBranch}.`);
     }
     return;
   }
@@ -71,7 +75,7 @@ export function assertReleaseContext(channel, version, env) {
     env.GITHUB_REF_TYPE !== "branch" ||
     env.GITHUB_REF_NAME !== baseBranch
   ) {
-    throw new Error(`insiders must be manually dispatched from ${baseBranch}.`);
+    throw new Error(`${channel} must be manually dispatched from ${baseBranch}.`);
   }
 }
 
@@ -150,7 +154,7 @@ export function validateReleaseManifest(manifest) {
     throw new Error("Release manifest sourceDirty must be boolean.");
   }
   if (manifest.channel !== "dev" && manifest.sourceDirty) {
-    throw new Error("alpha and insiders release manifests require a clean source.");
+    throw new Error("alpha, insiders, and stable release manifests require a clean source.");
   }
   if (manifest.channel === "dev") {
     if (Object.hasOwn(manifest, "sdkVersion")) {

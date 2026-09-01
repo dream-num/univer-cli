@@ -24,28 +24,25 @@ afterEach(async () => {
 });
 
 describe("channel-aware CLI update", () => {
-  it("maps 0.5.x alpha and insiders versions to separate insider-npm tags", () => {
-    expect(resolveUpdateTarget("0.5.0-alpha.1")).toEqual({
-      channel: "alpha",
-      distTag: "alpha",
-      packageName: "univer-cli",
-      registryUrl: "https://insider-npm-registry.univer.work/",
-    });
+  it("routes installed versions to their release channel and insider-npm tag", () => {
     expect(resolveUpdateTarget("0.5.0-insider.20260813-deadbee")).toEqual({
       channel: "insiders",
       distTag: "insiders",
       packageName: "univer-cli",
       registryUrl: "https://insider-npm-registry.univer.work/",
     });
-    expect(() => resolveUpdateTarget("0.5.0")).toThrowError(
-      expect.objectContaining({ code: "CLI_UPDATE_CHANNEL_UNSUPPORTED" }),
-    );
-    expect(() => resolveUpdateTarget("0.5.0-beta.1")).toThrowError(
-      expect.objectContaining({ code: "CLI_UPDATE_CHANNEL_UNSUPPORTED" }),
-    );
-    expect(() => resolveUpdateTarget("0.4.9-insider.1")).toThrowError(
-      expect.objectContaining({ code: "CLI_UPDATE_CHANNEL_UNSUPPORTED" }),
-    );
+    expect(resolveUpdateTarget("0.5.1-insiders.20260901-abc1234")).toEqual({
+      channel: "insiders",
+      distTag: "insiders",
+      packageName: "univer-cli",
+      registryUrl: "https://insider-npm-registry.univer.work/",
+    });
+    expect(resolveUpdateTarget("0.5.0")).toEqual({
+      channel: "stable",
+      distTag: "latest",
+      packageName: "univer-cli",
+      registryUrl: "https://insider-npm-registry.univer.work/",
+    });
   });
 
   it("uses semver ordering within the selected channel", () => {
@@ -73,7 +70,7 @@ describe("channel-aware CLI update", () => {
       }),
       fetchRegistry: async (url) => {
         expect(url).toBe("https://insider-npm-registry.univer.work/univer-cli");
-        return registryMetadata("insiders", "0.5.0-insider.20260814-next");
+        return registryMetadata("insiders", "0.5.0-insiders.20260814-next");
       },
       homeDir,
       now: () => new Date("2026-08-13T00:00:00.000Z"),
@@ -92,19 +89,57 @@ describe("channel-aware CLI update", () => {
 
     expect(result).toMatchObject({
       channel: "insiders",
-      latestVersion: "0.5.0-insider.20260814-next",
+      latestVersion: "0.5.0-insiders.20260814-next",
       status: "updated",
     });
     expect(stopped).toBe(1);
     expect(invocations).toEqual([
       {
-        packageSpec: "univer-cli@0.5.0-insider.20260814-next",
+        packageSpec: "univer-cli@0.5.0-insiders.20260814-next",
         registryUrl: "https://insider-npm-registry.univer.work/",
       },
     ]);
     await expect(readUpdateCache(homeDir)).resolves.toMatchObject({
       distTag: "insiders",
-      latestVersion: "0.5.0-insider.20260814-next",
+      latestVersion: "0.5.0-insiders.20260814-next",
+    });
+  });
+
+  it("checks stable metadata on the latest dist-tag and installs the exact verified version", async () => {
+    const homeDir = await temporaryRoot();
+    const invocations: Array<{ readonly packageSpec: string; readonly registryUrl: string }> = [];
+    const application = createLocalUpdateApplication({
+      control: fakeControl(),
+      fetchRegistry: async (url) => {
+        expect(url).toBe("https://insider-npm-registry.univer.work/univer-cli");
+        return registryMetadata("latest", "0.5.1");
+      },
+      homeDir,
+      now: () => new Date("2026-09-01T00:00:00.000Z"),
+      packageRoot: homeDir,
+      runInstaller: async (invocation) => {
+        invocations.push(invocation);
+        return { exitCode: 0 };
+      },
+      version: "0.5.0",
+    });
+
+    const result = await application.update({ force: false, progress: () => undefined });
+
+    expect(result).toMatchObject({
+      channel: "stable",
+      latestVersion: "0.5.1",
+      status: "updated",
+    });
+    expect(invocations).toEqual([
+      {
+        packageSpec: "univer-cli@0.5.1",
+        registryUrl: "https://insider-npm-registry.univer.work/",
+      },
+    ]);
+    await expect(readUpdateCache(homeDir)).resolves.toMatchObject({
+      distTag: "latest",
+      latestVersion: "0.5.1",
     });
   });
 
@@ -363,7 +398,7 @@ async function writeCache(homeDir: string, value: unknown): Promise<void> {
   await writeFile(join(directory, "latest.json"), `${JSON.stringify(value)}\n`, "utf8");
 }
 
-function registryMetadata(tag: "alpha" | "insiders", version: string): unknown {
+function registryMetadata(tag: "alpha" | "insiders" | "latest", version: string): unknown {
   return {
     "dist-tags": { [tag]: version },
     versions: { [version]: { dist: { tarball: `https://example.test/${version}.tgz` } } },

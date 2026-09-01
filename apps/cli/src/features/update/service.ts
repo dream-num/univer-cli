@@ -8,11 +8,11 @@ export const UPDATE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const UPDATE_CACHE_SCHEMA_VERSION = 1;
 const PACKAGE_NAME = "univer-cli";
 
-export type ReleaseChannel = "alpha" | "insiders";
+export type ReleaseChannel = "alpha" | "insiders" | "stable";
 
 export interface UpdateTarget {
   readonly channel: ReleaseChannel;
-  readonly distTag: "alpha" | "insiders";
+  readonly distTag: "alpha" | "insiders" | "latest";
   readonly packageName: typeof PACKAGE_NAME;
   readonly registryUrl: "https://insider-npm-registry.univer.work/";
 }
@@ -162,7 +162,8 @@ export function resolveUpdateTarget(version: string): UpdateTarget {
       registryUrl: "https://insider-npm-registry.univer.work/",
     };
   }
-  if (/^0\.5\.(?:0|[1-9]\d*)-insider\.[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*$/u.test(version)) {
+  // "insider" is a legacy spelling kept for already-installed versions; releases now use "insiders".
+  if (/^0\.5\.(?:0|[1-9]\d*)-insiders?\.[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*$/u.test(version)) {
     return {
       channel: "insiders",
       distTag: "insiders",
@@ -170,9 +171,17 @@ export function resolveUpdateTarget(version: string): UpdateTarget {
       registryUrl: "https://insider-npm-registry.univer.work/",
     };
   }
+  if (/^0\.5\.(?:0|[1-9]\d*)$/u.test(version)) {
+    return {
+      channel: "stable",
+      distTag: "latest",
+      packageName: PACKAGE_NAME,
+      registryUrl: "https://insider-npm-registry.univer.work/",
+    };
+  }
   throw new UpdateError(
     "CLI_UPDATE_CHANNEL_UNSUPPORTED",
-    `Version ${version} does not identify a supported alpha or insiders release channel.`,
+    `Version ${version} does not identify a supported alpha, insiders, or stable release channel.`,
   );
 }
 
@@ -247,8 +256,8 @@ export function isNewerVersion(currentVersion: string, candidateVersion: string)
     );
   }
   if (
-    current.prerelease[0] === "insider" &&
-    candidate.prerelease[0] === "insider" &&
+    isInsidersPrerelease(current.prerelease[0]) &&
+    isInsidersPrerelease(candidate.prerelease[0]) &&
     compareNormalVersions(current, candidate) === 0
   ) {
     const currentDate = insidersBuildDate(currentVersion);
@@ -344,7 +353,9 @@ function parseUpdateCache(value: unknown): UpdateCacheEntry | null {
     !isRecord(value) ||
     value["schemaVersion"] !== UPDATE_CACHE_SCHEMA_VERSION ||
     typeof value["checkedAt"] !== "string" ||
-    (value["distTag"] !== "alpha" && value["distTag"] !== "insiders") ||
+    (value["distTag"] !== "alpha" &&
+      value["distTag"] !== "insiders" &&
+      value["distTag"] !== "latest") ||
     value["packageName"] !== PACKAGE_NAME ||
     value["registryUrl"] !== "https://insider-npm-registry.univer.work/" ||
     (value["latestVersion"] !== undefined && typeof value["latestVersion"] !== "string") ||
@@ -417,8 +428,12 @@ function compareNormalVersions(left: ParsedVersion, right: ParsedVersion): numbe
   );
 }
 
+function isInsidersPrerelease(prerelease: string | undefined): boolean {
+  return prerelease === "insider" || prerelease === "insiders";
+}
+
 function insidersBuildDate(version: string): number | undefined {
-  const match = /^\d+\.\d+\.\d+-insider\.(\d{8})(?:[.-]|$)/u.exec(version);
+  const match = /^\d+\.\d+\.\d+-insiders?\.(\d{8})(?:[.-]|$)/u.exec(version);
   return match?.[1] === undefined ? undefined : Number(match[1]);
 }
 

@@ -1,14 +1,20 @@
 name: Release CLI to insider-npm
-run-name: Release CLI to insider-npm ${{ github.event_name == 'push' && github.ref_name || inputs.version }}${{ inputs.dry_run && ' (dry-run)' || '' }}
+run-name: Release CLI to insider-npm ${{ inputs.version }}${{ inputs.dry_run && ' (dry-run)' || '' }}
 
 on:
-  push:
-    tags:
-      - "v0.5.*-alpha.*"
   workflow_dispatch:
     inputs:
+      channel:
+        description: Release channel to publish under
+        required: true
+        type: choice
+        default: stable
+        options:
+          - stable
+          - insiders
+          - alpha
       version:
-        description: Exact insiders version in 0.5.x-insider.<suffix> form
+        description: Exact release version, for example 0.5.0 or 0.5.1-insiders.20260901-abc1234
         required: true
         type: string
       dry_run:
@@ -58,23 +64,18 @@ jobs:
         id: release
         shell: bash
         env:
+          DISPATCH_CHANNEL: ${{ inputs.channel }}
           DISPATCH_VERSION: ${{ inputs.version }}
           DISPATCH_DRY_RUN: ${{ inputs.dry_run }}
         run: |
           set -euo pipefail
-          if [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
-            VERSION="${GITHUB_REF_NAME#v}"
-            CHANNEL="alpha"
-            DRY_RUN="false"
-          else
-            if [[ "$GITHUB_REF_NAME" != "$BASE_BRANCH" ]]; then
-              echo "insiders releases must be dispatched from $BASE_BRANCH, got $GITHUB_REF_NAME." >&2
-              exit 1
-            fi
-            VERSION="$DISPATCH_VERSION"
-            CHANNEL="insiders"
-            DRY_RUN="$DISPATCH_DRY_RUN"
+          if [[ "$GITHUB_REF_NAME" != "$BASE_BRANCH" ]]; then
+            echo "releases must be dispatched from $BASE_BRANCH, got $GITHUB_REF_NAME." >&2
+            exit 1
           fi
+          VERSION="$DISPATCH_VERSION"
+          CHANNEL="$DISPATCH_CHANNEL"
+          DRY_RUN="$DISPATCH_DRY_RUN"
           {
             echo "version=$VERSION"
             echo "channel=$CHANNEL"
@@ -91,7 +92,6 @@ jobs:
             echo
             echo "- trigger: \`$GITHUB_EVENT_NAME\`"
             echo "- channel: \`$CHANNEL\`"
-            echo "- npm dist-tag: \`$CHANNEL\`"
             echo "- dry_run: \`$DRY_RUN\`"
             echo "- source: \`$GITHUB_SHA\`"
           } >> "$GITHUB_STEP_SUMMARY"
