@@ -47,9 +47,9 @@ export default defineConfig({
         assetFileNames: "assets/[name]-[hash][extname]",
         chunkFileNames: "chunks/[name]-[hash].js",
         entryFileNames: "assets/[name]-[hash].js",
-        manualChunks(id) {
-          if (id.includes("node_modules")) return "vendor";
-        },
+        // No manualChunks: Rollup already shares every module both pages import, and forcing
+        // all dependencies into one vendor chunk reorders SDK internal initialization
+        // (redi registration fails at page init).
       },
     },
     target: "esnext",
