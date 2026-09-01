@@ -1,3 +1,4 @@
+import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { chmod, cp, readFile, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
@@ -6,6 +7,7 @@ import { build } from "esbuild";
 import { EXTERNAL_DEPENDENCY_WHITELIST, externalDependencyAudit } from "./release-dependencies.mjs";
 
 const projectRoot = dirname(dirname(fileURLToPath(import.meta.url)));
+const repositoryRoot = dirname(projectRoot);
 const packageManifestPath = join(projectRoot, "package.json");
 const nodeEsmBanner = {
   js: [
@@ -17,9 +19,63 @@ const nodeEsmBanner = {
     "const __dirname = __pathDirname(__filename);",
   ].join("\n"),
 };
+// Dual-format SDK packages ship lib/cjs and lib/es builds. One CJS-context require anywhere in
+// the graph makes esbuild resolve the whole SDK through the require condition, inlining a second
+// CommonJS copy of every engine next to the ESM copy the other entries share. Force every
+// @univerjs-scoped bare import through the ESM condition so the graph stays single-instance.
+const UNIVER_SDK_PACKAGE = /^@univerjs(?:-pro)?\/[^/]+$/u;
+
+function pickEsmExport(entry) {
+  if (typeof entry === "string") return entry;
+  if (entry !== null && typeof entry === "object") {
+    for (const condition of ["import", "node", "default"]) {
+      if (entry[condition] !== undefined) return pickEsmExport(entry[condition]);
+    }
+  }
+  return undefined;
+}
+
+function resolveEsmSdkPackage(specifier, importer) {
+  const parts = specifier.split("/");
+  const packageName = parts[0].startsWith("@") ? parts.slice(0, 2).join("/") : parts[0];
+  // Resolve from the physical file location so dependency lookups land in the pnpm store
+  // context that actually contains this importer's dependencies (symlink paths do not).
+  let directory = dirname(realpathSync(importer));
+  while (true) {
+    const candidate = join(directory, "node_modules", packageName);
+    if (existsSync(candidate)) {
+      const packageRoot = realpathSync(candidate);
+      let manifest;
+      try {
+        manifest = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"));
+      } catch {
+        return undefined;
+      }
+      if (manifest.exports === undefined) return undefined;
+      const target = pickEsmExport(manifest.exports["."] ?? manifest.exports);
+      return target === undefined ? undefined : join(packageRoot, target);
+    }
+    const parent = dirname(directory);
+    if (parent === directory || directory === repositoryRoot) return undefined;
+    directory = parent;
+  }
+}
+
+const preferEsmSdkResolution = {
+  name: "prefer-esm-univer-sdk-resolution",
+  setup(context) {
+    context.onResolve({ filter: /^@univerjs(?:-pro)?\// }, (args) => {
+      if (!UNIVER_SDK_PACKAGE.test(args.path) || args.importer === "") return undefined;
+      const resolved = resolveEsmSdkPackage(args.path, args.importer);
+      // undefined falls through to esbuild's default resolution (deep imports, peers, etc.)
+      return resolved === undefined ? undefined : { path: resolved };
+    });
+  },
+};
 const buildVersion = process.env["UNIVER_CLI_BUILD_VERSION"]?.trim();
-const plugins =
-  buildVersion === undefined || buildVersion.length === 0
+const plugins = [
+  preferEsmSdkResolution,
+  ...(buildVersion === undefined || buildVersion.length === 0
     ? []
     : [
         {
@@ -35,7 +91,8 @@ const plugins =
             });
           },
         },
-      ];
+      ]),
+];
 
 await rm(join(projectRoot, "dist"), { force: true, recursive: true });
 // One build with code splitting: the SDK and other shared modules are emitted once into
@@ -70,6 +127,13 @@ await writeFile(
   `${JSON.stringify(externalDependencyAudit([nodeBuild.metafile]), null, 2)}\n`,
   "utf8",
 );
+if (process.env["UNIVER_CLI_DUMP_METAFILE"] === "1") {
+  await writeFile(
+    join(projectRoot, "dist", "metafile.json"),
+    `${JSON.stringify(nodeBuild.metafile)}\n`,
+    "utf8",
+  );
+}
 await cp(join(projectRoot, "src", "skills"), join(projectRoot, "dist", "skills"), {
   recursive: true,
 });
