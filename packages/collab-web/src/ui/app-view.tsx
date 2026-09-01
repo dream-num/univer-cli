@@ -62,6 +62,8 @@ import type { Appearance } from "../appearance";
 import { cn } from "../lib/utils";
 import {
   buildChangedSlidePages,
+  filterSlidePageDiffItems,
+  slidePageIdOfDiffItem,
   type UnitStructuralDiffItem
 } from "@univer/unit-compare";
 import { structuralDiffItemsFromContext } from "../core/structural-diff-from-context";
@@ -74,6 +76,8 @@ import { UnitIcon } from "./unit-icon";
 import { DiscordIcon } from "./discord-icon";
 import { BaseTableDiffViewer } from "./base-table-diff-viewer";
 import { ComparisonPageTabs, type ComparisonPageTabOption } from "./comparison-page-tabs";
+import { useEnsureSelectedDiffVisible } from "./use-ensure-selected-diff-visible";
+import { shouldClearDiffSidebarSelection } from "./diff-sidebar-selection";
 import {
   structuralDiffItemEntityLabel,
   structuralDiffItemLabel
@@ -960,7 +964,6 @@ function WorktreeTitle({
 }
 
 function ComparisonSourceSelect({ app, snap }: { app: App; snap: AppSnapshot }): ReactElement {
-  const currentWorktreeId = snap.view.kind === "worktree" ? snap.view.worktreeId : null;
   const pinnedRevision = snap.comparisonData?.response.left.revision;
   return (
     <label className="grid min-w-0 gap-0.5" data-testid="comparison-source-title">
@@ -986,17 +989,11 @@ function ComparisonSourceSelect({ app, snap }: { app: App; snap: AppSnapshot }):
         }}
         >
           <option value="trunk">{t().topbar.trunk}</option>
-          {snap.worktrees
-            .filter(
-              (candidate) =>
-                candidate.worktreeId !== currentWorktreeId &&
-                (candidate.status === "draft" || candidate.status === "ready")
-            )
-            .map((candidate) => (
-              <option key={candidate.worktreeId} value={`worktree:${candidate.worktreeId}`}>
-                {candidate.name || candidate.worktreeId}
-              </option>
-            ))}
+          {app.comparisonSourceWorktrees().map((candidate) => (
+            <option key={candidate.worktreeId} value={`worktree:${candidate.worktreeId}`}>
+              {candidate.name || candidate.worktreeId}
+            </option>
+          ))}
         </select>
         {pinnedRevision !== undefined ? (
           <span className="shrink-0 text-[9px] font-semibold tabular-nums text-muted-foreground">
@@ -1104,8 +1101,6 @@ function CanvasNativeUnitDiff({ app, snap }: { app: App; snap: AppSnapshot }): R
         : structuralDiffItemsFromContext(data.context),
     [data]
   );
-  const selectedItem =
-    items.find((item) => item.id === selectedItemId) ?? items[0] ?? undefined;
   const pageTabs = useMemo(
     () =>
       data?.response.unit.type === UNIT_TYPE_SLIDE
@@ -1117,16 +1112,27 @@ function CanvasNativeUnitDiff({ app, snap }: { app: App; snap: AppSnapshot }): R
     activePageId !== null && pageTabs.some((page) => page.id === activePageId)
       ? activePageId
       : pageTabs[0]?.id ?? null;
+  const scopedItems = useMemo(
+    () =>
+      data?.response.unit.type === UNIT_TYPE_SLIDE && selectedPageId !== null
+        ? filterSlidePageDiffItems(items, selectedPageId)
+        : items,
+    [data?.response.unit.type, items, selectedPageId]
+  );
+  const selectedItem = scopedItems.find((item) => item.id === selectedItemId);
 
   useEffect(() => {
-    if (items.length === 0) {
+    setSelectedItemId(undefined);
+  }, [data?.response.unit.unitId, session?.comparisonId]);
+
+  useEffect(() => {
+    if (
+      selectedItemId !== undefined &&
+      !scopedItems.some((item) => item.id === selectedItemId)
+    ) {
       setSelectedItemId(undefined);
-      return;
     }
-    if (selectedItemId === undefined || !items.some((item) => item.id === selectedItemId)) {
-      setSelectedItemId(items[0]?.id);
-    }
-  }, [items, selectedItemId]);
+  }, [scopedItems, selectedItemId]);
 
   useEffect(() => {
     setActivePageId(selectedPageId);
@@ -1155,8 +1161,9 @@ function CanvasNativeUnitDiff({ app, snap }: { app: App; snap: AppSnapshot }): R
         sheetBlocks: [...(source.sheetBlocks ?? [])],
         changesets: [],
         comparison: {
-          side: comparisonSide, peerData, items,
+          side: comparisonSide, peerData, items: scopedItems,
           alignment: data.context.productContext.kind === "doc" ? data.context.productContext.paragraphAlignment.rows : [],
+          ...(selectedItemId === undefined ? {} : { selectedItemId }),
         },
         ...(data.response.unit.type === UNIT_TYPE_SLIDE &&
         selectedPageId !== null &&
@@ -1187,14 +1194,9 @@ function CanvasNativeUnitDiff({ app, snap }: { app: App; snap: AppSnapshot }): R
       );
       const initialItem =
         selectedPageId === null
-          ? items[0]
-          : (items.find(
-              (item) =>
-                item.category !== "slide" && slidePageIdOfItem(item) === selectedPageId
-            ) ??
-            items.find(
-              (item) => item.category === "slide" && item.stableId === selectedPageId
-            ));
+          ? scopedItems[0]
+          : (scopedItems.find((item) => item.entityType === "slide-element") ??
+            scopedItems.find((item) => item.entityType === "slide"));
       if (disposed || initialItem === undefined) return;
       void Promise.all([
         leftHandleRef.current?.focusComparisonTarget(
@@ -1219,28 +1221,54 @@ function CanvasNativeUnitDiff({ app, snap }: { app: App; snap: AppSnapshot }): R
       leftHandleRef.current = null;
       rightHandleRef.current = null;
     };
-  }, [data, items, selectedPageId, session, snap.appearance, snap.lang]);
+  }, [data, scopedItems, selectedPageId, session, snap.appearance, snap.lang]);
+
+  useEffect(() => {
+    void Promise.all([
+      leftHandleRef.current?.setComparisonSelection(selectedItemId),
+      rightHandleRef.current?.setComparisonSelection(selectedItemId)
+    ]);
+  }, [selectedItemId]);
 
   const focusItem = useCallback((item: UnitStructuralDiffItem): void => {
     setSelectedItemId(item.id);
-    const pageId = slidePageIdOfItem(item);
+    const pageId = slidePageIdOfDiffItem(item);
     if (pageId !== null) setActivePageId(pageId);
     void Promise.all([
-      leftHandleRef.current?.focusComparisonTarget(structuralDiffFocusTarget(item, "left")),
-      rightHandleRef.current?.focusComparisonTarget(structuralDiffFocusTarget(item, "right"))
+      leftHandleRef.current?.setComparisonSelection(item.id),
+      rightHandleRef.current?.setComparisonSelection(item.id)
+    ]).then(() =>
+      Promise.all([
+        leftHandleRef.current?.focusComparisonTarget(structuralDiffFocusTarget(item, "left")),
+        rightHandleRef.current?.focusComparisonTarget(structuralDiffFocusTarget(item, "right"))
+      ])
+    );
+  }, []);
+
+  const clearFocusedItem = useCallback((): void => {
+    setSelectedItemId(undefined);
+    void Promise.all([
+      leftHandleRef.current?.setComparisonSelection(undefined),
+      rightHandleRef.current?.setComparisonSelection(undefined)
     ]);
   }, []);
 
   const focusPage = useCallback((pageId: string): void => {
     setActivePageId(pageId);
+    const pageItems = filterSlidePageDiffItems(items, pageId);
     const pageItem =
-      items.find((item) => item.category === `slide-element:${pageId}`) ??
-      items.find((item) => item.category === "slide" && item.stableId === pageId);
+      pageItems.find((item) => item.entityType === "slide-element") ??
+      pageItems.find((item) => item.entityType === "slide");
     if (pageItem !== undefined) setSelectedItemId(pageItem.id);
     void Promise.all([
-      leftHandleRef.current?.focusComparisonTarget({ category: "slide", stableId: pageId }),
-      rightHandleRef.current?.focusComparisonTarget({ category: "slide", stableId: pageId })
-    ]);
+      leftHandleRef.current?.setComparisonSelection(pageItem?.id),
+      rightHandleRef.current?.setComparisonSelection(pageItem?.id)
+    ]).then(() =>
+      Promise.all([
+        leftHandleRef.current?.focusComparisonTarget({ category: "slide", stableId: pageId }),
+        rightHandleRef.current?.focusComparisonTarget({ category: "slide", stableId: pageId })
+      ])
+    );
   }, [items]);
 
   if (data === undefined || session === undefined) return <div className="min-h-0 flex-1" />;
@@ -1248,9 +1276,10 @@ function CanvasNativeUnitDiff({ app, snap }: { app: App; snap: AppSnapshot }): R
     <div className="min-h-0 flex-1 overflow-auto bg-muted/30 p-2">
       <div className="grid h-full min-h-[420px] grid-cols-[240px_minmax(720px,1fr)] overflow-hidden rounded-xl border border-border bg-border shadow-[0_12px_32px_rgb(15_23_42/0.08),0_1px_2px_rgb(15_23_42/0.06)] max-[1023px]:grid-cols-1 max-[1023px]:grid-rows-1">
         <NativeDiffSidebar
-          items={items}
+          items={scopedItems}
           fidelity={data.response.fidelity}
           selectedItemId={selectedItem?.id}
+          onClear={clearFocusedItem}
           onSelect={focusItem}
         />
         <div className="grid min-h-0 grid-rows-[minmax(0,1fr)] bg-card">
@@ -1259,7 +1288,7 @@ function CanvasNativeUnitDiff({ app, snap }: { app: App; snap: AppSnapshot }): R
               activePageId={selectedPageId}
               hostRef={leftRef}
               hideSlideAddControl={data.response.unit.type === UNIT_TYPE_SLIDE}
-              itemCount={items.length}
+              itemCount={scopedItems.length}
               label={session.left.label}
               leftSourceControl={<ComparisonSourceSelect app={app} snap={snap} />}
               pagePresent={slidePagePresent(data.leftUnitData, selectedPageId)}
@@ -1272,7 +1301,7 @@ function CanvasNativeUnitDiff({ app, snap }: { app: App; snap: AppSnapshot }): R
               activePageId={selectedPageId}
               hostRef={rightRef}
               hideSlideAddControl={data.response.unit.type === UNIT_TYPE_SLIDE}
-              itemCount={items.length}
+              itemCount={scopedItems.length}
               label={comparisonRevisionLabel(session.right.label, data.response.right.revision)}
               leftSourceControl={undefined}
               pagePresent={slidePagePresent(data.rightUnitData, selectedPageId)}
@@ -1364,15 +1393,24 @@ function NativeDiffSidebar({
   items,
   fidelity,
   selectedItemId,
+  onClear,
   onSelect
 }: {
   items: readonly UnitStructuralDiffItem[];
   fidelity: "history" | "snapshot";
   selectedItemId: string | undefined;
+  onClear: () => void;
   onSelect: (item: UnitStructuralDiffItem) => void;
 }): ReactElement {
+  const sidebarRef = useEnsureSelectedDiffVisible<HTMLElement>(selectedItemId);
   return (
-    <aside className="min-h-0 overflow-auto border-r bg-card p-3 max-[1023px]:hidden">
+    <aside
+      className="min-h-0 overflow-auto border-r bg-card p-3 max-[1023px]:hidden"
+      ref={sidebarRef}
+      onClick={(event) => {
+        if (shouldClearDiffSidebarSelection(event.target)) onClear();
+      }}
+    >
       <div className="mb-3 flex items-center justify-between border-b border-border pb-3 text-xs font-semibold">
         <div className="grid gap-0.5">
           <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
@@ -1398,6 +1436,7 @@ function NativeDiffSidebar({
               type="button"
               key={item.id}
               aria-pressed={selectedItemId === item.id}
+              data-diff-sidebar-selected={selectedItemId === item.id ? "true" : undefined}
               onClick={() => onSelect(item)}
               className={cn(
                 "block w-full rounded-lg border px-2.5 py-2 text-left text-[11px] leading-4 outline-none transition-[border-color,background,box-shadow,transform] hover:-translate-y-px focus-visible:ring-2 focus-visible:ring-ring",
@@ -1560,13 +1599,6 @@ function NativeDiffSide({
       )}
     </section>
   );
-}
-
-function slidePageIdOfItem(item: UnitStructuralDiffItem): string | null {
-  if (item.category === "slide") return item.stableId;
-  return item.category.startsWith("slide-element:")
-    ? item.category.slice("slide-element:".length)
-    : null;
 }
 
 function comparisonRevisionLabel(label: string, revision: number | undefined): string {

@@ -84,7 +84,7 @@ describe("viewer host lifecycle when leaving comparison", () => {
             summary: { total: 0, insert: 0, delete: 0, update: 0, moved: 0, byEntityType: {} },
             coverage: { supportedEntityTypes: [] },
             page: { offset: 0, limit: 1000, matched: 0, hasMore: false }, items: [],
-            diagnostics: { readiness: "ready", unsupportedMutationIds: [], notes: [] },
+            diagnostics: { readiness: "ready", unsupportedMutationIds: [], codes: [] },
             productContext: { kind: "sheet", sheets: [] },
           },
         }),

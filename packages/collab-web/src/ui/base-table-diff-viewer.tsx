@@ -20,15 +20,17 @@ import {
   type BaseTableDiff
 } from "../core/base-table-diff";
 import {
+  baseTableIdOfDiffItem,
+  filterBaseTableDiffItems,
   type UnitStructuralDiffItem,
   type UnitStructuralDiffKind
 } from "@univer/unit-compare";
 import { cn } from "../lib/utils";
 import { t } from "../i18n";
 import { ComparisonPageTabs } from "./comparison-page-tabs";
-import {
-  structuralDiffItemLabel
-} from "./structural-diff-item-label";
+import { shouldClearDiffSidebarSelection } from "./diff-sidebar-selection";
+import { useEnsureSelectedDiffVisible } from "./use-ensure-selected-diff-visible";
+import { structuralDiffItemLabel } from "./structural-diff-item-label";
 
 export function BaseTableDiffViewer(input: {
   readonly fidelity: "history" | "snapshot";
@@ -39,8 +41,11 @@ export function BaseTableDiffViewer(input: {
   readonly right: unknown;
   readonly rightLabel: string;
 }): ReactElement {
-  const tables = useMemo(() => buildBaseTableDiff(input.left, input.right, input.items), [input.left, input.right, input.items]);
-  const items = useMemo(
+  const tables = useMemo(
+    () => buildBaseTableDiff(input.left, input.right, input.items),
+    [input.left, input.right, input.items]
+  );
+  const visibleItems = useMemo(
     () =>
       input.items.filter((item) => isVisibleBaseDiffItem(item, tables)),
     [input.items, tables]
@@ -48,7 +53,14 @@ export function BaseTableDiffViewer(input: {
   const [activeTableId, setActiveTableId] = useState<string | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | undefined>(undefined);
   const activeTable = tables.find((table) => table.id === activeTableId) ?? tables[0] ?? null;
-  const selectedItem = items.find((item) => item.id === selectedItemId) ?? items[0];
+  const scopedItems = useMemo(
+    () =>
+      activeTable === null
+        ? []
+        : filterBaseTableDiffItems(visibleItems, activeTable.id),
+    [activeTable, visibleItems]
+  );
+  const selectedItem = scopedItems.find((item) => item.id === selectedItemId);
 
   useEffect(() => {
     if (activeTable === null) setActiveTableId(null);
@@ -56,14 +68,17 @@ export function BaseTableDiffViewer(input: {
   }, [activeTable, activeTableId]);
 
   useEffect(() => {
-    if (selectedItem === undefined) setSelectedItemId(undefined);
-    else if (selectedItem.id !== selectedItemId) setSelectedItemId(selectedItem.id);
+    if (selectedItemId !== undefined && selectedItem === undefined) setSelectedItemId(undefined);
   }, [selectedItem, selectedItemId]);
 
   const selectItem = (item: UnitStructuralDiffItem): void => {
     setSelectedItemId(item.id);
-    const tableId = tableIdOfItem(item);
+    const tableId = baseTableIdOfDiffItem(item);
     if (tableId !== null && tables.some((table) => table.id === tableId)) setActiveTableId(tableId);
+  };
+  const selectTable = (tableId: string): void => {
+    setSelectedItemId(undefined);
+    setActiveTableId(tableId);
   };
 
   return (
@@ -71,9 +86,10 @@ export function BaseTableDiffViewer(input: {
       <div className="grid h-full min-h-[420px] grid-cols-[240px_minmax(720px,1fr)] overflow-hidden rounded-xl border border-border bg-border shadow-[0_12px_32px_rgb(15_23_42/0.08),0_1px_2px_rgb(15_23_42/0.06)] max-[1023px]:grid-cols-1 max-[1023px]:grid-rows-1">
         <BaseDiffSidebar
           fidelity={input.fidelity}
-          items={items}
+          items={scopedItems}
           selectedItemId={selectedItem?.id}
           tables={tables}
+          onClear={() => setSelectedItemId(undefined)}
           onSelect={selectItem}
         />
         <div className="grid min-h-0 grid-rows-[minmax(0,1fr)] bg-card">
@@ -83,8 +99,9 @@ export function BaseTableDiffViewer(input: {
             leftLabel={input.leftLabel}
             leftSourceControl={input.leftSourceControl}
             rightLabel={input.rightLabel}
+            selectedItem={selectedItem}
             tables={tables}
-            onSelectTable={setActiveTableId}
+            onSelectTable={selectTable}
           />
         </div>
       </div>
@@ -98,6 +115,7 @@ function BaseDiffPanes(input: {
   readonly leftLabel: string;
   readonly leftSourceControl: ReactNode;
   readonly rightLabel: string;
+  readonly selectedItem: UnitStructuralDiffItem | undefined;
   readonly tables: readonly BaseTableDiff[];
   readonly onSelectTable: (tableId: string) => void;
 }): ReactElement {
@@ -136,6 +154,7 @@ function BaseDiffPanes(input: {
         activeTableId={input.activeTableId}
         label={input.leftLabel}
         scrollRef={leftScrollRef}
+        selectedItem={input.selectedItem}
         side="left"
         sourceControl={input.leftSourceControl}
         tabs={tabs}
@@ -147,6 +166,7 @@ function BaseDiffPanes(input: {
         activeTableId={input.activeTableId}
         label={input.rightLabel}
         scrollRef={rightScrollRef}
+        selectedItem={input.selectedItem}
         side="right"
         sourceControl={undefined}
         tabs={tabs}
@@ -162,6 +182,7 @@ function BaseDiffPane(input: {
   readonly activeTableId: string | null;
   readonly label: string;
   readonly scrollRef: MutableRefObject<HTMLDivElement | null>;
+  readonly selectedItem: UnitStructuralDiffItem | undefined;
   readonly side: "left" | "right";
   readonly sourceControl: ReactNode | undefined;
   readonly tabs: readonly { readonly id: string; readonly label: string; readonly status: UnitStructuralDiffKind }[];
@@ -198,6 +219,7 @@ function BaseDiffPane(input: {
       ) : (
         <BaseRawTableGrid
           scrollRef={input.scrollRef}
+          selectedItem={input.selectedItem}
           side={input.side}
           table={input.activeTable}
           onScroll={input.onScroll}
@@ -209,6 +231,7 @@ function BaseDiffPane(input: {
 
 function BaseRawTableGrid(input: {
   readonly scrollRef: MutableRefObject<HTMLDivElement | null>;
+  readonly selectedItem: UnitStructuralDiffItem | undefined;
   readonly side: "left" | "right";
   readonly table: BaseTableDiff;
   readonly onScroll: (event: UIEvent<HTMLDivElement>) => void;
@@ -226,7 +249,12 @@ function BaseRawTableGrid(input: {
           <span aria-hidden="true" className="size-3.5 rounded-[4px] border border-border bg-card/85 shadow-sm" />
         </div>
         {input.table.fields.map((field) => (
-          <BaseFieldHeader key={field.id} field={field} side={input.side} />
+          <BaseFieldHeader
+            key={field.id}
+            field={field}
+            selectedItem={input.selectedItem}
+            side={input.side}
+          />
         ))}
         {input.table.records.map((record, index) => (
           <BaseRecordRow
@@ -234,6 +262,7 @@ function BaseRawTableGrid(input: {
             fields={input.table.fields}
             index={index}
             record={record}
+            selectedItem={input.selectedItem}
             side={input.side}
           />
         ))}
@@ -244,17 +273,20 @@ function BaseRawTableGrid(input: {
 
 function BaseFieldHeader(input: {
   readonly field: BaseDiffField;
+  readonly selectedItem: UnitStructuralDiffItem | undefined;
   readonly side: "left" | "right";
 }): ReactElement {
   const field = input.field[input.side];
   const label = baseDiffFieldLabel(input.field, input.side);
   const fieldType = getBaseFieldType(input.field, input.side);
   const status = sideStatus(input.field.left, input.field.right, input.field.status, input.side);
+  const emphasized =
+    input.selectedItem?.entityType === "field" && input.selectedItem.stableId === input.field.id;
   return (
     <div
       className={cn(
         "sticky top-0 z-20 flex h-10 min-w-0 items-center border-b border-r border-border bg-muted/85 px-3 font-semibold text-foreground backdrop-blur-sm",
-        toneClass(status),
+        toneClass(status, emphasized),
         field === null && "italic text-muted-foreground"
       )}
       title={field === null ? t().diff.notPresent : label}
@@ -279,15 +311,19 @@ function BaseRecordRow(input: {
   readonly fields: readonly BaseDiffField[];
   readonly index: number;
   readonly record: BaseDiffRecord;
+  readonly selectedItem: UnitStructuralDiffItem | undefined;
   readonly side: "left" | "right";
 }): ReactElement {
   const rowStatus = sideStatus(input.record.left, input.record.right, input.record.status, input.side);
+  const recordEmphasized =
+    input.selectedItem?.entityType === "record" &&
+    input.selectedItem.stableId === input.record.id;
   return (
     <>
       <div
         className={cn(
           "sticky left-0 z-10 grid min-h-9 place-items-center border-b border-r border-border bg-muted/70 font-semibold tabular-nums text-muted-foreground",
-          toneClass(rowStatus)
+          toneClass(rowStatus, recordEmphasized)
         )}
         title={`${input.record.label} · ${input.record.id}`}
       >
@@ -295,12 +331,15 @@ function BaseRecordRow(input: {
       </div>
       {input.fields.map((field) => {
         const cell = getBaseDiffCell({ field, record: input.record, side: input.side });
+        const cellEmphasized =
+          input.selectedItem?.entityType === "cell" &&
+          input.selectedItem.stableId === `${input.record.id}:${field.id}`;
         return (
           <div
             key={`${input.record.id}:${field.id}`}
             className={cn(
               "flex min-h-9 min-w-0 items-center border-b border-r border-border bg-card px-3 leading-4 text-foreground",
-              toneClass(cell.status),
+              toneClass(cell.status, cellEmphasized),
               !cell.present && "bg-[repeating-linear-gradient(135deg,transparent,transparent_6px,color-mix(in_srgb,currentColor_7%,transparent)_6px,color-mix(in_srgb,currentColor_7%,transparent)_12px)]"
             )}
             title={cell.displayValue || (cell.present ? t().diff.sheetTree.emptyText : t().diff.notPresent)}
@@ -416,10 +455,18 @@ function BaseDiffSidebar(input: {
   readonly items: readonly UnitStructuralDiffItem[];
   readonly selectedItemId: string | undefined;
   readonly tables: readonly BaseTableDiff[];
+  readonly onClear: () => void;
   readonly onSelect: (item: UnitStructuralDiffItem) => void;
 }): ReactElement {
+  const sidebarRef = useEnsureSelectedDiffVisible<HTMLElement>(input.selectedItemId);
   return (
-    <aside className="min-h-0 overflow-auto border-r bg-card p-3 max-[1023px]:hidden">
+    <aside
+      className="min-h-0 overflow-auto border-r bg-card p-3 max-[1023px]:hidden"
+      ref={sidebarRef}
+      onClick={(event) => {
+        if (shouldClearDiffSidebarSelection(event.target)) input.onClear();
+      }}
+    >
       <div className="mb-3 flex items-center justify-between border-b border-border pb-3 text-xs font-semibold">
         <div className="grid gap-0.5">
           <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">{t().diff.changes}</span>
@@ -440,6 +487,7 @@ function BaseDiffSidebar(input: {
           <button
             key={item.id}
             aria-pressed={input.selectedItemId === item.id}
+            data-diff-sidebar-selected={input.selectedItemId === item.id ? "true" : undefined}
             className={cn(
               "block w-full rounded-lg border px-2.5 py-2 text-left text-[11px] leading-4 outline-none transition-[border-color,background,box-shadow,transform] hover:-translate-y-px focus-visible:ring-2 focus-visible:ring-ring",
               toneClass(item.kind),
@@ -469,17 +517,20 @@ function sideStatus(
   return commonStatus;
 }
 
-function toneClass(status: UnitStructuralDiffKind | null): string {
+function toneClass(status: UnitStructuralDiffKind | null, emphasized = false): string {
+  if (emphasized && status === "delete") {
+    return "border-diff-delete/80 bg-diff-delete/30 text-diff-delete ring-2 ring-inset ring-diff-delete/70";
+  }
+  if (emphasized && status === "insert") {
+    return "border-diff-insert/80 bg-diff-insert/30 text-diff-insert ring-2 ring-inset ring-diff-insert/70";
+  }
+  if (emphasized && status === "update") {
+    return "border-diff-update/80 bg-diff-update/30 text-diff-update ring-2 ring-inset ring-diff-update/70";
+  }
   if (status === "delete") return "border-diff-delete/40 bg-diff-delete-muted/80 text-diff-delete";
   if (status === "insert") return "border-diff-insert/40 bg-diff-insert-muted/80 text-diff-insert";
   if (status === "update") return "border-diff-update/40 bg-diff-update-muted/75 text-diff-update";
   return "";
-}
-
-function tableIdOfItem(item: UnitStructuralDiffItem): string | null {
-  if (item.category === "table") return item.stableId;
-  const separator = item.category.indexOf(":");
-  return separator < 0 ? null : item.category.slice(separator + 1);
 }
 
 function isVisibleBaseDiffItem(
@@ -488,12 +539,12 @@ function isVisibleBaseDiffItem(
 ): boolean {
   if (item.category.startsWith("view:")) return false;
   if (!item.category.startsWith("field:")) return true;
-  const table = tables.find((candidate) => candidate.id === tableIdOfItem(item));
+  const table = tables.find((candidate) => candidate.id === baseTableIdOfDiffItem(item));
   return table === undefined || table.fields.some((field) => field.id === item.stableId);
 }
 
 function itemDisplayLabel(item: UnitStructuralDiffItem, tables: readonly BaseTableDiff[]): string {
-  const table = tables.find((candidate) => candidate.id === tableIdOfItem(item));
+  const table = tables.find((candidate) => candidate.id === baseTableIdOfDiffItem(item));
   if (table === undefined) return item.label;
   if (item.category.startsWith("field:")) {
     return table.fields.find((field) => field.id === item.stableId)?.label ?? item.label;

@@ -10,6 +10,7 @@ import {
   IUniverInstanceService,
   IUndoRedoService,
   ThemeService,
+  type DocumentDataModel,
   type LocaleType,
   Univer,
   UniverInstanceType
@@ -121,6 +122,8 @@ export interface ViewerHandle {
 export interface PreviewViewerHandle extends ViewerHandle {
   /** Navigate a materialized read-only Unit to the same stable object on either comparison side. */
   focusComparisonTarget(target: PreviewFocusTarget): Promise<boolean>;
+  /** Emphasize one semantic diff item while preserving the normal comparison paint. */
+  setComparisonSelection(itemId: string | undefined): Promise<void>;
   getBoardViewport(): BoardPreviewViewport | null;
   setBoardViewport(viewport: BoardPreviewViewport): void;
   subscribeBoardViewport(listener: (viewport: BoardPreviewViewport) => void): () => void;
@@ -354,6 +357,7 @@ export interface PreviewViewerOptions {
     readonly peerData: unknown;
     readonly items: readonly UnitStructuralDiffItem[];
     readonly alignment: DocumentComparisonInput["alignment"];
+    readonly selectedItemId?: string;
   };
   /** Slide page selected by the comparison shell before the read-only viewer mounts. */
   initialSlideId?: string;
@@ -394,20 +398,38 @@ export async function createPreviewViewer(opts: PreviewViewerOptions): Promise<P
   let unitId = "";
   let docPageWidth: number | undefined;
   let slidePageSize: ISlidePageSize | undefined;
+  let updateDocumentComparisonSelection:
+    | ((itemId: string | undefined) => Promise<void>)
+    | undefined;
   if (opts.unitType === UNIT_TYPE_DOC) {
     const source = transformSnapshotToDocumentData(snapshot);
-    const data =
-      opts.comparison === undefined
+    const comparison = opts.comparison;
+    const decorate = (selectedItemId: string | undefined): IDocumentData =>
+      comparison === undefined
         ? source
         : decorateDocumentComparisonSide(
             source,
-            opts.comparison.peerData as IDocumentData,
-            opts.comparison.side,
-            opts.comparison
+            comparison.peerData as IDocumentData,
+            comparison.side,
+            {
+              ...comparison,
+              ...(selectedItemId === undefined ? {} : { selectedItemId })
+            }
           );
+    const data = decorate(comparison?.selectedItemId);
     unitId = data.id ?? "";
     docPageWidth = data.documentStyle.pageSize?.width;
     univer.createUnit(UniverInstanceType.UNIVER_DOC, data);
+    if (comparison !== undefined) {
+      const documentModel = univer
+        .__getInjector()
+        .get(IUniverInstanceService)
+        .getUnit<DocumentDataModel>(unitId, UniverInstanceType.UNIVER_DOC);
+      updateDocumentComparisonSelection = async (itemId) => {
+        documentModel?.reset(decorate(itemId));
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      };
+    }
   } else if (opts.unitType === UNIT_TYPE_SLIDE) {
     const data = transformSnapshotToSlideData(snapshot);
     if (opts.initialSlideId !== undefined) data.activeSlideId = opts.initialSlideId;
@@ -463,7 +485,10 @@ export async function createPreviewViewer(opts: PreviewViewerOptions): Promise<P
           unitId,
           unitType: opts.unitType,
           side: opts.comparison.side,
-          items: opts.comparison.items
+          items: opts.comparison.items,
+          ...(opts.comparison.selectedItemId === undefined
+            ? {}
+            : { selectedItemId: opts.comparison.selectedItemId })
         });
   await comparisonHighlights?.refresh();
 
@@ -500,6 +525,13 @@ export async function createPreviewViewer(opts: PreviewViewerOptions): Promise<P
   const previewAPI = FUniver.newAPI(univer);
 
   return {
+    setComparisonSelection: async (itemId) => {
+      if (updateDocumentComparisonSelection !== undefined) {
+        await updateDocumentComparisonSelection(itemId);
+        return;
+      }
+      await comparisonHighlights?.setSelectedItem(itemId);
+    },
     focusComparisonTarget: async (target) => {
       const focused = await focusPreviewComparisonTarget(
         previewAPI,

@@ -23,6 +23,7 @@ interface HighlightTarget {
   readonly id: string;
   readonly tone: ComparisonTone;
   readonly bounds: HighlightBounds;
+  readonly emphasized: boolean;
   /** Geometry-only edits need a locator, not a translucent mask over unchanged content. */
   readonly outlineOnly?: boolean;
 }
@@ -52,9 +53,15 @@ const TONE_STYLE: Record<ComparisonTone, { fill: string; stroke: string }> = {
   insert: { fill: "rgba(22, 163, 74, 0.28)", stroke: "rgba(21, 128, 61, 0.95)" },
   update: { fill: "rgba(37, 99, 235, 0.24)", stroke: "rgba(29, 78, 216, 0.95)" }
 };
+const EMPHASIZED_TONE_STYLE: Record<ComparisonTone, { fill: string; stroke: string }> = {
+  delete: { fill: "rgba(220, 38, 38, 0.46)", stroke: "rgba(153, 27, 27, 1)" },
+  insert: { fill: "rgba(22, 163, 74, 0.46)", stroke: "rgba(20, 83, 45, 1)" },
+  update: { fill: "rgba(37, 99, 235, 0.42)", stroke: "rgba(30, 64, 175, 1)" }
+};
 
 export interface NativeComparisonHighlightController {
   refresh(): Promise<void>;
+  setSelectedItem(itemId: string | undefined): Promise<void>;
   dispose(): void;
 }
 
@@ -65,6 +72,7 @@ export function createNativeComparisonHighlightController(input: {
   readonly unitType: UnitType;
   readonly side: ComparisonSide;
   readonly items: readonly UnitStructuralDiffItem[];
+  readonly selectedItemId?: string;
 }): NativeComparisonHighlightController {
   const renderManager = input.univer.__getInjector().get(IRenderManagerService);
   let bindings: OverlayBinding[] = [];
@@ -72,6 +80,7 @@ export function createNativeComparisonHighlightController(input: {
   let observedScene: Scene | undefined;
   let sceneTransformSubscription: { unsubscribe(): void } | undefined;
   let scheduledRefresh: number | undefined;
+  let selectedItemId = input.selectedItemId;
 
   const scheduleRefresh = (): void => {
     if (scheduledRefresh !== undefined) return;
@@ -104,25 +113,34 @@ export function createNativeComparisonHighlightController(input: {
     }
     const targets =
       input.unitType === UNIT_TYPE_BASE
-        ? await buildBaseTargets(render.scene, render.mainComponent, input.items, input.side)
+        ? await buildBaseTargets(
+            render.scene,
+            render.mainComponent,
+            input.items,
+            input.side,
+            selectedItemId
+          )
         : await buildObjectTargets(
             render.scene,
             input.unitId,
             input.unitType,
             input.items,
-            input.side
+            input.side,
+            selectedItemId
           );
     if (ownGeneration !== generation) return;
     bindings = targets.map((target) => {
-      const style = TONE_STYLE[target.tone];
+      const style = target.emphasized
+        ? EMPHASIZED_TONE_STYLE[target.tone]
+        : TONE_STYLE[target.tone];
       const shape = new Rect(`comparison-highlight-${input.side}-${target.id}`, {
         ...target.bounds,
         fill:
-          target.outlineOnly && target.tone === "update"
+          target.outlineOnly && target.tone === "update" && !target.emphasized
             ? "rgba(37, 99, 235, 0.06)"
             : style.fill,
         stroke: style.stroke,
-        strokeWidth: 3,
+        strokeWidth: target.emphasized ? 5 : 3,
         evented: false,
         zIndex: HIGHLIGHT_LAYER
       });
@@ -134,6 +152,10 @@ export function createNativeComparisonHighlightController(input: {
 
   return {
     refresh,
+    setSelectedItem: async (itemId) => {
+      selectedItemId = itemId;
+      await refresh();
+    },
     dispose: () => {
       generation += 1;
       if (scheduledRefresh !== undefined) cancelAnimationFrame(scheduledRefresh);
@@ -151,7 +173,8 @@ async function buildObjectTargets(
   unitId: string,
   unitType: UnitType,
   items: readonly UnitStructuralDiffItem[],
-  side: ComparisonSide
+  side: ComparisonSide,
+  selectedItemId: string | undefined
 ): Promise<HighlightTarget[]> {
   const candidates = items.flatMap((item) => {
     const tone = toneForSide(item, side);
@@ -169,6 +192,7 @@ async function buildObjectTargets(
           id: item.id,
           tone,
           bounds: { ...bounds, angle: object.angle },
+          emphasized: item.id === selectedItemId,
           outlineOnly:
             item.kind === "update" &&
             item.changes.length > 0 &&
@@ -206,7 +230,8 @@ async function buildBaseTargets(
   scene: Scene,
   mainComponent: unknown,
   items: readonly UnitStructuralDiffItem[],
-  side: ComparisonSide
+  side: ComparisonSide,
+  selectedItemId: string | undefined
 ): Promise<HighlightTarget[]> {
   const component = await waitForBaseComponent(scene, mainComponent);
   if (component === null) return [];
@@ -238,6 +263,7 @@ async function buildBaseTargets(
       {
         id: item.id,
         tone,
+        emphasized: item.id === selectedItemId,
         bounds: {
           left: componentBounds.left + left,
           top: componentBounds.top + top,

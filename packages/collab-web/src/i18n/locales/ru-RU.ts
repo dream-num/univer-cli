@@ -1,3 +1,4 @@
+import editHistoryUI from "@univerjs-pro/edit-history-ui/locale/ru-RU";
 import { messagesFromVocabulary, type MessageVocabulary } from "./from-vocabulary";
 
 const vocabulary = {
@@ -98,4 +99,4 @@ const vocabulary = {
   empty: "Файл не открыт"
 } satisfies MessageVocabulary;
 
-export const RU_RU_MESSAGES = messagesFromVocabulary(vocabulary, "ru-RU");
+export const RU_RU_MESSAGES = messagesFromVocabulary(vocabulary, "ru-RU", editHistoryUI);

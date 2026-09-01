@@ -1,3 +1,4 @@
+import editHistoryUI from "@univerjs-pro/edit-history-ui/locale/pl-PL";
 import { messagesFromVocabulary, type MessageVocabulary } from "./from-vocabulary";
 
 const vocabulary = {
@@ -98,4 +99,4 @@ const vocabulary = {
   empty: "Nie otwarto pliku"
 } satisfies MessageVocabulary;
 
-export const PL_PL_MESSAGES = messagesFromVocabulary(vocabulary, "pl-PL");
+export const PL_PL_MESSAGES = messagesFromVocabulary(vocabulary, "pl-PL", editHistoryUI);

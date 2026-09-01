@@ -77,7 +77,7 @@ function context(left: IWorkbookData, right: IWorkbookData): UnitComparisonConte
     },
     page: { offset: 0, limit: 1000, matched: result.items.length, hasMore: false },
     coverage: { supportedEntityTypes: result.supportedEntityTypes },
-    diagnostics: { readiness: "ready", unsupportedMutationIds: [], notes: [] },
+    diagnostics: { readiness: "ready", unsupportedMutationIds: [], codes: [] },
     productContext: {
       kind: "sheet",
       sheets: result.productContext.sheets.map((sheet) => ({
@@ -188,7 +188,24 @@ describe("SDK Sheet presentation projection", () => {
     expect(model.items).toEqual([]);
     expect(model.compareInfo.worksheets.sheet?.presentation.baseRangeHighlights).toEqual([]);
     expect(model.compareInfo.worksheets.sheet?.presentation.currentRangeHighlights).toEqual([]);
-    expect(model.displayedSnapshots).toEqual({ base: left, current: right });
+    expect(model.displayedSnapshots).toEqual({
+      base: expect.objectContaining({ sheets: { sheet: expect.objectContaining({ freeze: { startColumn: -1, startRow: -1, xSplit: 0, ySplit: 0 } }) } }),
+      current: expect.objectContaining({ sheets: { sheet: expect.objectContaining({ freeze: { startColumn: -1, startRow: -1, xSplit: 0, ySplit: 0 } }) } }),
+    });
+  });
+
+  it.each(["value", "style"] as const)("disables canvas freeze in %s mode without mutating semantic snapshots", (mode) => {
+    const left = workbook(false);
+    const right = workbook(true);
+    left.sheets.sheet!.freeze = { startColumn: -1, startRow: -1, xSplit: 0, ySplit: 0 };
+    right.sheets.sheet!.freeze = { startColumn: -1, startRow: 4, xSplit: 0, ySplit: 4 };
+    const originalRightFreeze = structuredClone(right.sheets.sheet!.freeze);
+    const api = context(left, right);
+    const model = workbookComparisonFromContext({ context: api, left, right, mode });
+
+    expect(model.displayedSnapshots.base?.sheets.sheet?.freeze).toEqual({ startColumn: -1, startRow: -1, xSplit: 0, ySplit: 0 });
+    expect(model.displayedSnapshots.current?.sheets.sheet?.freeze).toEqual({ startColumn: -1, startRow: -1, xSplit: 0, ySplit: 0 });
+    expect(right.sheets.sheet!.freeze).toEqual(originalRightFreeze);
   });
 
   it("can present a removed workbook with no right snapshot", () => {

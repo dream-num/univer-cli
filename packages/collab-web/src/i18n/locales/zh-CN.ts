@@ -1,71 +1,11 @@
 import type { Messages } from "./en-US";
-import { UnitComparisonEntityType } from "@univerjs-pro/edit-history";
-import { comparisonTerm, localizedComparisonEnum, localizedComparisonPath } from "./comparison-labels.js";
-
-const UNIT_COMPARISON_ENTITY_TYPES = new Set<string>(Object.values(UnitComparisonEntityType));
-
-function isUnitComparisonEntityType(value: string): value is UnitComparisonEntityType {
-  return UNIT_COMPARISON_ENTITY_TYPES.has(value);
-}
-
-const STRUCTURAL_ENTITY_LABELS: Readonly<Record<UnitComparisonEntityType, string>> = {
-  unit: "文件",
-  workbook: "工作簿",
-  worksheet: "工作表",
-  cell: "单元格",
-  "row-column": "行与列",
-  move: "移动",
-  "condition-format": "条件格式",
-  "data-validation": "数据验证",
-  sparkline: "迷你图",
-  shape: "形状",
-  chart: "图表",
-  pivot: "数据透视表",
-  paragraph: "段落",
-  "text-style": "文字样式",
-  section: "分节",
-  "block-range": "块范围",
-  "custom-range": "自定义范围",
-  "table-range": "表格范围",
-  "custom-block": "自定义块",
-  "column-group": "分栏",
-  table: "表格",
-  drawing: "绘图",
-  header: "页眉",
-  footer: "页脚",
-  "document-style": "文档样式",
-  "document-setting": "文档设置",
-  "custom-decoration": "自定义标记",
-  "doc-hyperlink": "超链接",
-  "doc-callout": "标注块",
-  "doc-quote": "引用",
-  "doc-chart": "图表",
-  "doc-chart-data": "图表数据",
-  "doc-code": "代码块",
-  "doc-latex": "LaTeX 公式",
-  "doc-shape-resource": "形状",
-  "doc-table-resource": "表格数据",
-  slide: "幻灯片",
-  "slide-element": "幻灯片元素",
-  "slide-transition": "转场",
-  "slide-transition-ref": "幻灯片转场",
-  "slide-master": "幻灯片母版",
-  "slide-layout": "幻灯片版式",
-  "slide-theme": "幻灯片主题",
-  "slide-chart": "图表",
-  "slide-chart-data": "图表数据",
-  "slide-table": "表格数据",
-  base: "多维表格",
-  field: "字段",
-  record: "记录",
-  view: "视图",
-  "board-page": "画板页",
-  "board-element": "画板元素",
-  "board-theme": "画板主题",
-  "board-chart": "图表",
-  "board-chart-data": "图表数据",
-  "board-table": "表格数据"
-};
+import editHistoryUI from "@univerjs-pro/edit-history-ui/locale/zh-CN";
+import {
+  comparisonTerm,
+  localizedComparisonEntity,
+  localizedComparisonEnum,
+  localizedComparisonPath
+} from "./comparison-labels.js";
 
 const COMPARISON_PATH_LABELS: Readonly<Record<string, string>> = {
   text: "文字",
@@ -110,14 +50,11 @@ const COMPARISON_PATH_LABELS: Readonly<Record<string, string>> = {
 };
 
 function comparisonPathLabel(path: readonly string[]): string {
-  return localizedComparisonPath("zh-CN", path, (key) => COMPARISON_PATH_LABELS[key]);
+  return localizedComparisonPath(editHistoryUI, path, (key) => COMPARISON_PATH_LABELS[key]);
 }
 
 function comparisonEntityLabel(category: string): string {
-  const entityType = category.split(":")[0] ?? "";
-  return isUnitComparisonEntityType(entityType)
-    ? STRUCTURAL_ENTITY_LABELS[entityType]
-    : "内容";
+  return localizedComparisonEntity(editHistoryUI, category);
 }
 
 /**
@@ -217,10 +154,10 @@ export const ZH_CN_MESSAGES: Messages = {
     entityAt: (category: string, index: number): string =>
       `第 ${index} 个${comparisonEntityLabel(category)}`,
     changePath: comparisonPathLabel,
-    changeValue: (entityType: string, path: readonly string[], value: unknown): string | undefined => localizedComparisonEnum("zh-CN", entityType, path, value),
-    renderFailed: comparisonTerm("zh-CN", "loadFailed"),
-    comparisonFailed: comparisonTerm("zh-CN", "comparisonFailed"),
-    incompletePage: comparisonTerm("zh-CN", "incompletePage"),
+    changeValue: (entityType: string, path: readonly string[], value: unknown): string | undefined => localizedComparisonEnum(editHistoryUI, entityType, path, value),
+    renderFailed: comparisonTerm(editHistoryUI, "loadFailed"),
+    comparisonFailed: comparisonTerm(editHistoryUI, "comparisonFailed"),
+    incompletePage: comparisonTerm(editHistoryUI, "incompletePage"),
     wholeItem: "整个对象",
     present: "存在",
     itemCount: (count: number): string => `${count} 项`,

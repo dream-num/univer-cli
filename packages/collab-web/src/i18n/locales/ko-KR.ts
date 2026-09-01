@@ -1,3 +1,4 @@
+import editHistoryUI from "@univerjs-pro/edit-history-ui/locale/ko-KR";
 import { messagesFromVocabulary, type MessageVocabulary } from "./from-vocabulary";
 
 const vocabulary = {
@@ -97,4 +98,4 @@ const vocabulary = {
   empty: "열린 파일 없음"
 } satisfies MessageVocabulary;
 
-export const KO_KR_MESSAGES = messagesFromVocabulary(vocabulary, "ko-KR");
+export const KO_KR_MESSAGES = messagesFromVocabulary(vocabulary, "ko-KR", editHistoryUI);

@@ -1,3 +1,4 @@
+import editHistoryUI from "@univerjs-pro/edit-history-ui/locale/sk-SK";
 import { messagesFromVocabulary, type MessageVocabulary } from "./from-vocabulary";
 
 const vocabulary = {
@@ -98,4 +99,4 @@ const vocabulary = {
   empty: "Nie je otvorený žiadny súbor"
 } satisfies MessageVocabulary;
 
-export const SK_SK_MESSAGES = messagesFromVocabulary(vocabulary, "sk-SK");
+export const SK_SK_MESSAGES = messagesFromVocabulary(vocabulary, "sk-SK", editHistoryUI);

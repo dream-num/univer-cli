@@ -1,3 +1,4 @@
+import editHistoryUI from "@univerjs-pro/edit-history-ui/locale/de-DE";
 import { messagesFromVocabulary, type MessageVocabulary } from "./from-vocabulary";
 
 const vocabulary = {
@@ -98,4 +99,4 @@ const vocabulary = {
   empty: "Keine Datei geöffnet"
 } satisfies MessageVocabulary;
 
-export const DE_DE_MESSAGES = messagesFromVocabulary(vocabulary, "de-DE");
+export const DE_DE_MESSAGES = messagesFromVocabulary(vocabulary, "de-DE", editHistoryUI);

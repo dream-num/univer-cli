@@ -1,70 +1,10 @@
-import { UnitComparisonEntityType } from "@univerjs-pro/edit-history";
-import { comparisonTerm, localizedComparisonEnum, localizedComparisonPath } from "./comparison-labels.js";
-
-const UNIT_COMPARISON_ENTITY_TYPES = new Set<string>(Object.values(UnitComparisonEntityType));
-
-function isUnitComparisonEntityType(value: string): value is UnitComparisonEntityType {
-  return UNIT_COMPARISON_ENTITY_TYPES.has(value);
-}
-
-const STRUCTURAL_ENTITY_LABELS: Readonly<Record<UnitComparisonEntityType, string>> = {
-  unit: "Unit",
-  workbook: "Workbook",
-  worksheet: "Worksheet",
-  cell: "Cell",
-  "row-column": "Rows and columns",
-  move: "Move",
-  "condition-format": "Conditional format",
-  "data-validation": "Data validation",
-  sparkline: "Sparkline",
-  shape: "Shape",
-  chart: "Chart",
-  pivot: "Pivot table",
-  paragraph: "Paragraph",
-  "text-style": "Text style",
-  section: "Section",
-  "block-range": "Block range",
-  "custom-range": "Custom range",
-  "table-range": "Table range",
-  "custom-block": "Custom block",
-  "column-group": "Column group",
-  table: "Table",
-  drawing: "Drawing",
-  header: "Header",
-  footer: "Footer",
-  "document-style": "Document style",
-  "document-setting": "Document setting",
-  "custom-decoration": "Custom decoration",
-  "doc-hyperlink": "Hyperlink",
-  "doc-callout": "Callout",
-  "doc-quote": "Quote",
-  "doc-chart": "Chart",
-  "doc-chart-data": "Chart data",
-  "doc-code": "Code block",
-  "doc-latex": "LaTeX formula",
-  "doc-shape-resource": "Shape",
-  "doc-table-resource": "Table data",
-  slide: "Slide",
-  "slide-element": "Slide element",
-  "slide-transition": "Transition",
-  "slide-transition-ref": "Slide transition",
-  "slide-master": "Master slide",
-  "slide-layout": "Slide layout",
-  "slide-theme": "Slide theme",
-  "slide-chart": "Chart",
-  "slide-chart-data": "Chart data",
-  "slide-table": "Table data",
-  base: "Base",
-  field: "Field",
-  record: "Record",
-  view: "View",
-  "board-page": "Board page",
-  "board-element": "Board element",
-  "board-theme": "Board theme",
-  "board-chart": "Chart",
-  "board-chart-data": "Chart data",
-  "board-table": "Table data"
-};
+import editHistoryUI from "@univerjs-pro/edit-history-ui/locale/en-US";
+import {
+  comparisonTerm,
+  localizedComparisonEntity,
+  localizedComparisonEnum,
+  localizedComparisonPath
+} from "./comparison-labels.js";
 
 const COMPARISON_PATH_LABELS: Readonly<Record<string, string>> = {
   text: "Text",
@@ -109,14 +49,11 @@ const COMPARISON_PATH_LABELS: Readonly<Record<string, string>> = {
 };
 
 function comparisonPathLabel(path: readonly string[]): string {
-  return localizedComparisonPath("en-US", path, (key) => COMPARISON_PATH_LABELS[key]);
+  return localizedComparisonPath(editHistoryUI, path, (key) => COMPARISON_PATH_LABELS[key]);
 }
 
 function comparisonEntityLabel(category: string): string {
-  const entityType = category.split(":")[0] ?? "";
-  return isUnitComparisonEntityType(entityType)
-    ? STRUCTURAL_ENTITY_LABELS[entityType]
-    : "Content";
+  return localizedComparisonEntity(editHistoryUI, category);
 }
 
 /** English shell copy; this table is the structural authority for every other language. */
@@ -217,10 +154,10 @@ export const EN_US_MESSAGES = {
     entityAt: (category: string, index: number): string =>
       `${comparisonEntityLabel(category)} ${index}`,
     changePath: comparisonPathLabel,
-    changeValue: (entityType: string, path: readonly string[], value: unknown): string | undefined => localizedComparisonEnum("en-US", entityType, path, value),
-    renderFailed: comparisonTerm("en-US", "loadFailed"),
-    comparisonFailed: comparisonTerm("en-US", "comparisonFailed"),
-    incompletePage: comparisonTerm("en-US", "incompletePage"),
+    changeValue: (entityType: string, path: readonly string[], value: unknown): string | undefined => localizedComparisonEnum(editHistoryUI, entityType, path, value),
+    renderFailed: comparisonTerm(editHistoryUI, "loadFailed"),
+    comparisonFailed: comparisonTerm(editHistoryUI, "comparisonFailed"),
+    incompletePage: comparisonTerm(editHistoryUI, "incompletePage"),
     wholeItem: "Entire item",
     present: "Present",
     itemCount: (count: number): string => `${count} item${count === 1 ? "" : "s"}`,

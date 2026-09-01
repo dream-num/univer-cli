@@ -6,7 +6,7 @@ import type {
   UnitComparisonContextLocation,
 } from "@univer/collab-gateway-contract";
 import { buildWorkbookCompareModel, WorkbookCompareTitleCode } from "@univer/workbook-compare";
-import { createContentComparisonSnapshot } from "./workbook-comparison-display.js";
+import { createWorkbookComparisonDisplaySnapshot } from "./workbook-comparison-display.js";
 import type {
   WorkbookCompareCategory,
   WorkbookCompareCellChange,
@@ -122,9 +122,10 @@ export function workbookComparisonFromContext(input: {
   });
   return {
     ...model,
-    displayedSnapshots: input.mode === "value"
-      ? { base: createContentComparisonSnapshot(input.left), current: createContentComparisonSnapshot(input.right) }
-      : { base: input.left, current: input.right },
+    displayedSnapshots: {
+      base: createWorkbookComparisonDisplaySnapshot(input.left, input.mode),
+      current: createWorkbookComparisonDisplaySnapshot(input.right, input.mode)
+    },
     unsupportedMutationIds: input.context.diagnostics.unsupportedMutationIds,
   };
 }

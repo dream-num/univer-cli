@@ -1,3 +1,4 @@
+import editHistoryUI from "@univerjs-pro/edit-history-ui/locale/ja-JP";
 import { messagesFromVocabulary, type MessageVocabulary } from "./from-vocabulary";
 
 const vocabulary = {
@@ -98,4 +99,4 @@ const vocabulary = {
   empty: "ファイルが開かれていません"
 } satisfies MessageVocabulary;
 
-export const JA_JP_MESSAGES = messagesFromVocabulary(vocabulary, "ja-JP");
+export const JA_JP_MESSAGES = messagesFromVocabulary(vocabulary, "ja-JP", editHistoryUI);
