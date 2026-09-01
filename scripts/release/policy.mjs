@@ -19,6 +19,18 @@ export function assertExactSemver(version, label = "Version") {
   return version;
 }
 
+export function channelForVersion(version) {
+  assertExactSemver(version, "Release version");
+  if (!version.startsWith(`${RELEASE_VERSION_LINE}.`)) {
+    throw new Error(`univer-cli releases must stay on the ${RELEASE_VERSION_LINE}.x version line.`);
+  }
+  if (/^\d+\.\d+\.\d+$/u.test(version)) return "stable";
+  if (/^\d+\.\d+\.\d+-insiders\..+$/u.test(version)) return "insiders";
+  if (/^\d+\.\d+\.\d+-alpha\..+$/u.test(version)) return "alpha";
+  if (/^\d+\.\d+\.\d+-dev\..+$/u.test(version)) return "dev";
+  throw new Error(`Cannot infer the release channel from version ${version}.`);
+}
+
 export function npmTagForRelease(channel, version) {
   assertExactSemver(version, "Release version");
   if (!version.startsWith(`${RELEASE_VERSION_LINE}.`)) {

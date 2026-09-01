@@ -4,17 +4,8 @@ run-name: Release CLI to insider-npm ${{ inputs.version }}${{ inputs.dry_run && 
 on:
   workflow_dispatch:
     inputs:
-      channel:
-        description: Release channel to publish under
-        required: true
-        type: choice
-        default: stable
-        options:
-          - stable
-          - insiders
-          - alpha
       version:
-        description: Exact release version, for example 0.5.0 or 0.5.1-insiders.20260901-abc1234
+        description: Exact release version; the channel is inferred from it, e.g. 0.5.0 or 0.5.1-insiders.20260901-abc1234
         required: true
         type: string
       dry_run:
@@ -64,7 +55,6 @@ jobs:
         id: release
         shell: bash
         env:
-          DISPATCH_CHANNEL: ${{ inputs.channel }}
           DISPATCH_VERSION: ${{ inputs.version }}
           DISPATCH_DRY_RUN: ${{ inputs.dry_run }}
         run: |
@@ -74,7 +64,7 @@ jobs:
             exit 1
           fi
           VERSION="$DISPATCH_VERSION"
-          CHANNEL="$DISPATCH_CHANNEL"
+          CHANNEL="$(node --input-type=module -e 'import("./scripts/release/policy.mjs").then((policy) => process.stdout.write(policy.channelForVersion(process.argv[1])))' "$VERSION")"
           DRY_RUN="$DISPATCH_DRY_RUN"
           {
             echo "version=$VERSION"

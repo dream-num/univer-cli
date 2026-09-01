@@ -25,7 +25,7 @@ describe("release workflow contract", () => {
     expect(releaseWorkflow).toMatch(/^name: Release CLI to insider-npm$/mu);
     expect(releaseWorkflow).toMatch(/workflow_dispatch:/u);
     expect(releaseWorkflow).not.toMatch(/push:/u);
-    expect(releaseWorkflow).toMatch(/type: choice/u);
+    expect(releaseWorkflow).toMatch(/channelForVersion/u);
     expect(releaseWorkflow).toMatch(/^  prepare:$/mu);
     expect(releaseWorkflow).toMatch(/^  publish:$/mu);
     expect(releaseWorkflow).toMatch(/include-hidden-files: true/u);
