@@ -6,7 +6,6 @@ import {
   IAuthzIoService,
   ICommandService,
   LocaleService,
-  IPermissionService,
   IUniverInstanceService,
   IUndoRedoService,
   ThemeService,
@@ -70,10 +69,9 @@ import {
 } from "@univer/collab-gateway-contract";
 import {
   blockLocalEditingCommands,
-  enforceUnitViewerReadOnlyPermission,
-  enforceSheetViewerReadOnlyPermissions,
   resolveViewerReadOnlyEnforcement
 } from "./viewer-readonly";
+import { LocalReadOnlyAuthzIoService } from "./local-read-only-authz-io.service";
 import { createCollaborationSheetResourceRefDataProvider } from "./collaboration-sheet-resource-ref-data-provider";
 import { installHistoryShapeFormulaCompatibility } from "./history-shape-formula-compatibility";
 import { loadViewerLocale } from "./locales/generated/load";
@@ -151,6 +149,10 @@ declare global {
  */
 export async function createViewer(opts: ViewerOptions): Promise<ViewerHandle> {
   const localePack = await loadViewerLocale(opts.locale);
+  const readOnlyEnforcement = resolveViewerReadOnlyEnforcement(
+    opts.unitType,
+    opts.editable === true
+  );
   const urls = buildRuntimeConfig(
     opts.gatewayFileKey === undefined
       ? {
@@ -232,6 +234,13 @@ export async function createViewer(opts: ViewerOptions): Promise<ViewerHandle> {
         enableSingleActiveInstanceLock: false,
         loginUrlKey: "/login",
         sendChangesetTimeout: 200,
+        ...(readOnlyEnforcement === "local-authz"
+          ? {
+              override: [
+                [IAuthzIoService, { useClass: LocalReadOnlyAuthzIoService }]
+              ]
+            }
+          : {}),
         ...urls
       });
       univer.registerPlugin(UniverCollaborationClientUIPlugin, {
@@ -295,21 +304,7 @@ export async function createViewer(opts: ViewerOptions): Promise<ViewerHandle> {
   await materializeHostEmbedChildren(univer, opts.unitId);
   const disposeDebugEndpoint = exposeDebugEndpoint(univer, api);
 
-  const readOnlyEnforcement = resolveViewerReadOnlyEnforcement(
-    opts.unitType,
-    opts.editable === true
-  );
-  if (readOnlyEnforcement === "sheet-permission") {
-    enforceSheetViewerReadOnlyPermissions(
-      univer.__getInjector().get(IPermissionService),
-      opts.unitId
-    );
-  } else if (readOnlyEnforcement === "mutation-gate") {
-    enforceUnitViewerReadOnlyPermission(
-      univer.__getInjector().get(IPermissionService),
-      opts.unitType,
-      opts.unitId
-    );
+  if (readOnlyEnforcement === "local-authz") {
     blockLocalEditingCommands(univer.__getInjector().get(ICommandService));
   }
 
@@ -495,17 +490,9 @@ export async function createPreviewViewer(opts: PreviewViewerOptions): Promise<P
   // discovers them and cancels stale retries when selection or scene state changes.
   void comparisonHighlights?.refresh();
 
-  if (unitId !== "") {
-    enforceUnitViewerReadOnlyPermission(
-      univer.__getInjector().get(IPermissionService),
-      opts.unitType,
-      unitId
-    );
-  }
-  if (opts.unitType !== UNIT_TYPE_SHEET) {
-    // Keep a second, product-independent guard against local data changes in comparison panes.
-    blockLocalEditingCommands(univer.__getInjector().get(ICommandService));
-  }
+  // Preview has no collaboration/authz controller, so its product-independent mutation gate is
+  // the sole read-only enforcement and must cover every Unit type, including Sheet.
+  blockLocalEditingCommands(univer.__getInjector().get(ICommandService));
 
   const slideDrawingStateService =
     opts.unitType === UNIT_TYPE_SLIDE
