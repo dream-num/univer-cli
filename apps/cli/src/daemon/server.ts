@@ -47,7 +47,7 @@ export async function startApplicationDaemon(
     viewAssetsRoot: options.viewAssetsRoot,
   });
   const origin = `http://127.0.0.1:${String(gateway.port)}`;
-  const info = { origin, port: gateway.port, viewUrl: `${origin}/` } as JsonValue;
+  const info = { origin, port: gateway.port, viewUrl: `${origin}/collab-web/` } as JsonValue;
   const license = await resolveRuntimeLicense(config, env);
   const runtimes =
     options.runtimePool ??
