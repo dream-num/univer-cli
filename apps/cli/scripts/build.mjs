@@ -1,20 +1,14 @@
+import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { chmod, cp, readFile, rm, writeFile } from "node:fs/promises";
-import { isBuiltin } from "node:module";
+import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
+import { EXTERNAL_DEPENDENCY_WHITELIST, externalDependencyAudit } from "./release-dependencies.mjs";
 
 const projectRoot = dirname(dirname(fileURLToPath(import.meta.url)));
+const repositoryRoot = dirname(projectRoot);
 const packageManifestPath = join(projectRoot, "package.json");
-const outputPath = join(projectRoot, "dist", "bin.js");
-const daemonOutputPath = join(projectRoot, "dist", "daemon.js");
-const runtimeWorkerOutputPath = join(projectRoot, "dist", "runtime-worker.js");
-const nodeEsmRequireBanner = {
-  js: [
-    'import { createRequire as __createRequire } from "node:module";',
-    "const require = __createRequire(import.meta.url);",
-  ].join("\n"),
-};
 const nodeEsmBanner = {
   js: [
     'import { createRequire as __createRequire } from "node:module";',
@@ -25,9 +19,63 @@ const nodeEsmBanner = {
     "const __dirname = __pathDirname(__filename);",
   ].join("\n"),
 };
+// Dual-format SDK packages ship lib/cjs and lib/es builds. One CJS-context require anywhere in
+// the graph makes esbuild resolve the whole SDK through the require condition, inlining a second
+// CommonJS copy of every engine next to the ESM copy the other entries share. Force every
+// @univerjs-scoped bare import through the ESM condition so the graph stays single-instance.
+const UNIVER_SDK_PACKAGE = /^@univerjs(?:-pro)?\/[^/]+$/u;
+
+function pickEsmExport(entry) {
+  if (typeof entry === "string") return entry;
+  if (entry !== null && typeof entry === "object") {
+    for (const condition of ["import", "node", "default"]) {
+      if (entry[condition] !== undefined) return pickEsmExport(entry[condition]);
+    }
+  }
+  return undefined;
+}
+
+function resolveEsmSdkPackage(specifier, importer) {
+  const parts = specifier.split("/");
+  const packageName = parts[0].startsWith("@") ? parts.slice(0, 2).join("/") : parts[0];
+  // Resolve from the physical file location so dependency lookups land in the pnpm store
+  // context that actually contains this importer's dependencies (symlink paths do not).
+  let directory = dirname(realpathSync(importer));
+  while (true) {
+    const candidate = join(directory, "node_modules", packageName);
+    if (existsSync(candidate)) {
+      const packageRoot = realpathSync(candidate);
+      let manifest;
+      try {
+        manifest = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"));
+      } catch {
+        return undefined;
+      }
+      if (manifest.exports === undefined) return undefined;
+      const target = pickEsmExport(manifest.exports["."] ?? manifest.exports);
+      return target === undefined ? undefined : join(packageRoot, target);
+    }
+    const parent = dirname(directory);
+    if (parent === directory || directory === repositoryRoot) return undefined;
+    directory = parent;
+  }
+}
+
+const preferEsmSdkResolution = {
+  name: "prefer-esm-univer-sdk-resolution",
+  setup(context) {
+    context.onResolve({ filter: /^@univerjs(?:-pro)?\// }, (args) => {
+      if (!UNIVER_SDK_PACKAGE.test(args.path) || args.importer === "") return undefined;
+      const resolved = resolveEsmSdkPackage(args.path, args.importer);
+      // undefined falls through to esbuild's default resolution (deep imports, peers, etc.)
+      return resolved === undefined ? undefined : { path: resolved };
+    });
+  },
+};
 const buildVersion = process.env["UNIVER_CLI_BUILD_VERSION"]?.trim();
-const plugins =
-  buildVersion === undefined || buildVersion.length === 0
+const plugins = [
+  preferEsmSdkResolution,
+  ...(buildVersion === undefined || buildVersion.length === 0
     ? []
     : [
         {
@@ -43,92 +91,59 @@ const plugins =
             });
           },
         },
-      ];
+      ]),
+];
 
 await rm(join(projectRoot, "dist"), { force: true, recursive: true });
-const binBuild = await build({
-  banner: nodeEsmRequireBanner,
-  bundle: true,
-  entryPoints: [join(projectRoot, "src", "bin.ts")],
-  external: ["@univer-cli/doc-typst-facade"],
-  format: "esm",
-  legalComments: "none",
-  metafile: true,
-  outfile: outputPath,
-  platform: "node",
-  plugins,
-  sourcemap: true,
-  target: "node22.12",
-});
-await chmod(outputPath, 0o755);
-const daemonBuild = await build({
+// One build with code splitting: the SDK and other shared modules are emitted once into
+// chunks/ and imported by every entry, instead of each entry inlining its own full copy.
+const nodeBuild = await build({
   banner: nodeEsmBanner,
   bundle: true,
-  entryPoints: [join(projectRoot, "src", "daemon-entry.ts")],
-  external: ["@univer-cli/univer-collaboration-runtime-pool", "busboy", "libsql"],
+  entryPoints: {
+    bin: join(projectRoot, "src", "bin.ts"),
+    daemon: join(projectRoot, "src", "daemon-entry.ts"),
+    "runtime-worker": join(projectRoot, "src", "runtime-worker.ts"),
+  },
+  external: EXTERNAL_DEPENDENCY_WHITELIST,
   format: "esm",
   legalComments: "none",
   metafile: true,
-  outfile: daemonOutputPath,
+  minify: true,
+  outdir: join(projectRoot, "dist"),
+  chunkNames: "chunks/[name]-[hash]",
+  entryNames: "[name]",
   platform: "node",
   plugins,
-  sourcemap: true,
+  splitting: true,
+  sourcemap: false,
   target: "node22.12",
 });
-await chmod(daemonOutputPath, 0o755);
-const runtimeWorkerBuild = await build({
-  banner: nodeEsmBanner,
-  bundle: true,
-  entryPoints: [join(projectRoot, "src", "runtime-worker.ts")],
-  format: "esm",
-  legalComments: "none",
-  metafile: true,
-  outfile: runtimeWorkerOutputPath,
-  packages: "external",
-  platform: "node",
-  plugins,
-  sourcemap: true,
-  target: "node22.12",
-});
-await chmod(runtimeWorkerOutputPath, 0o755);
+for (const entryName of ["bin", "daemon", "runtime-worker"]) {
+  await chmod(join(projectRoot, "dist", `${entryName}.js`), 0o755);
+}
 await writeFile(
   join(projectRoot, "dist", "release-dependencies.json"),
-  `${JSON.stringify(
-    externalDependencyAudit([binBuild.metafile, daemonBuild.metafile, runtimeWorkerBuild.metafile]),
-    null,
-    2,
-  )}\n`,
+  `${JSON.stringify(externalDependencyAudit([nodeBuild.metafile]), null, 2)}\n`,
   "utf8",
 );
+if (process.env["UNIVER_CLI_DUMP_METAFILE"] === "1") {
+  await writeFile(
+    join(projectRoot, "dist", "metafile.json"),
+    `${JSON.stringify(nodeBuild.metafile)}\n`,
+    "utf8",
+  );
+}
 await cp(join(projectRoot, "src", "skills"), join(projectRoot, "dist", "skills"), {
   recursive: true,
 });
-
-function externalDependencyAudit(metafiles) {
-  // These application adapters resolve their platform packages dynamically at runtime, so esbuild's
-  // metafile cannot see them. Keep them in the release audit rather than repairing downstream images.
-  const required = new Set([
-    "@univerjs-pro/cli-assets",
-    "@univerjs-pro/engine-formula-rust-binding",
-    "@univerjs-pro/exchange-node-binding",
-  ]);
-  const conditional = new Set();
-  for (const metafile of metafiles) {
-    for (const output of Object.values(metafile.outputs)) {
-      for (const dependency of output.imports) {
-        if (dependency.external !== true || isBuiltin(dependency.path)) continue;
-        const name = packageName(dependency.path);
-        if (name === undefined) continue;
-        if (dependency.kind === "import-statement") required.add(name);
-        else conditional.add(name);
-      }
-    }
-  }
-  return { conditional: [...conditional].sort(), required: [...required].sort() };
-}
-
-function packageName(specifier) {
-  if (specifier.startsWith(".") || specifier.startsWith("/")) return undefined;
-  const parts = specifier.split("/");
-  return specifier.startsWith("@") ? parts.slice(0, 2).join("/") : parts[0];
-}
+// The collaboration pool spawns its worker bootstrap relative to its own module URL. Code
+// splitting places the pool in a shared chunk under dist/chunks/, so the bootstrap file must
+// ship there for the runtime URL resolution to find it.
+const poolEntryPath = createRequire(import.meta.url).resolve(
+  "@univer-cli/univer-collaboration-runtime-pool",
+);
+await cp(
+  join(dirname(poolEntryPath), "worker-child.mjs"),
+  join(projectRoot, "dist", "chunks", "worker-child.mjs"),
+);

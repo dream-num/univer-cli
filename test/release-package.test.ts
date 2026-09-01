@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createReleaseManifest, stageReleasePackage } from "../scripts/release/release-package.mjs";
 import { RELEASE_REGISTRY } from "../scripts/release/policy.mjs";
+import { EXTERNAL_DEPENDENCY_WHITELIST } from "../apps/cli/scripts/release-dependencies.mjs";
 
 describe("release package", () => {
   it("publishes only audited runtime dependencies without workspace protocols", () => {
@@ -26,11 +27,11 @@ describe("release package", () => {
         engines: { node: ">=22.12.0" },
         dependencies: {
           bundled: "workspace:*",
-          external: "1.2.3",
+          libsql: "^1.2.3",
         },
       },
-      "0.5.0-insider.20260817-374ec99",
-      ["external"],
+      "0.5.0-insiders.20260817-374ec99",
+      ["libsql"],
       { registry: RELEASE_REGISTRY, tag: "insiders" },
     );
 
@@ -38,7 +39,7 @@ describe("release package", () => {
       bin: { univer: "dist/bin.js" },
       name: "univer-cli",
       private: false,
-      dependencies: { external: "1.2.3" },
+      dependencies: { libsql: "^1.2.3" },
       files: ["dist", "LICENSE", "README.md", "README.zh-CN.md"],
       license: "Apache-2.0",
       publishConfig: { registry: RELEASE_REGISTRY, tag: "insiders" },
@@ -47,7 +48,7 @@ describe("release package", () => {
         url: "git+https://github.com/dream-num/univer-cli.git",
         directory: "apps/cli",
       },
-      version: "0.5.0-insider.20260817-374ec99",
+      version: "0.5.0-insiders.20260817-374ec99",
     });
     expect(JSON.stringify(manifest)).not.toContain("workspace:");
   });
@@ -60,26 +61,33 @@ describe("release package", () => {
     );
     const manifest = createReleaseManifest(
       source,
-      "0.5.0-insider.20260817-374ec99",
+      "0.5.0-insiders.20260817-374ec99",
       audit.required,
       { registry: RELEASE_REGISTRY, tag: "insiders" },
     );
 
     expect(source).toMatchObject({ license: "Apache-2.0", private: true, version: "0.0.0" });
     expect(Object.keys(manifest.dependencies)).toEqual(audit.required);
-    expect(audit.required).toEqual([
-      "@univer-cli/doc-typst-facade",
-      "@univer-cli/headless-univer",
-      "@univer-cli/univer-collaboration-runtime",
-      "@univer-cli/univer-collaboration-runtime-pool",
-      "@univerjs-pro/cli-assets",
-      "@univerjs-pro/engine-formula-rust-binding",
-      "@univerjs-pro/exchange-node-binding",
-      "@univerjs/core",
-      "busboy",
-      "libsql",
-    ]);
-    expect(audit.conditional).toEqual(["bufferutil", "proxy-agent", "utf-8-validate", "yauzl"]);
+    // The published dependency set is exactly the whitelist: no bundled package may leak out,
+    // and every whitelisted non-inlinable package must ship.
+    expect(audit.required).toEqual([...EXTERNAL_DEPENDENCY_WHITELIST].sort());
+    expect(audit.conditional.every((name) => EXTERNAL_DEPENDENCY_WHITELIST.includes(name))).toBe(
+      true,
+    );
+  });
+
+  it("rejects release dependencies outside the external whitelist", () => {
+    expect(() =>
+      createReleaseManifest(
+        {
+          name: "univer-cli",
+          dependencies: { "@univerjs/core": "1.0.0" },
+        },
+        "0.5.0",
+        ["@univerjs/core"],
+        { registry: RELEASE_REGISTRY, tag: "latest" },
+      ),
+    ).toThrow(/whitelist/u);
   });
 
   it("stages the repository license and both readmes", async () => {
@@ -127,7 +135,7 @@ describe("release package", () => {
         readmePath,
         readmeZhCnPath,
         sourceManifestPath,
-        version: "0.5.0-insider.test",
+        version: "0.5.0-insiders.test",
       });
 
       await Promise.all(

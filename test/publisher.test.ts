@@ -48,7 +48,7 @@ describe("release publisher", () => {
   it("rejects a reviewed CI artifact from a different workflow source", async () => {
     const root = await mkdtemp(join(tmpdir(), "univer-cli-publisher-"));
     roots.push(root);
-    const tarball = "univer-cli-0.5.0-insider.test.tgz";
+    const tarball = "univer-cli-0.5.0-insiders.test.tgz";
     const manifestPath = join(root, "release-manifest.json");
     const tarballContents = "reviewed tarball";
     await writeFile(join(root, tarball), tarballContents, "utf8");
@@ -67,7 +67,7 @@ describe("release publisher", () => {
         sourceDirty: false,
         sourceSha: "a".repeat(40),
         tarball,
-        version: "0.5.0-insider.test",
+        version: "0.5.0-insiders.test",
       }),
       "utf8",
     );

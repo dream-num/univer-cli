@@ -12,6 +12,7 @@ export const DEPENDENCY_FIELDS = [
 export const INDEPENDENT_PACKAGES = new Set([
   "@univerjs/icons",
   "@univerjs-pro/cli-assets",
+  "@univerjs-pro/doc-typst-native-binding",
   "@univerjs-pro/engine-formula-rust-binding",
   "@univerjs-pro/exchange-node-binding",
 ]);

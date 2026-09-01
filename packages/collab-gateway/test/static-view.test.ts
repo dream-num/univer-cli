@@ -115,6 +115,56 @@ describe("Gateway-owned static view", () => {
   });
 });
 
+describe("Gateway view index file", () => {
+  let root: string;
+  let server: StartedServer | undefined;
+
+  beforeEach(async () => {
+    root = mkdtempSync(join(tmpdir(), "collab-gateway-view-index-"));
+    mkdirSync(join(root, "assets"), { recursive: true });
+    mkdirSync(join(root, "collab-web"), { recursive: true });
+    writeFileSync(join(root, "assets", "app.js"), "window.__collabView = true;\n");
+    // Tree-root index.html is a non-Viewer page (e.g. the render page).
+    writeFileSync(join(root, "index.html"), "<!doctype html>render page");
+    writeFileSync(join(root, "collab-web", "index.html"), "<!doctype html>viewer page");
+    server = await startServer({
+      port: 0,
+      viewAssetsRoot: root,
+      viewIndexFile: join(root, "collab-web", "index.html"),
+    });
+  });
+
+  afterEach(async () => {
+    await server?.close();
+    rmSync(root, { force: true, recursive: true });
+  });
+
+  it("serves the viewer index at the root while the render page stays reachable", async () => {
+    const activeServer = requireServer(server);
+    const origin = `http://127.0.0.1:${activeServer.port}`;
+
+    const rootPage = await fetch(`${origin}/`);
+    const indexPath = await fetch(`${origin}/index.html`);
+    const viewer = await fetch(`${origin}/collab-web/`);
+
+    expect(rootPage.status).toBe(200);
+    expect(await rootPage.text()).toContain("viewer page");
+    expect(indexPath.status).toBe(200);
+    expect(await indexPath.text()).toContain("viewer page");
+    expect(viewer.status).toBe(200);
+    expect(await viewer.text()).toContain("viewer page");
+  });
+
+  it("serves the assets root index.html when no view index file is configured", async () => {
+    await server?.close();
+    server = await startServer({ port: 0, viewAssetsRoot: root });
+
+    const rootPage = await fetch(`http://127.0.0.1:${requireServer(server).port}/`);
+    expect(rootPage.status).toBe(200);
+    expect(await rootPage.text()).toContain("render page");
+  });
+});
+
 function requireServer(server: StartedServer | undefined): StartedServer {
   if (server === undefined) {
     throw new Error("Expected started server.");
