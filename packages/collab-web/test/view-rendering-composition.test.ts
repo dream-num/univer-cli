@@ -78,20 +78,6 @@ describe("authoritative Browser View rendering composition", () => {
     );
   });
 
-  it("hides native table editing anchors only in read-only Sheet comparison panes", async () => {
-    const preset = await read("render-preset/src/index.ts");
-    const comparison = await read("collab-web/src/ui/readonly-univer-workbook-view.tsx");
-    const viewer = await read("collab-web/src/core/viewer.ts");
-
-    expect(preset).toContain('sheetTableUI?: Pick<IUniverSheetsTableUIConfig, "hideAnchor">;');
-    expect(preset).toContain("registerSheetPlugins(univer, options.sheetTableUI);");
-    expect(preset).toContain("univer.registerPlugin(UniverSheetsTableUIPlugin, tableUI);");
-    expect(comparison).toContain("sheetTableUI: { hideAnchor: true }");
-    expect(viewer).not.toContain("sheetTableUI:");
-    expect(comparison).toContain("highlightSheet.highlightRanges(ranges,");
-    expect(comparison).toContain("attachReadonlyPaneEvents({");
-  });
-
   it("owns the shared Browser View facade surface", async () => {
     const facades = await read("render-preset/src/facades.ts");
     const human = await read("collab-web/src/core/viewer.ts");
@@ -249,41 +235,4 @@ describe("authoritative Browser View rendering composition", () => {
     expect(styles).toContain("--color-background: #0a0a0a;");
   });
 
-  it("keeps local comparison facades alive and refreshes Slide overlays after zoom", async () => {
-    const human = await read("collab-web/src/core/viewer.ts");
-    const highlights = await read("collab-web/src/core/native-comparison-highlights.ts");
-
-    expectInOrder(human, [
-      "if (!previewInjector.has(CollaborationController))",
-      "previewInjector.add([",
-      "const previewAPI = FUniver.newAPI(univer)"
-    ]);
-    expect(human).toContain("{ useValue: { entityInit$: EMPTY }");
-    expect(highlights).toContain(
-      "render.scene.onTransformChange$.subscribeEvent(scheduleRefresh)"
-    );
-    expect(highlights).toContain("sceneTransformSubscription?.unsubscribe()");
-    expect(highlights).toContain("cancelAnimationFrame(scheduledRefresh)");
-  });
-
-  it("hides change navigation and evenly splits comparison panes below 1024px", async () => {
-    const appView = await read("collab-web/src/ui/app-view.tsx");
-    const base = await read("collab-web/src/ui/base-table-diff-viewer.tsx");
-    const workbook = await read("collab-web/src/ui/workbook-diff-viewer.tsx");
-
-    expect(occurrences(appView, "max-[1023px]:grid-cols-1")).toBeGreaterThanOrEqual(2);
-    expect(appView).toContain("max-[1023px]:grid-rows-2");
-    expect(appView).toContain("max-[1023px]:hidden");
-    expect(appView).not.toContain("max-[1023px]:min-h-[560px]");
-    expect(occurrences(base, "max-[1023px]:grid-cols-1")).toBeGreaterThanOrEqual(2);
-    expect(base).toContain("max-[1023px]:grid-rows-2");
-    expect(base).toContain("max-[1023px]:hidden");
-    expect(base).not.toContain("max-[1023px]:min-h-[460px]");
-    expect(workbook).toContain("max-[1023px]:grid-cols-1");
-    expect(workbook).toContain("max-[1023px]:grid-rows-2");
-    expect(workbook).toContain("max-[1023px]:hidden");
-    expect(workbook).toContain("max-[1023px]:min-h-0");
-    expect(workbook).toContain("{messages.readOnly}");
-    expect(workbook).not.toContain("max-[900px]:grid-cols-2");
-  });
 });

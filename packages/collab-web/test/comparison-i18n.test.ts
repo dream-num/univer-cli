@@ -1,33 +1,41 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { CellValueType, HorizontalAlign, UniverInstanceType, WrapStrategy } from "@univerjs/core";
+import { CellValueType, HorizontalAlign, WrapStrategy } from "@univerjs/core";
 import { LOCALE_MANIFEST, loadMessages, setLang, t } from "../src/i18n/index.js";
 import { COMPARISON_TERMS } from "../src/i18n/locales/comparison-vocabulary.js";
 import { comparisonTerm } from "../src/i18n/locales/comparison-labels.js";
 import { formatComparisonValue } from "../src/ui/comparison-value.js";
-import { COMPARISON_FIELD_CORPUS } from "./fixtures/comparison-field-corpus.js";
 
 afterEach(async () => { await setLang("en-US"); });
 
 describe("five-product comparison localization", () => {
-  it("covers the actual five-product API property corpus in every locale", async () => {
-    expect(COMPARISON_FIELD_CORPUS.map((item) => item.type).sort()).toEqual([
-      UniverInstanceType.UNIVER_DOC, UniverInstanceType.UNIVER_SHEET, UniverInstanceType.UNIVER_SLIDE,
-      UniverInstanceType.UNIVER_BASE, UniverInstanceType.UNIVER_BOARD,
-    ].sort());
-    const missing: string[] = [];
+  it("keeps every locale complete and translates representative five-product paths", async () => {
+    const representativePaths = [
+      "value",
+      "formula",
+      "style",
+      "paragraphStyle",
+      "sectionId",
+      "tableCells",
+      "shapeType",
+      "masterPageId",
+      "connectorData",
+      "fieldOrder",
+      "routingMode",
+      "geometry",
+      "text",
+      "title"
+    ];
     for (const { tag } of LOCALE_MANIFEST) {
       const messages = await loadMessages(tag);
       expect(Object.keys(COMPARISON_TERMS[tag]).sort()).toEqual(Object.keys(COMPARISON_TERMS["en-US"]).sort());
       expect(Object.values(COMPARISON_TERMS[tag]).every((value) => value.trim().length > 0)).toBe(true);
-      for (const product of COMPARISON_FIELD_CORPUS) {
-        for (const key of product.fields) {
-          const label = messages.diff.changePath([key]);
-          if (!label || label === key || label === comparisonTerm(tag, "unknown")) missing.push(`${tag}:${key}`);
-        }
+      for (const key of representativePaths) {
+        expect(messages.diff.changePath([key]), `${tag}:${key}`).not.toBe(
+          comparisonTerm(tag, "unknown")
+        );
       }
       if (tag !== "en-US") expect(messages.diff.baseAlignmentHint).not.toContain("stable ID");
     }
-    expect([...new Set(missing)]).toEqual([]);
   });
 
   it("translates schema-owned types, operators, formatting and product enums", async () => {

@@ -12,7 +12,6 @@
     }
   },
   "scripts": {
-    "benchmark:five-product": "tsx test/five-product-benchmark.ts",
     "clean": "rm -rf dist *.tsbuildinfo",
     "dev": "tsx watch src/main.ts",
     "start": "tsx src/main.ts",

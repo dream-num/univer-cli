@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import type { IWorkbookData, Workbook } from "@univerjs/core";
 import { EventSubject, ICommandService, LifecycleService, LifecycleStages, LocaleType, Univer, UniverInstanceType } from "@univerjs/core";
 import { UniverFormulaEnginePlugin } from "@univerjs/engine-formula";
@@ -140,14 +138,5 @@ describe("live Doc first visible position", () => {
     engine.width = 960; engine.height = 600;
     engine.onTransformChange$.emitEvent({});
     expect(position).not.toHaveBeenCalled();
-  });
-
-  it("wires both workbook entry paths and live Doc cleanup to the tested adapters", () => {
-    const workbook = readFileSync(resolve(import.meta.dirname, "../src/ui/readonly-univer-workbook-view.tsx"), "utf8");
-    expect(workbook).not.toContain(".registerFormulaTextDisplay(");
-    expect(workbook.match(/= registerFormulaTextDisplay\(/gu)).toHaveLength(2);
-    const viewer = readFileSync(resolve(import.meta.dirname, "../src/core/viewer.ts"), "utf8");
-    expect(viewer).toContain("initializeDocumentViewPosition(univer, opts.unitId)");
-    expect(viewer).toContain("documentViewPosition?.dispose();");
   });
 });

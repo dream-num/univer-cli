@@ -160,13 +160,6 @@ pnpm link:cli
 pnpm check
 ```
 
-Run the five-product comparison benchmark through the SDK-backed Gateway. It checks preparation,
-pagination, serialization, and response-size budgets for medium and large fixtures:
-
-```bash
-pnpm --filter @univer/collab-gateway benchmark:five-product --enforce
-```
-
 Stop the daemon before unlinking a local build:
 
 ```bash
@@ -176,13 +169,16 @@ pnpm unlink:cli
 
 ### SDK upgrades
 
-Every Univer SDK dependency (`@univer-cli/*`, `@univerjs/*`, `@univerjs-pro/*`) moves as one exact version cohort, while `@univerjs/icons`, `@univerjs-pro/cli-assets`, `@univerjs-pro/engine-formula-rust-binding`, and `@univerjs-pro/exchange-node-binding` keep their own release chains. Upgrade the cohort with:
+The main Univer SDK, Univer CLI SDK, and Collaboration Server SDK are independently published exact
+version cohorts. Upgrade only the main `@univerjs/*` and `@univerjs-pro/*` cohort with:
 
 ```bash
 pnpm update:sdk --sdk_version <exact-sdk-version>
 ```
 
-Commit all affected manifests together with `pnpm-lock.yaml`; updating only part of the cohort by hand is not allowed.
+The updater preserves `@univer-cli/*` and the Collaboration Server packages at their own internally
+aligned versions. Commit every affected manifest together with `pnpm-lock.yaml`; partial manual
+updates within any cohort are not allowed.
 
 ## License
 

@@ -154,13 +154,6 @@ pnpm link:cli
 pnpm check
 ```
 
-五产品对比性能基准通过实际接入 SDK 的 Gateway 运行，检查中、大案例的准备计算、分页查询、
-序列化时间和响应体积预算：
-
-```bash
-pnpm --filter @univer/collab-gateway benchmark:five-product --enforce
-```
-
 解除本地链接前先停止 daemon：
 
 ```bash
@@ -170,13 +163,15 @@ pnpm unlink:cli
 
 ### SDK 升级
 
-所有 Univer SDK 依赖（`@univer-cli/*`、`@univerjs/*`、`@univerjs-pro/*`）作为一个精确版本 cohort 统一升级；`@univerjs/icons`、`@univerjs-pro/cli-assets`、`@univerjs-pro/engine-formula-rust-binding` 与 `@univerjs-pro/exchange-node-binding` 保持独立发布链。升级运行：
+主 Univer SDK、Univer CLI SDK 与 Collaboration Server SDK 是分别发布的精确版本 cohort。
+以下命令只升级主 `@univerjs/*` 与 `@univerjs-pro/*` cohort：
 
 ```bash
 pnpm update:sdk --sdk_version <exact-sdk-version>
 ```
 
-必须同时提交所有受影响的 manifest 与 `pnpm-lock.yaml`，不得手工只更新其中一部分。
+升级器会保留 `@univer-cli/*` 和 Collaboration Server package 各自内部一致的版本。
+必须同时提交所有受影响的 manifest 与 `pnpm-lock.yaml`，不得手工只更新任一 cohort 的一部分。
 
 ## 许可证
 
