@@ -1,5 +1,6 @@
 import { cp, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
+import { EXTERNAL_DEPENDENCY_WHITELIST } from "../../apps/cli/scripts/release-dependencies.mjs";
 
 export function createReleaseManifest(
   sourceManifest,
@@ -11,8 +12,14 @@ export function createReleaseManifest(
     throw new Error(`Expected package name univer-cli, received ${String(sourceManifest.name)}`);
   }
   const sourceDependencies = sourceManifest.dependencies ?? {};
+  const whitelist = new Set(EXTERNAL_DEPENDENCY_WHITELIST);
   const dependencies = {};
   for (const name of [...externalPackageNames].sort()) {
+    if (!whitelist.has(name)) {
+      throw new Error(
+        `Release dependency ${name} is not on the external dependency whitelist; only packages that cannot be inlined may ship.`,
+      );
+    }
     const range = sourceDependencies[name];
     if (typeof range !== "string" || range.length === 0) {
       throw new Error(`Built output imports undeclared runtime dependency ${name}`);

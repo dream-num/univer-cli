@@ -168,6 +168,37 @@ importers:
 
   apps/cli:
     dependencies:
+      '@puppeteer/browsers':
+        specifier: 3.2.0
+        version: 3.2.0
+      '@univerjs-pro/cli-assets':
+        specifier: 0.1.0
+        version: 0.1.0
+      '@univerjs-pro/doc-typst-native-binding':
+        specifier: 1.0.0-insiders.20260723-c21613b
+        version: 1.0.0-insiders.20260723-c21613b
+      '@univerjs-pro/engine-formula-rust-binding':
+        specifier: 1.0.0-insiders.20260829-2e3c387
+        version: 1.0.0-insiders.20260829-2e3c387
+      '@univerjs-pro/exchange-node-binding':
+        specifier: 0.1.1
+        version: 0.1.1
+      libsql:
+        specifier: 0.5.29
+        version: 0.5.29
+      puppeteer-core:
+        specifier: 25.6.0
+        version: 25.6.0
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      ws:
+        specifier: 8.21.0
+        version: 8.21.0
+    devDependencies:
+      '@types/node':
+        specifier: ^24.10.0
+        version: 24.13.3
       '@univer-cli/api-reference':
         specifier: 1.0.0-insiders.20260831-796c4f4
         version: 1.0.0-insiders.20260831-796c4f4
@@ -246,18 +277,15 @@ importers:
       '@univer/univerfile-sqlite':
         specifier: workspace:*
         version: link:../../packages/univerfile-sqlite
-      '@univerjs-pro/cli-assets':
-        specifier: 0.1.0
-        version: 0.1.0
-      '@univerjs-pro/engine-formula-rust-binding':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387
+      '@univerjs-pro/collaboration':
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/embed':
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/exchange-node':
         specifier: 1.0.0-insiders.20260831-796c4f4
         version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
-      '@univerjs-pro/exchange-node-binding':
-        specifier: 0.1.1
-        version: 0.1.1
       '@univerjs/core':
         specifier: 1.0.0-insiders.20260831-796c4f4
         version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
@@ -270,28 +298,12 @@ importers:
       commander:
         specifier: ^15.0.0
         version: 15.0.0
-      libsql:
-        specifier: ^0.5.29
-        version: 0.5.29
-    devDependencies:
-      '@types/node':
-        specifier: ^24.10.0
-        version: 24.13.3
-      '@univerjs-pro/collaboration':
-        specifier: 1.0.0-insiders.20260831-796c4f4
-        version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
-      '@univerjs-pro/embed':
-        specifier: 1.0.0-insiders.20260831-796c4f4
-        version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       esbuild:
         specifier: ^0.28.2
         version: 0.28.2
       tsx:
         specifier: 4.19.4
         version: 4.19.4
-      typescript:
-        specifier: ^7.0.2
-        version: 7.0.2
       vitest:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@24.13.3)(jsdom@30.0.1(@noble/hashes@2.2.0))(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.19.4)(yaml@2.9.0))
