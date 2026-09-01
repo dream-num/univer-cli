@@ -10,7 +10,8 @@
     "generate:locales": "node scripts/generate-viewer-locales.mjs",
     "check:locales": "node scripts/generate-viewer-locales.mjs --check && node scripts/check-sdk-locales.mjs",
     "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.json --noEmit --pretty false"
+    "typecheck": "tsc -p tsconfig.json --noEmit --pretty false",
+    "build:browser": "vite build --config vite.browser.config.ts"
   },
   "dependencies": {
     "@base-ui-components/react": "1.0.0-rc.0",
@@ -149,6 +150,6 @@
     "@vitejs/plugin-react": "^5.2.0",
     "jsdom": "^30.0.1",
     "tailwindcss": "^4.3.3",
-    "vite": "^5.4.10"
+    "vite": "^7.3.6"
   }
 }

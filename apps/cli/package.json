@@ -30,7 +30,7 @@
   ],
   "type": "module",
   "scripts": {
-    "build": "pnpm --filter @univer/collab-web build && pnpm --filter @univer/render-runtime-client build && node scripts/build.mjs && node scripts/copy-render-runtime.mjs",
+    "build": "node scripts/build.mjs && pnpm --filter @univer/collab-web build:browser",
     "dev": "tsx src/bin.ts",
     "link:cli": "pnpm build && npm link",
     "unlink:cli": "npm unlink --global univer-cli",

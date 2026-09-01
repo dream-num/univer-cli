@@ -9,7 +9,7 @@ if (!socketPath) throw new Error(`${DAEMON_SOCKET_ENV} is required`);
 
 const viewAssetsRoot =
   process.env["UNIVER_CLI_VIEW_ASSETS_ROOT"] ??
-  fileURLToPath(new URL("./collab-web/", import.meta.url));
+  fileURLToPath(new URL("./browser/", import.meta.url));
 const application = await startApplicationDaemon({
   env: process.env,
   runtimeWorkerEntry: new URL("./runtime-worker.js", import.meta.url),
