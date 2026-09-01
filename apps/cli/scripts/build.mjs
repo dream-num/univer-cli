@@ -7,15 +7,6 @@ import { EXTERNAL_DEPENDENCY_WHITELIST, externalDependencyAudit } from "./releas
 
 const projectRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const packageManifestPath = join(projectRoot, "package.json");
-const outputPath = join(projectRoot, "dist", "bin.js");
-const daemonOutputPath = join(projectRoot, "dist", "daemon.js");
-const runtimeWorkerOutputPath = join(projectRoot, "dist", "runtime-worker.js");
-const nodeEsmRequireBanner = {
-  js: [
-    'import { createRequire as __createRequire } from "node:module";',
-    "const require = __createRequire(import.meta.url);",
-  ].join("\n"),
-};
 const nodeEsmBanner = {
   js: [
     'import { createRequire as __createRequire } from "node:module";',
@@ -47,69 +38,48 @@ const plugins =
       ];
 
 await rm(join(projectRoot, "dist"), { force: true, recursive: true });
-const binBuild = await build({
-  banner: nodeEsmRequireBanner,
-  bundle: true,
-  entryPoints: [join(projectRoot, "src", "bin.ts")],
-  external: EXTERNAL_DEPENDENCY_WHITELIST,
-  format: "esm",
-  legalComments: "none",
-  metafile: true,
-  outfile: outputPath,
-  platform: "node",
-  plugins,
-  sourcemap: true,
-  target: "node22.12",
-});
-await chmod(outputPath, 0o755);
-const daemonBuild = await build({
+// One build with code splitting: the SDK and other shared modules are emitted once into
+// chunks/ and imported by every entry, instead of each entry inlining its own full copy.
+const nodeBuild = await build({
   banner: nodeEsmBanner,
   bundle: true,
-  entryPoints: [join(projectRoot, "src", "daemon-entry.ts")],
+  entryPoints: {
+    bin: join(projectRoot, "src", "bin.ts"),
+    daemon: join(projectRoot, "src", "daemon-entry.ts"),
+    "runtime-worker": join(projectRoot, "src", "runtime-worker.ts"),
+  },
   external: EXTERNAL_DEPENDENCY_WHITELIST,
   format: "esm",
   legalComments: "none",
   metafile: true,
-  outfile: daemonOutputPath,
+  minify: true,
+  outdir: join(projectRoot, "dist"),
+  chunkNames: "chunks/[name]-[hash]",
+  entryNames: "[name]",
   platform: "node",
   plugins,
-  sourcemap: true,
+  splitting: true,
+  sourcemap: false,
   target: "node22.12",
 });
-await chmod(daemonOutputPath, 0o755);
-const runtimeWorkerBuild = await build({
-  banner: nodeEsmBanner,
-  bundle: true,
-  entryPoints: [join(projectRoot, "src", "runtime-worker.ts")],
-  external: EXTERNAL_DEPENDENCY_WHITELIST,
-  format: "esm",
-  legalComments: "none",
-  metafile: true,
-  outfile: runtimeWorkerOutputPath,
-  platform: "node",
-  plugins,
-  sourcemap: true,
-  target: "node22.12",
-});
-await chmod(runtimeWorkerOutputPath, 0o755);
+for (const entryName of ["bin", "daemon", "runtime-worker"]) {
+  await chmod(join(projectRoot, "dist", `${entryName}.js`), 0o755);
+}
 await writeFile(
   join(projectRoot, "dist", "release-dependencies.json"),
-  `${JSON.stringify(
-    externalDependencyAudit([binBuild.metafile, daemonBuild.metafile, runtimeWorkerBuild.metafile]),
-    null,
-    2,
-  )}\n`,
+  `${JSON.stringify(externalDependencyAudit([nodeBuild.metafile]), null, 2)}\n`,
   "utf8",
 );
 await cp(join(projectRoot, "src", "skills"), join(projectRoot, "dist", "skills"), {
   recursive: true,
 });
-// The collaboration pool spawns its worker bootstrap relative to its own module URL. Inlining the
-// pool moves that URL into dist/, so the bootstrap file must ship next to the bundles.
+// The collaboration pool spawns its worker bootstrap relative to its own module URL. Code
+// splitting places the pool in a shared chunk under dist/chunks/, so the bootstrap file must
+// ship there for the runtime URL resolution to find it.
 const poolEntryPath = createRequire(import.meta.url).resolve(
   "@univer-cli/univer-collaboration-runtime-pool",
 );
 await cp(
   join(dirname(poolEntryPath), "worker-child.mjs"),
-  join(projectRoot, "dist", "worker-child.mjs"),
+  join(projectRoot, "dist", "chunks", "worker-child.mjs"),
 );
