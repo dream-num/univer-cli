@@ -49,6 +49,9 @@ for (const item of page.context.items) {
   文本和公式还可以包含左右 `segments`。语义 `path` 与产品原始路径不同时，`sourcePath` 保留精确位置，
   例如嵌套表格的行/单元格索引；
 - `summary`、`coverage` 和 `diagnostics` 让 Agent 区分“没有变化”“当前版本不覆盖”和“已降级”；
+  `diagnostics.readiness` 使用稳定的 `ready | degraded`，`diagnostics.codes` 使用稳定的机器可读 code，
+  当前包含 `sheet-snapshot-axis-identity-ambiguous` 与
+  `sheet-structural-history-partially-falls-back-to-snapshot-coordinates`；
 - `productContext` 补充 SDK 计算的导航与对齐数据：Doc paragraph alignment 包含两侧原生段落 ID，
   Sheet 提供紧凑的行列索引区间。应用不根据 snapshot 或 mutation 重算这些关系。
 

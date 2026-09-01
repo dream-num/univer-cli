@@ -85,8 +85,10 @@ Every content type supports isolated draft editing, review, revision, merge, and
 
 Inside a Worktree, the Viewer offers read-only **View** and **Compare** modes for Sheet, Doc, Slide,
 Base, and Board Units. Diff compares the current Worktree with a pinned Trunk state by default; the
-left side can instead be another active Worktree. Both sides are materialized through their pinned
-heads before comparison, and a stale comparison is refreshed explicitly.
+left side can instead be another active Worktree that contains changes for the selected product type.
+Both sides are materialized through their pinned heads before comparison, and a stale comparison is
+refreshed explicitly. Slide and Base change lists follow the selected page or table; selecting a
+change focuses its target in both read-only panes.
 
 Sheet Compare offers independent **Content / Formatting** filters and a **Show formulas** switch
 for both grids. Content uses plain display copies without original cell, rich-text, table-theme or
