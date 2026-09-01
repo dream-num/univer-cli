@@ -98,6 +98,8 @@ function createGatewayRequestListener(
 ): (req: http.IncomingMessage, res: http.ServerResponse) => void {
   const serveViewAsset =
     viewAssetsRoot === undefined ? undefined : createViewAssetHandler(viewAssetsRoot);
+  // The served index file is a static build artifact; read it once.
+  const viewerIndexHtml = viewIndexFile === undefined ? undefined : readFileSync(viewIndexFile);
   const serveViewerIndex = (res: http.ServerResponse, method: string): void => {
     res.writeHead(200, {
       "cache-control": "no-cache",
@@ -107,7 +109,7 @@ function createGatewayRequestListener(
       res.end();
       return;
     }
-    res.end(readFileSync(viewIndexFile));
+    res.end(viewerIndexHtml);
   };
   return (req, res): void => {
     const pathname = new URL(req.url ?? "/", "http://localhost").pathname;
