@@ -256,8 +256,8 @@ importers:
         specifier: 1.0.0-insiders.20260831-796c4f4
         version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/exchange-node-binding':
-        specifier: 0.1.0
-        version: 0.1.0
+        specifier: 0.1.1
+        version: 0.1.1
       '@univerjs/core':
         specifier: 1.0.0-insiders.20260831-796c4f4
         version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
@@ -3521,31 +3521,14 @@ packages:
       react: ^16.9.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc
       rxjs: '>=7.0.0'
 
-  '@univerjs-pro/exchange-node-binding-darwin-arm64@0.1.0':
-    resolution: {integrity: sha512-QoNg/6PyhpwRmOdzmkZpb5EoM1Z/zNOCT3yyFzDyyKLObjD/Q1fvWRnicuhlB7Bi9HK4rKRAKWq3hn7DRY/LGg==, tarball: https://registry.npmjs.org/@univerjs-pro/exchange-node-binding-darwin-arm64/-/exchange-node-binding-darwin-arm64-0.1.0.tgz}
-    cpu: [arm64]
-    os: [darwin]
-
   '@univerjs-pro/exchange-node-binding-darwin-arm64@0.1.1':
     resolution: {integrity: sha512-AjYNE3HBU08snieqmACmKDE0Vybqj1qvXxOUVPYKSrqnDJR7lh098oCeje/PiF7hMkucwkiB6a5jAJlGj1RAfw==}
     cpu: [arm64]
     os: [darwin]
 
-  '@univerjs-pro/exchange-node-binding-linux-arm64-gnu@0.1.0':
-    resolution: {integrity: sha512-qcFw4sCb02pyPdvQfM4JTG7/EPHgnerKcu+VWO/O7pxXW8lIoFKC897Bwx6+xYThrjAtLl9ycyEWZaVCKQL4lA==, tarball: https://registry.npmjs.org/@univerjs-pro/exchange-node-binding-linux-arm64-gnu/-/exchange-node-binding-linux-arm64-gnu-0.1.0.tgz}
-    cpu: [arm64]
-    os: [linux]
-    libc: [glibc]
-
   '@univerjs-pro/exchange-node-binding-linux-arm64-gnu@0.1.1':
     resolution: {integrity: sha512-SuMMVPI/ms2rQtzZAA7/0f8R61vtP17nenho6DocekyLVpwRGzDrtZFvcecwCcjy31OwaPzunufr8N/BzCe2WQ==}
     cpu: [arm64]
-    os: [linux]
-    libc: [glibc]
-
-  '@univerjs-pro/exchange-node-binding-linux-x64-gnu@0.1.0':
-    resolution: {integrity: sha512-qGDzRn67tqINU/zZ8luvDq2G1O2gYECZOzN42LtPotCDkFLEcYMweExe+vV4QaJ9tx8tBMQt/fnGTpfH/kzEgw==, tarball: https://registry.npmjs.org/@univerjs-pro/exchange-node-binding-linux-x64-gnu/-/exchange-node-binding-linux-x64-gnu-0.1.0.tgz}
-    cpu: [x64]
     os: [linux]
     libc: [glibc]
 
@@ -3555,18 +3538,10 @@ packages:
     os: [linux]
     libc: [glibc]
 
-  '@univerjs-pro/exchange-node-binding-win32-x64-msvc@0.1.0':
-    resolution: {integrity: sha512-eO79lZCXEtnFbArmXFKIMxUoKfiDtAhfClG+uZVmvqcg+blj7BD/Rn/WSmyB4CYciXdRcR4QAX0Si0DaMrxfgA==, tarball: https://registry.npmjs.org/@univerjs-pro/exchange-node-binding-win32-x64-msvc/-/exchange-node-binding-win32-x64-msvc-0.1.0.tgz}
-    cpu: [x64]
-    os: [win32]
-
   '@univerjs-pro/exchange-node-binding-win32-x64-msvc@0.1.1':
     resolution: {integrity: sha512-oSkbOOau/9vOIYAWj6NZ6bfqB1szn3yM1vUQe1qfA6xhdGGn848bBVhpIlq/nPnQcA1O70pzUrDBbORv1LoCDQ==}
     cpu: [x64]
     os: [win32]
-
-  '@univerjs-pro/exchange-node-binding@0.1.0':
-    resolution: {integrity: sha512-opsPVyI2WFafWzvFSdRvy2Fz5leMS6edwqc4o8GYqzIRSu36DkpWaydvFRGcXLN+CxhB6EkpHDQaFIRextey8w==, tarball: https://registry.npmjs.org/@univerjs-pro/exchange-node-binding/-/exchange-node-binding-0.1.0.tgz}
 
   '@univerjs-pro/exchange-node-binding@0.1.1':
     resolution: {integrity: sha512-8P02leiOE8/z4SthVmPYnPGxMb9eLdjc+OqEFn4utl3bo/3T/lhSFWqvwdH9ytaZunhcwif+F54v1cA7ZUg3FQ==}
@@ -7925,36 +7900,17 @@ snapshots:
       - '@types/react-dom'
       - react-dom
 
-  '@univerjs-pro/exchange-node-binding-darwin-arm64@0.1.0':
-    optional: true
-
   '@univerjs-pro/exchange-node-binding-darwin-arm64@0.1.1':
-    optional: true
-
-  '@univerjs-pro/exchange-node-binding-linux-arm64-gnu@0.1.0':
     optional: true
 
   '@univerjs-pro/exchange-node-binding-linux-arm64-gnu@0.1.1':
     optional: true
 
-  '@univerjs-pro/exchange-node-binding-linux-x64-gnu@0.1.0':
-    optional: true
-
   '@univerjs-pro/exchange-node-binding-linux-x64-gnu@0.1.1':
-    optional: true
-
-  '@univerjs-pro/exchange-node-binding-win32-x64-msvc@0.1.0':
     optional: true
 
   '@univerjs-pro/exchange-node-binding-win32-x64-msvc@0.1.1':
     optional: true
-
-  '@univerjs-pro/exchange-node-binding@0.1.0':
-    optionalDependencies:
-      '@univerjs-pro/exchange-node-binding-darwin-arm64': 0.1.0
-      '@univerjs-pro/exchange-node-binding-linux-arm64-gnu': 0.1.0
-      '@univerjs-pro/exchange-node-binding-linux-x64-gnu': 0.1.0
-      '@univerjs-pro/exchange-node-binding-win32-x64-msvc': 0.1.0
 
   '@univerjs-pro/exchange-node-binding@0.1.1':
     optionalDependencies:
