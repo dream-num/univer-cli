@@ -8,7 +8,7 @@ interface UpdateOptions {
 
 export function createUpdateCommand(application: UpdateApplication): Command {
   const command = new Command("update")
-    .description("Update Univer CLI on the current release channel")
+    .description("Update Univer CLI to the latest stable release")
     .option("--force", "stop the shared daemon before updating")
     .option("--json", "write structured JSON")
     .action(async (options: UpdateOptions) => {

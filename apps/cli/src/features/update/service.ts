@@ -7,14 +7,15 @@ export const UPDATE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 const UPDATE_CACHE_SCHEMA_VERSION = 1;
 const PACKAGE_NAME = "univer-cli";
+const UPDATE_REGISTRY = "https://registry.npmjs.org/" as const;
 
-export type ReleaseChannel = "alpha" | "insiders" | "stable";
+export type ReleaseChannel = "stable";
 
 export interface UpdateTarget {
   readonly channel: ReleaseChannel;
-  readonly distTag: "alpha" | "insiders" | "latest";
+  readonly distTag: "latest";
   readonly packageName: typeof PACKAGE_NAME;
-  readonly registryUrl: "https://insider-npm-registry.univer.work/";
+  readonly registryUrl: typeof UPDATE_REGISTRY;
 }
 
 export interface UpdateCheckResult {
@@ -154,34 +155,18 @@ async function assertReleaseInstallation(packageRoot: string): Promise<void> {
 }
 
 export function resolveUpdateTarget(version: string): UpdateTarget {
-  if (/^0\.5\.(?:0|[1-9]\d*)-alpha\.[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*$/u.test(version)) {
-    return {
-      channel: "alpha",
-      distTag: "alpha",
-      packageName: PACKAGE_NAME,
-      registryUrl: "https://insider-npm-registry.univer.work/",
-    };
-  }
-  // "insider" is a legacy spelling kept for already-installed versions; releases now use "insiders".
-  if (/^0\.5\.(?:0|[1-9]\d*)-insiders?\.[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*$/u.test(version)) {
-    return {
-      channel: "insiders",
-      distTag: "insiders",
-      packageName: PACKAGE_NAME,
-      registryUrl: "https://insider-npm-registry.univer.work/",
-    };
-  }
-  if (/^0\.5\.(?:0|[1-9]\d*)$/u.test(version)) {
+  // Any released stable version qualifies, so installs of older public lines can update forward.
+  if (/^\d+\.\d+\.\d+$/u.test(version)) {
     return {
       channel: "stable",
       distTag: "latest",
       packageName: PACKAGE_NAME,
-      registryUrl: "https://insider-npm-registry.univer.work/",
+      registryUrl: UPDATE_REGISTRY,
     };
   }
   throw new UpdateError(
     "CLI_UPDATE_CHANNEL_UNSUPPORTED",
-    `Version ${version} does not identify a supported alpha, insiders, or stable release channel.`,
+    `Version ${version} is a development build; \`univer update\` applies only to stable releases. Install development builds manually.`,
   );
 }
 
@@ -254,19 +239,6 @@ export function isNewerVersion(currentVersion: string, candidateVersion: string)
       "CLI_UPDATE_VERSION_INVALID",
       `Cannot compare Univer CLI versions ${currentVersion} and ${candidateVersion}.`,
     );
-  }
-  if (
-    isInsidersPrerelease(current.prerelease[0]) &&
-    isInsidersPrerelease(candidate.prerelease[0]) &&
-    compareNormalVersions(current, candidate) === 0
-  ) {
-    const currentDate = insidersBuildDate(currentVersion);
-    const candidateDate = insidersBuildDate(candidateVersion);
-    if (currentDate !== undefined && candidateDate !== undefined && currentDate !== candidateDate) {
-      return currentDate < candidateDate;
-    }
-    // The insiders dist-tag is authoritative within one build date; hashes are not ordered.
-    return currentVersion !== candidateVersion;
   }
   return compareVersions(current, candidate) < 0;
 }
@@ -353,11 +325,9 @@ function parseUpdateCache(value: unknown): UpdateCacheEntry | null {
     !isRecord(value) ||
     value["schemaVersion"] !== UPDATE_CACHE_SCHEMA_VERSION ||
     typeof value["checkedAt"] !== "string" ||
-    (value["distTag"] !== "alpha" &&
-      value["distTag"] !== "insiders" &&
-      value["distTag"] !== "latest") ||
+    value["distTag"] !== "latest" ||
     value["packageName"] !== PACKAGE_NAME ||
-    value["registryUrl"] !== "https://insider-npm-registry.univer.work/" ||
+    value["registryUrl"] !== UPDATE_REGISTRY ||
     (value["latestVersion"] !== undefined && typeof value["latestVersion"] !== "string") ||
     (value["diagnostic"] !== undefined && typeof value["diagnostic"] !== "string")
   ) {
@@ -426,15 +396,6 @@ function compareNormalVersions(left: ParsedVersion, right: ParsedVersion): numbe
     compareNumber(left.minor, right.minor) ||
     compareNumber(left.patch, right.patch)
   );
-}
-
-function isInsidersPrerelease(prerelease: string | undefined): boolean {
-  return prerelease === "insider" || prerelease === "insiders";
-}
-
-function insidersBuildDate(version: string): number | undefined {
-  const match = /^\d+\.\d+\.\d+-insiders?\.(\d{8})(?:[.-]|$)/u.exec(version);
-  return match?.[1] === undefined ? undefined : Number(match[1]);
 }
 
 function numericIdentifier(value: string): number | undefined {
