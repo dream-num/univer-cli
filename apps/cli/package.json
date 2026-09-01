@@ -40,6 +40,18 @@
     "typecheck": "tsc -p tsconfig.test.json --noEmit"
   },
   "dependencies": {
+    "@puppeteer/browsers": "3.2.0",
+    "@univerjs-pro/cli-assets": "0.1.0",
+    "@univerjs-pro/doc-typst-native-binding": "1.0.0-insiders.20260723-c21613b",
+    "@univerjs-pro/engine-formula-rust-binding": "1.0.0-insiders.20260829-2e3c387",
+    "@univerjs-pro/exchange-node-binding": "0.1.1",
+    "libsql": "^0.5.29",
+    "puppeteer-core": "25.6.0",
+    "typescript": "^5.9.3",
+    "ws": "8.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
     "@univer-cli/api-reference": "1.0.0-insiders.20260831-796c4f4",
     "@univer-cli/api-reference-command": "1.0.0-insiders.20260831-796c4f4",
     "@univer-cli/config": "1.0.0-insiders.20260831-796c4f4",
@@ -66,23 +78,15 @@
     "@univer/collab-gateway": "workspace:*",
     "@univer/collab-gateway-contract": "workspace:*",
     "@univer/univerfile-sqlite": "workspace:*",
-    "@univerjs-pro/cli-assets": "0.1.0",
-    "@univerjs-pro/engine-formula-rust-binding": "1.0.0-insiders.20260829-2e3c387",
+    "@univerjs-pro/collaboration": "1.0.0-insiders.20260831-796c4f4",
+    "@univerjs-pro/embed": "1.0.0-insiders.20260831-796c4f4",
     "@univerjs-pro/exchange-node": "1.0.0-insiders.20260831-796c4f4",
-    "@univerjs-pro/exchange-node-binding": "0.1.1",
     "@univerjs/core": "1.0.0-insiders.20260831-796c4f4",
     "@univerjs/protocol": "1.0.0-insiders.20260831-796c4f4",
     "busboy": "^1.6.0",
     "commander": "^15.0.0",
-    "libsql": "^0.5.29"
-  },
-  "devDependencies": {
-    "@types/node": "^24.10.0",
-    "@univerjs-pro/collaboration": "1.0.0-insiders.20260831-796c4f4",
-    "@univerjs-pro/embed": "1.0.0-insiders.20260831-796c4f4",
     "esbuild": "^0.28.2",
     "tsx": "4.19.4",
-    "typescript": "^7.0.2",
     "vitest": "^4.1.10"
   },
   "engines": {

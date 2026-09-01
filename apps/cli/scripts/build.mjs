@@ -1,8 +1,9 @@
 import { chmod, cp, readFile, rm, writeFile } from "node:fs/promises";
-import { isBuiltin } from "node:module";
+import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
+import { EXTERNAL_DEPENDENCY_WHITELIST, externalDependencyAudit } from "./release-dependencies.mjs";
 
 const projectRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const packageManifestPath = join(projectRoot, "package.json");
@@ -50,7 +51,7 @@ const binBuild = await build({
   banner: nodeEsmRequireBanner,
   bundle: true,
   entryPoints: [join(projectRoot, "src", "bin.ts")],
-  external: ["@univer-cli/doc-typst-facade"],
+  external: EXTERNAL_DEPENDENCY_WHITELIST,
   format: "esm",
   legalComments: "none",
   metafile: true,
@@ -65,7 +66,7 @@ const daemonBuild = await build({
   banner: nodeEsmBanner,
   bundle: true,
   entryPoints: [join(projectRoot, "src", "daemon-entry.ts")],
-  external: ["@univer-cli/univer-collaboration-runtime-pool", "busboy", "libsql"],
+  external: EXTERNAL_DEPENDENCY_WHITELIST,
   format: "esm",
   legalComments: "none",
   metafile: true,
@@ -80,11 +81,11 @@ const runtimeWorkerBuild = await build({
   banner: nodeEsmBanner,
   bundle: true,
   entryPoints: [join(projectRoot, "src", "runtime-worker.ts")],
+  external: EXTERNAL_DEPENDENCY_WHITELIST,
   format: "esm",
   legalComments: "none",
   metafile: true,
   outfile: runtimeWorkerOutputPath,
-  packages: "external",
   platform: "node",
   plugins,
   sourcemap: true,
@@ -103,32 +104,12 @@ await writeFile(
 await cp(join(projectRoot, "src", "skills"), join(projectRoot, "dist", "skills"), {
   recursive: true,
 });
-
-function externalDependencyAudit(metafiles) {
-  // These application adapters resolve their platform packages dynamically at runtime, so esbuild's
-  // metafile cannot see them. Keep them in the release audit rather than repairing downstream images.
-  const required = new Set([
-    "@univerjs-pro/cli-assets",
-    "@univerjs-pro/engine-formula-rust-binding",
-    "@univerjs-pro/exchange-node-binding",
-  ]);
-  const conditional = new Set();
-  for (const metafile of metafiles) {
-    for (const output of Object.values(metafile.outputs)) {
-      for (const dependency of output.imports) {
-        if (dependency.external !== true || isBuiltin(dependency.path)) continue;
-        const name = packageName(dependency.path);
-        if (name === undefined) continue;
-        if (dependency.kind === "import-statement") required.add(name);
-        else conditional.add(name);
-      }
-    }
-  }
-  return { conditional: [...conditional].sort(), required: [...required].sort() };
-}
-
-function packageName(specifier) {
-  if (specifier.startsWith(".") || specifier.startsWith("/")) return undefined;
-  const parts = specifier.split("/");
-  return specifier.startsWith("@") ? parts.slice(0, 2).join("/") : parts[0];
-}
+// The collaboration pool spawns its worker bootstrap relative to its own module URL. Inlining the
+// pool moves that URL into dist/, so the bootstrap file must ship next to the bundles.
+const poolEntryPath = createRequire(import.meta.url).resolve(
+  "@univer-cli/univer-collaboration-runtime-pool",
+);
+await cp(
+  join(dirname(poolEntryPath), "worker-child.mjs"),
+  join(projectRoot, "dist", "worker-child.mjs"),
+);
