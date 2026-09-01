@@ -1,5 +1,4 @@
-import editHistoryUI from "@univerjs-pro/edit-history-ui/locale/zh-HK";
-import { messagesFromVocabulary, type MessageVocabulary } from "./from-vocabulary";
+import type { MessageVocabulary } from "./from-vocabulary";
 
 const vocabulary = {
   showFormulas: "顯示公式",
@@ -98,4 +97,4 @@ const vocabulary = {
   empty: "未有開啟的檔案"
 } satisfies MessageVocabulary;
 
-export const ZH_HK_MESSAGES = messagesFromVocabulary(vocabulary, "zh-HK", editHistoryUI);
+export default vocabulary;

@@ -1,9 +1,9 @@
-import editHistoryUI from "@univerjs-pro/edit-history-ui/locale/en-US";
 import {
   comparisonTerm,
   localizedComparisonEntity,
   localizedComparisonEnum,
-  localizedComparisonPath
+  localizedComparisonPath,
+  type UnitComparisonTranslate
 } from "./comparison-labels.js";
 
 const COMPARISON_PATH_LABELS: Readonly<Record<string, string>> = {
@@ -48,16 +48,13 @@ const COMPARISON_PATH_LABELS: Readonly<Record<string, string>> = {
   tableCells: "Cells"
 };
 
-function comparisonPathLabel(path: readonly string[]): string {
-  return localizedComparisonPath(editHistoryUI, path, (key) => COMPARISON_PATH_LABELS[key]);
-}
-
-function comparisonEntityLabel(category: string): string {
-  return localizedComparisonEntity(editHistoryUI, category);
-}
-
 /** English shell copy; this table is the structural authority for every other language. */
-export const EN_US_MESSAGES = {
+function buildEnUsMessages(translateComparison: UnitComparisonTranslate) {
+  const comparisonPathLabel = (path: readonly string[]): string =>
+    localizedComparisonPath(translateComparison, path, (key) => COMPARISON_PATH_LABELS[key]);
+  const comparisonEntityLabel = (category: string): string =>
+    localizedComparisonEntity(translateComparison, category);
+  return {
   app: {
     title: "Collaboration Viewer"
   },
@@ -154,10 +151,10 @@ export const EN_US_MESSAGES = {
     entityAt: (category: string, index: number): string =>
       `${comparisonEntityLabel(category)} ${index}`,
     changePath: comparisonPathLabel,
-    changeValue: (entityType: string, path: readonly string[], value: unknown): string | undefined => localizedComparisonEnum(editHistoryUI, entityType, path, value),
-    renderFailed: comparisonTerm(editHistoryUI, "loadFailed"),
-    comparisonFailed: comparisonTerm(editHistoryUI, "comparisonFailed"),
-    incompletePage: comparisonTerm(editHistoryUI, "incompletePage"),
+    changeValue: (entityType: string, path: readonly string[], value: unknown): string | undefined => localizedComparisonEnum(translateComparison, entityType, path, value),
+    renderFailed: comparisonTerm(translateComparison, "loadFailed"),
+    comparisonFailed: comparisonTerm(translateComparison, "comparisonFailed"),
+    incompletePage: comparisonTerm(translateComparison, "incompletePage"),
     wholeItem: "Entire item",
     present: "Present",
     itemCount: (count: number): string => `${count} item${count === 1 ? "" : "s"}`,
@@ -308,6 +305,11 @@ export const EN_US_MESSAGES = {
     deleted: (n: number): string => `${n} deleted`,
     noChanges: "No changes yet"
   }
-};
+  };
+}
 
-export type Messages = typeof EN_US_MESSAGES;
+export type Messages = ReturnType<typeof buildEnUsMessages>;
+
+export function createEnUsMessages(translateComparison: UnitComparisonTranslate): Messages {
+  return buildEnUsMessages(translateComparison);
+}

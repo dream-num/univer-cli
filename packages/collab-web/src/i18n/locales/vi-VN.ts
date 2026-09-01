@@ -1,5 +1,4 @@
-import editHistoryUI from "@univerjs-pro/edit-history-ui/locale/vi-VN";
-import { messagesFromVocabulary, type MessageVocabulary } from "./from-vocabulary";
+import type { MessageVocabulary } from "./from-vocabulary";
 
 const vocabulary = {
   showFormulas: "Hiển thị công thức",
@@ -99,4 +98,4 @@ const vocabulary = {
   empty: "Chưa mở tệp"
 } satisfies MessageVocabulary;
 
-export const VI_VN_MESSAGES = messagesFromVocabulary(vocabulary, "vi-VN", editHistoryUI);
+export default vocabulary;

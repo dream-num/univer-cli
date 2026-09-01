@@ -11,8 +11,6 @@ import {
   setLang,
   t
 } from "../src/i18n";
-import { EN_US_MESSAGES } from "../src/i18n/locales/en-US";
-import { ZH_CN_MESSAGES } from "../src/i18n/locales/zh-CN";
 import { structuralDiffItemLabel } from "../src/ui/structural-diff-item-label";
 
 describe("resolveLang", () => {
@@ -69,8 +67,10 @@ describe("setLang / t", () => {
     expect(t().topbar.currentVersion).toBe("Current version");
   });
 
-  it("keeps both locale tables structurally identical", () => {
-    expect(shapeOf(EN_US_MESSAGES)).toEqual(shapeOf(ZH_CN_MESSAGES));
+  it("keeps both locale tables structurally identical", async () => {
+    const english = await loadMessages("en-US");
+    const chinese = await loadMessages("zh-CN");
+    expect(shapeOf(english)).toEqual(shapeOf(chinese));
   });
 
   it("keeps the canonical manifest unique and every shell table structurally complete", async () => {
@@ -80,12 +80,13 @@ describe("setLang / t", () => {
     expect(LOCALE_MANIFEST.map(({ tag }) => tag)).not.toContain("ar-SA");
     expect(LOCALE_MANIFEST.map(({ tag }) => tag)).not.toContain("fa-IR");
 
-    const authority = shapeOf(EN_US_MESSAGES);
+    const english = await loadMessages("en-US");
+    const authority = shapeOf(english);
     for (const locale of LOCALE_MANIFEST) {
       const messages = await loadMessages(locale.tag);
       for (const key of ["worksheet", "workbook", "scopeLabel", "displayModeLabel", "content", "formatting", "searchChanges"] as const) {
         expect(messages.diff[key].trim(), `${locale.tag}:${key}`).not.toBe("");
-        if (locale.tag !== "en-US") expect(messages.diff[key], `${locale.tag}:${key}`).not.toBe(EN_US_MESSAGES.diff[key]);
+        if (locale.tag !== "en-US") expect(messages.diff[key], `${locale.tag}:${key}`).not.toBe(english.diff[key]);
       }
       expect(messages.diff.showFormulas, `${locale.tag}:formula display`).toBeTruthy();
       if (locale.tag !== "en-US") expect(messages.diff.showFormulas).not.toBe("Show formulas");

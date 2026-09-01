@@ -1,10 +1,10 @@
 import type { Messages } from "./en-US";
-import editHistoryUI from "@univerjs-pro/edit-history-ui/locale/zh-CN";
 import {
   comparisonTerm,
   localizedComparisonEntity,
   localizedComparisonEnum,
-  localizedComparisonPath
+  localizedComparisonPath,
+  type UnitComparisonTranslate
 } from "./comparison-labels.js";
 
 const COMPARISON_PATH_LABELS: Readonly<Record<string, string>> = {
@@ -49,19 +49,16 @@ const COMPARISON_PATH_LABELS: Readonly<Record<string, string>> = {
   tableCells: "单元格"
 };
 
-function comparisonPathLabel(path: readonly string[]): string {
-  return localizedComparisonPath(editHistoryUI, path, (key) => COMPARISON_PATH_LABELS[key]);
-}
-
-function comparisonEntityLabel(category: string): string {
-  return localizedComparisonEntity(editHistoryUI, category);
-}
-
 /**
  * Chinese shell copy. This table defines the `Messages` shape; en-US must mirror it exactly.
  * Entries that need interpolation or language-specific word order are functions.
  */
-export const ZH_CN_MESSAGES: Messages = {
+export function createZhCnMessages(translateComparison: UnitComparisonTranslate): Messages {
+  const comparisonPathLabel = (path: readonly string[]): string =>
+    localizedComparisonPath(translateComparison, path, (key) => COMPARISON_PATH_LABELS[key]);
+  const comparisonEntityLabel = (category: string): string =>
+    localizedComparisonEntity(translateComparison, category);
+  return {
   app: {
     title: "协同查看器"
   },
@@ -154,10 +151,10 @@ export const ZH_CN_MESSAGES: Messages = {
     entityAt: (category: string, index: number): string =>
       `第 ${index} 个${comparisonEntityLabel(category)}`,
     changePath: comparisonPathLabel,
-    changeValue: (entityType: string, path: readonly string[], value: unknown): string | undefined => localizedComparisonEnum(editHistoryUI, entityType, path, value),
-    renderFailed: comparisonTerm(editHistoryUI, "loadFailed"),
-    comparisonFailed: comparisonTerm(editHistoryUI, "comparisonFailed"),
-    incompletePage: comparisonTerm(editHistoryUI, "incompletePage"),
+    changeValue: (entityType: string, path: readonly string[], value: unknown): string | undefined => localizedComparisonEnum(translateComparison, entityType, path, value),
+    renderFailed: comparisonTerm(translateComparison, "loadFailed"),
+    comparisonFailed: comparisonTerm(translateComparison, "comparisonFailed"),
+    incompletePage: comparisonTerm(translateComparison, "incompletePage"),
     wholeItem: "整个对象",
     present: "存在",
     itemCount: (count: number): string => `${count} 项`,
@@ -305,4 +302,5 @@ export const ZH_CN_MESSAGES: Messages = {
     deleted: (n: number): string => `删 ${n}`,
     noChanges: "暂无改动"
   }
-};
+  };
+}

@@ -5,38 +5,34 @@ import type {
 import {
   getUnitComparisonEntityLabel,
   getUnitComparisonPathLabels,
-  getUnitComparisonValueLabel
+  getUnitComparisonValueLabel,
+  unitComparisonLocaleKey
 } from "@univerjs-pro/edit-history-ui";
 
-export interface UnitComparisonLocalePack {
-  readonly "edit-history-ui": {
-    readonly comparison: Readonly<Record<UnitComparisonTerm, string>>;
-  };
-}
+/** Translate an SDK descriptor through a host-owned Univer LocaleService. */
+export type UnitComparisonTranslate = (descriptor: IUnitComparisonLabelDescriptor) => string;
 
 type ComparisonPathLookup = (key: string) => string | undefined;
 
-const COMPARISON_KEY_PREFIX = "edit-history-ui.comparison.";
-
-/** Resolve one SDK-owned comparison term from the matching standard History UI locale. */
+/** Resolve one SDK-owned comparison term through the standard History UI locale. */
 export function comparisonTerm(
-  locale: UnitComparisonLocalePack,
+  translate: UnitComparisonTranslate,
   term: UnitComparisonTerm
 ): string {
-  return locale["edit-history-ui"].comparison[term];
+  return translate({ key: unitComparisonLocaleKey(term) });
 }
 
 /** Resolve a typed SDK entity without exposing its persisted identifier to the user. */
 export function localizedComparisonEntity(
-  locale: UnitComparisonLocalePack,
+  translate: UnitComparisonTranslate,
   entityType: string
 ): string {
-  return resolveDescriptor(locale, getUnitComparisonEntityLabel(entityType));
+  return translate(getUnitComparisonEntityLabel(entityType));
 }
 
 /** Resolve typed SDK path descriptors while preserving application-specific exact labels. */
 export function localizedComparisonPath(
-  locale: UnitComparisonLocalePack,
+  translate: UnitComparisonTranslate,
   path: readonly string[],
   lookup: ComparisonPathLookup
 ): string {
@@ -45,30 +41,17 @@ export function localizedComparisonPath(
     return exact;
   }
   return getUnitComparisonPathLabels(path)
-    .map((descriptor, index) => lookup(path[index] ?? "") ?? resolveDescriptor(locale, descriptor))
+    .map((descriptor, index) => lookup(path[index] ?? "") ?? translate(descriptor))
     .join(" · ");
 }
 
 /** Resolve only schema-owned enum values; user content remains unchanged. */
 export function localizedComparisonEnum(
-  locale: UnitComparisonLocalePack,
+  translate: UnitComparisonTranslate,
   entityType: string,
   path: readonly string[],
   value: unknown
 ): string | undefined {
   const descriptor = getUnitComparisonValueLabel(entityType, path, value);
-  return descriptor === undefined ? undefined : resolveDescriptor(locale, descriptor);
-}
-
-function resolveDescriptor(
-  locale: UnitComparisonLocalePack,
-  descriptor: IUnitComparisonLabelDescriptor
-): string {
-  const term = descriptor.key.slice(COMPARISON_KEY_PREFIX.length) as UnitComparisonTerm;
-  const comparison = locale["edit-history-ui"].comparison;
-  const template = comparison[term] ?? comparison.unknown;
-  return (descriptor.args ?? []).reduce(
-    (result, value, index) => result.replaceAll(`{${index}}`, value),
-    template
-  );
+  return descriptor === undefined ? undefined : translate(descriptor);
 }
