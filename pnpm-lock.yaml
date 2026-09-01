@@ -184,7 +184,7 @@ importers:
         specifier: 0.1.1
         version: 0.1.1
       libsql:
-        specifier: ^0.5.29
+        specifier: 0.5.29
         version: 0.5.29
       puppeteer-core:
         specifier: 25.6.0
