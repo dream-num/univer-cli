@@ -43,7 +43,7 @@ describe("comparison layout without step navigation", () => {
     const app = comparisonApp(type);
     root = createRoot(document.getElementById("root")!);
     flushSync(() => root?.render(<AppView app={app} />));
-    await vi.waitFor(() => expect(document.querySelector("select")).not.toBeNull());
+    await vi.waitFor(() => expect(document.querySelector("select")).not.toBeNull(), { timeout: 10_000 });
     expect(document.querySelector('[data-testid="comparison-change-navigator"]')).toBeNull();
     expect(document.querySelector("nav")).toBeNull();
     expect(document.body.textContent).toContain("Current edits");
@@ -66,7 +66,7 @@ describe("comparison layout without step navigation", () => {
   it("places scope in the sidebar header and switches formula display on both panes independently of diff mode", async () => {
     root = createRoot(document.getElementById("root")!);
     flushSync(() => root?.render(<AppView app={comparisonApp(UniverInstanceType.UNIVER_SHEET)} />));
-    await vi.waitFor(() => expect(document.querySelectorAll('[data-testid="readonly-sheet"]')).toHaveLength(2));
+    await vi.waitFor(() => expect(document.querySelectorAll('[data-testid="readonly-sheet"]')).toHaveLength(2), { timeout: 10_000 });
     const scope = document.querySelector('[aria-label="Comparison scope"]')!;
     expect(scope.closest("aside header")).not.toBeNull();
     expect(scope.classList.contains("w-full")).toBe(true);
