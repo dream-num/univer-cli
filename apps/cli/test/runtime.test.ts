@@ -17,7 +17,7 @@ describe("Local collaboration runtime worker", () => {
     await createV2Fixture(filename);
     const gateway = await startServer({
       port: 0,
-      viewAssetsRoot: join(projectRoot, "..", "..", "packages", "collab-web", "dist"),
+      viewAssetsRoot: join(projectRoot, "dist", "browser"),
     });
     const runtimes = createLocalCollaborationRuntimePool({
       entry: pathToFileURL(join(projectRoot, "dist", "runtime-worker.js")),
@@ -48,7 +48,7 @@ describe("Local collaboration runtime worker", () => {
     await createV2Fixture(filename);
     const gateway = await startServer({
       port: 0,
-      viewAssetsRoot: join(projectRoot, "..", "..", "packages", "collab-web", "dist"),
+      viewAssetsRoot: join(projectRoot, "dist", "browser"),
     });
     const univerfile = gateway.manager.openByPath(filename);
     const worktree = univerfile.collab.createWorktree("", "Embed regression");
@@ -114,7 +114,7 @@ describe("Local collaboration runtime worker", () => {
     await createV2Fixture(filename);
     const gateway = await startServer({
       port: 0,
-      viewAssetsRoot: join(projectRoot, "..", "..", "packages", "collab-web", "dist"),
+      viewAssetsRoot: join(projectRoot, "dist", "browser"),
     });
     const univerfile = gateway.manager.openByPath(filename);
     const worktree = univerfile.collab.createWorktree("", "Rename regression");

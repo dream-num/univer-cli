@@ -318,7 +318,7 @@ function defaultSkillAssetRoot(): string {
 function defaultBrowserRuntimeRoot(): string {
   const entry = import.meta.url.endsWith("/dist/bin.js")
     ? new URL("./browser/", import.meta.url)
-    : new URL("../../../packages/render-runtime-client/dist/", import.meta.url);
+    : new URL("../dist/browser/", import.meta.url);
   return fileURLToPath(entry);
 }
 
