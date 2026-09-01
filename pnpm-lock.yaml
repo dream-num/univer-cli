@@ -169,74 +169,74 @@ importers:
   apps/cli:
     dependencies:
       '@univer-cli/api-reference':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4
       '@univer-cli/api-reference-command':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387(commander@15.0.0)
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(commander@15.0.0)
       '@univer-cli/config':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4
       '@univer-cli/config-command':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387(commander@15.0.0)
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(commander@15.0.0)
       '@univer-cli/content-execution':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4
       '@univer-cli/content-inspection':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univer-cli/content-inspection-command':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387(commander@15.0.0)(react@19.2.8)(rxjs@7.8.2)
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(commander@15.0.0)(react@19.2.8)(rxjs@7.8.2)
       '@univer-cli/daemon':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4
       '@univer-cli/daemon-command':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387(commander@15.0.0)
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(commander@15.0.0)
       '@univer-cli/doc-typst-facade':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4
       '@univer-cli/doc-typst-facade-command':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387(commander@15.0.0)
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(commander@15.0.0)
       '@univer-cli/headless-univer':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univer-cli/resource-library':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4
       '@univer-cli/resource-library-command':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387(commander@15.0.0)
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(commander@15.0.0)
       '@univer-cli/svg-facade':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4
       '@univer-cli/svg-facade-command':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387(commander@15.0.0)
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(commander@15.0.0)
       '@univer-cli/unit-layout-lint':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univer-cli/unit-layout-lint-command':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387(commander@15.0.0)(react@19.2.8)(rxjs@7.8.2)
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(commander@15.0.0)(react@19.2.8)(rxjs@7.8.2)
       '@univer-cli/unit-screenshot':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univer-cli/unit-screenshot-command':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387(commander@15.0.0)(react@19.2.8)(rxjs@7.8.2)
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(commander@15.0.0)(react@19.2.8)(rxjs@7.8.2)
       '@univer-cli/univer-collaboration-runtime':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univer-cli/univer-collaboration-runtime-pool':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univer-cli/univer-render-runtime':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univer/collab-gateway':
         specifier: workspace:*
         version: link:../../packages/collab-gateway
@@ -250,11 +250,11 @@ importers:
         specifier: 0.1.0
         version: 0.1.0
       '@univerjs-pro/engine-formula-rust-binding':
-        specifier: 1.0.0-insiders.20260819-8209aa8
-        version: 1.0.0-insiders.20260819-8209aa8
-      '@univerjs-pro/exchange-node':
         specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)
+        version: 1.0.0-insiders.20260829-2e3c387
+      '@univerjs-pro/exchange-node':
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/exchange-node-binding':
         specifier: 0.1.0
         version: 0.1.0
@@ -320,26 +320,26 @@ importers:
         specifier: 1.0.0-insiders.20260831-796c4f4
         version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/collaboration-endpoint':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387(react@19.2.8)
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)
       '@univerjs-pro/collaboration-history-endpoint':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/collaboration-history-service':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/collaboration-service':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387(react@19.2.8)
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)
       '@univerjs-pro/collaboration-transport-node':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4
       '@univerjs-pro/collaboration-worktree-endpoint':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387(react@19.2.8)
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)
       '@univerjs-pro/collaboration-worktree-service':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387(react@19.2.8)
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)
       '@univerjs-pro/docs-history':
         specifier: 1.0.0-insiders.20260831-796c4f4
         version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
@@ -350,8 +350,8 @@ importers:
         specifier: 1.0.0-insiders.20260831-796c4f4
         version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/exchange-node':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/license':
         specifier: 1.0.0-insiders.20260831-796c4f4
         version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
@@ -1180,11 +1180,11 @@ importers:
   packages/render-runtime-client:
     dependencies:
       '@univer-cli/univer-render-page':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387(@univer-cli/univer-render-runtime@1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(@univer-cli/univer-render-runtime@1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
       '@univer-cli/univer-render-runtime':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
     devDependencies:
       vite:
         specifier: ^7.0.0
@@ -1199,14 +1199,14 @@ importers:
   packages/univerfile-sqlite:
     dependencies:
       '@univerjs-pro/collaboration-history-service':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/collaboration-service':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387(react@19.2.8)
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)
       '@univerjs-pro/collaboration-worktree-service':
-        specifier: 1.0.0-insiders.20260829-2e3c387
-        version: 1.0.0-insiders.20260829-2e3c387(react@19.2.8)
+        specifier: 1.0.0-insiders.20260831-796c4f4
+        version: 1.0.0-insiders.20260831-796c4f4(react@19.2.8)
       '@univerjs/protocol':
         specifier: 1.0.0-insiders.20260831-796c4f4
         version: 1.0.0-insiders.20260831-796c4f4
@@ -3050,100 +3050,100 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@univer-cli/api-reference-command@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-5QUN+ahOomDpb4/Jd7ecm9QjTyj8RN9ngj4p/n39dt5pxC1dUoLJDhIGsJoEeQT2rPPmzBi8TPU3kebTezlGzQ==}
+  '@univer-cli/api-reference-command@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-I6i9+/tHmEo4cKUezdHlSfqd/Q02TdI05ko0coO4AaS/gv7AK3ZtgQtvxoTXHICDZQSWPLmhiwUn8ulW5Rcs/Q==}
     peerDependencies:
       commander: ^15.0.0
 
-  '@univer-cli/api-reference@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-StULjHctzBPr+TC5QMzThP/NnPKd3AwVLBUNcmZWa2+sYzJXi3TJjJ7tgdFWquUuLVJYWIoKdInl7AZMyIHN3A==}
+  '@univer-cli/api-reference@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-veSFW5khvLyHXeB6hJbdqqviCzYvuxWDgohyI1PBJ6MrzfKfz7Cc6qs8WWih9LD9+MtyB+u8vQug2B27pDAH2Q==}
 
-  '@univer-cli/config-command@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-EE8/RltqB7BpzulklTbKX0zkGLv+eaoloT+F8fsCCReqBr+5/2do100JmvCnyWtp15ALmcAzhQbuIQZyDVhtwg==}
+  '@univer-cli/config-command@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-b14AeXqN2l6XDqrDl0R9hkt+EvhPmRU0AuDwMurLNZ1IFBL+rVSqwVBcOoHcbSkEsb1giXmvLzo4DEY8rpoy7w==}
     peerDependencies:
       commander: ^15.0.0
 
-  '@univer-cli/config@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-Tzm5+u21xlV8Bm/8j5v8PQoc4M/KvH1Iisd34RotYetTuN8QW49Vc4wYtqZ9kt9MwVJVVPUkzeY4hUZNKSMp/Q==}
+  '@univer-cli/config@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-btQvcPPjPwcoRqDSDhEzNaSDF4VRNQpT196Dh3suk7BBLekkuGZUKR2FR1/Yz0vXT/L+taehjg5mjOgsi73G6w==}
 
-  '@univer-cli/content-execution@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-XnDIx6xRvqzhgdl0+VhwzC5gq0SANR8kvaSf8yTbq06NnTsbcVPOnA7tNQt3PnYR20pAEHsc4roKygXorodCug==}
+  '@univer-cli/content-execution@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-J8ABBudMsyZFUozPZxqBuZzxUfQ3dzhVOOTX0wwZuXxjFtbMc1uQI2AtkT6PBamWj/Y5Lst1FfEOvDvzIrDndw==}
 
-  '@univer-cli/content-inspection-command@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-VLfciNRRHH+P6k7+rHiCM9InwBpnZ9ajy07GDRrKINH7ZKWFQjVUR+1YnXPaOJCWSVXK2QsQbuZl6qZ9NZKBHA==}
+  '@univer-cli/content-inspection-command@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-BsDr/4T4LgKJdorXM/Z+HYqDxYWJUa+szGLFB2lp3VYXHXlfidOdqD8pDYPVZGkD7t/VRx/YqwI6wKfbimfxfg==}
     peerDependencies:
       commander: ^15.0.0
 
-  '@univer-cli/content-inspection@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-E6mkc5SfvQG1dwuYpCDiYWluRqtDZTmMGjPwJchARyMI0DK+51Jue0kpbPksf0dOm8htIhIjSjIlKKVBWkPBgg==}
+  '@univer-cli/content-inspection@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-sRjVLzVEy3kNrTgssPeZ+nIyB3g1QXLtF3y9yqU7iDMmPwPXk13YTuPuU9SZZoeI07sCd1UULSKBh9J4qQQX/g==}
 
-  '@univer-cli/daemon-command@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-+xJOOs1PsaBwY3UQReTaw5J0JVp0HX5KecdTYsIYlU+iDv9WEuDwlRNPkohhbHee5VPKNhMFwkqqeGyMXhCWNg==}
+  '@univer-cli/daemon-command@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-v/QPb8jXTPI/bOwCUPZ88H3PqtmKehFoprX5QFcdM3OB1l9cuty0uC3QjOViRxK95AwkLvv0KLDGh8F1IS775A==}
     peerDependencies:
       commander: ^15.0.0
 
-  '@univer-cli/daemon@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-hpCgcVJMixgoQGCSrMExdVsvWTjPoZKcUzDlgDZuCZlt+9Ll1WoCIz87mtTI9HImxyB5TxSEEsPTSR88/e3scw==}
+  '@univer-cli/daemon@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-8um9oiQFImNFGnRwZOsZkzZwd/16O7WPTXNZwOKsIDAqyn+Z3X+ue1wQ0Ns66VJURMpXvHB3e7SCYAxG8R6z7g==}
 
-  '@univer-cli/doc-typst-facade-command@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-mhOk5AfHhFeV2QKf4bFchlMU6YpVib3IK2gROWrV6hYagVdv8eSwJIU+IsHSNqF/5NHcX/zhzmJ8eofABrTyrw==}
+  '@univer-cli/doc-typst-facade-command@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-C3aYILJoPCimw4tg+6YzrB9OG6uljIDfhxkJHQ7rbcIHxPzV63VKPOdevIKP4Qptngt2Xw0RUZuHyXtP9vifnA==}
     peerDependencies:
       commander: ^15.0.0
 
-  '@univer-cli/doc-typst-facade@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-r2n60NkE0yoVuiOX0/0qSUPSibIvrVJTd2ufskNaNp69zLexDKyPVU95iVSnB9t0PpC5E+RX0Gfy99JqRGkIfg==}
+  '@univer-cli/doc-typst-facade@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-j8Z3sL/Jsd2JhTBTZJFhfJA/QHxbI5piWEf6K3PL7nV4Hyr2b4fhpnBRvj4RzOO8ccGSxmvzBL8izG3Zmx8QDQ==}
 
-  '@univer-cli/generic-keyed-instance-pool@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-LO+XptX/j0GbpaT6AkB28a63gy7usYdexDzzq2kuOliwm0Z/lvfbImFu9Rm0sASN4b2VmarBSEqfVMhCQhYaiQ==}
+  '@univer-cli/generic-keyed-instance-pool@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-p4+DzrLwHtwQ/ShX4S5igYVsodOtdIEb3ettKuVat0ZQFFQIM4u6z450vxgd6DFfwF62YBRUx/Z/e6jHJu27Ug==}
 
-  '@univer-cli/headless-univer@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-qcmbfiyANDOrDoBKiDUrFYEXGjFDemKL/eovMk6eCNC8mUHlCA33kjgOsz8yJQvVhpxXYOnz0ZHwqeXjEuQQHg==}
+  '@univer-cli/headless-univer@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-BrROo46Dy8BS3fgSaEbiGCBNLgNSmz7fYNIL6G0TZSW4M7V9TBu0ttoKOWamtY+iCAu4mdszoYQeW69zkT3Z6A==}
 
-  '@univer-cli/resource-library-command@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-xV0nGDlNVgrlg0Qqx8lMYm8hTXdoQGMZkpjImJAQJZLSNgOadq7CZU5iUkcte2cXgy5slIqck0gM8eJD0WFrYQ==}
+  '@univer-cli/resource-library-command@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-PnESxryFbs/IaHtERWKbBgIqYitIP81pFF35bP4CTBv5FwucKsNLdhVYGpZRTkKO9BE+ZRca/XICvU3Cixn2tQ==}
     peerDependencies:
       commander: ^15.0.0
 
-  '@univer-cli/resource-library@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-vzzuh/XAn5fkT4buF8araAs/7m1Ly2gvpOISEXfZ/PlyygYGl8OG7cCF4RgiLCw3N6FkrVHlShqcCi/ebwyJlg==}
+  '@univer-cli/resource-library@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-/IHoLhOT2M091sedIgqSdu/VNp/KoZVUSQ7LgiypHiTfoTSIhmsk8IuI/grq0pcz7zPyEbldEAjEphCYtHR5ZQ==}
 
-  '@univer-cli/svg-facade-command@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-9T17xvKYbdVEOIMRZw32A9ia7eK/B+iGTFaWW0tTytC28cnI1r4yycnwzjMyDEPOi4AqlJAzV19fQNKvem0hmA==}
+  '@univer-cli/svg-facade-command@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-v2PwHkEpyxtKhz88LwHY8ccykBC59uv5c9KS2OVB8EgyRPtvDO7eJbZOUOHZkOpZCfVCvUgL05BH7j3AltHsVA==}
     peerDependencies:
       commander: ^15.0.0
 
-  '@univer-cli/svg-facade@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-afS/Og9LWnFtMsqs3r0gz4ST6vgVYxTy8ajg+mFJEvAM79tgZRPRGbKtL2J3M4LIJ7C4OI+VUlSk09QQzkaN3A==}
+  '@univer-cli/svg-facade@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-L+xHJUB1cdmhXVBG/DnHqYVm7IclCuB9cwBgKZuVqPeoO4HA57JI5SAo3VtxOQmNiAmXZECSYmq5aYwJYO3IZg==}
 
-  '@univer-cli/unit-layout-lint-command@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-wCTpGS1T1wU3EvU270KCY5sfu3E+NiDjUzav2v32gEmqAJmFgf8SWkccAEb3815yqWHOZdQoIxHx8BPgGMUCwQ==}
+  '@univer-cli/unit-layout-lint-command@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-Vd/L/xMvs1H4tgASUhU8G6W629wgYPtsGbWFqb3kd8zMu4Loo0zCc7oyEoMNMR2/a6ImmGFlUSJufjSd5IeU+Q==}
     peerDependencies:
       commander: ^15.0.0
 
-  '@univer-cli/unit-layout-lint@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-6cmkY0pvspqcrptTn9q20e0G3rSBKyYhlYp+8mfqGSuaCilvoxbn1/UvIqn1fRuAjtDuLAoNxrfEl74XDCI40w==}
+  '@univer-cli/unit-layout-lint@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-x/MG3BaDfGmpxeepc9kHt8nBauWdM+8PXD0FFrBla3mVIzljLxuh3W29ce45mQzhZi5UaIPcz0qYljwB0RzlUQ==}
 
-  '@univer-cli/unit-screenshot-command@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-rXApiY9CYI/Ks5BBvpnDwJGXNkzjyMexDHGepnmkWPURxAdQtITJiyNPPyENAPh2Zsm2rOjh4eRg3nY31AHuaw==}
+  '@univer-cli/unit-screenshot-command@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-7FqKKmANUQzFup3jlxEk4RwG7vEXOeykBHvyhxOj4MGcnkVxD1YcNZ98FV1iiWC9Pc7T2SNRMFncVZKLgIlCLQ==}
     peerDependencies:
       commander: ^15.0.0
 
-  '@univer-cli/unit-screenshot@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-LX5oszhFVACCGr4NLkxLmD/Ys9wohexdJGRcKtn9D1U4dL42T3fPp7J+UenZuyfdsBOTQv0I+83HA3Ci/KweWw==}
+  '@univer-cli/unit-screenshot@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-KjcickOck4Br5Fl23Mk8xcuHqZ34TNmNnbYSx6xqlCwo8w1tcWJK4ndJIIywhwSyuHrlA1pnRjhlFPeN9XQpWA==}
 
-  '@univer-cli/univer-collaboration-runtime-pool@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-QpIQqgNQjtwIDOYvJTQbBYy5OqbwVOUZyTfFI1B0s4R8tu+YIWHnJXLBS/AxwIPKaxE90oX5hX1NFe6iloFy9Q==}
+  '@univer-cli/univer-collaboration-runtime-pool@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-t0O9ZkQvK7rRHSaT4eNHIGx+l55Cp4ImWeUAEWgZQH6A3J2FuYnFlMEaV3CAruqsVp65lp/ujkKKE4Pal+QjBg==}
 
-  '@univer-cli/univer-collaboration-runtime@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-1sUXNbIIitPnPTBAxMajWBU/3iH8RmhO3cJ1qWRwkiEG5UVGNpbXpPwde1VhsJ4y8g5+SuA1RMPhMfckOrfvBA==}
+  '@univer-cli/univer-collaboration-runtime@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-w0FKwV4ziydm8B3yWTNjl8JZqRaHkhehsS04EN6gIFvtXCqqHudVvhOcqUEKxavVUppa3g6d+8VbBTf92jZRow==}
 
-  '@univer-cli/univer-render-page@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-/VZtzpGI+96CzzbE846esNFHPffOLnyn2DiQvG4RKY/ZnQ1Ppa5M/uF4+lrvSWxpqBxqau16KXMiIw98x/EJig==}
+  '@univer-cli/univer-render-page@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-nB0r3+cmJkjDmf3XDetA+Y8muGB8sYyhR+kLOsU74Cr79iw0AyL2IDc3gB2t85wUQQYdUrUuuph8fVBDNGgecw==}
     peerDependencies:
-      '@univer-cli/univer-render-runtime': 1.0.0-insiders.20260829-2e3c387
+      '@univer-cli/univer-render-runtime': 1.0.0-insiders.20260831-796c4f4
 
-  '@univer-cli/univer-render-runtime@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-x2JSa5b3WOVEkxtVP29APLWNJ8EOx+zuSvkJ0R7EEmLs7QGpqQs2ifZcmQ0q+uDVlK8YN/BFfGCPeEGzUGwxOw==}
+  '@univer-cli/univer-render-runtime@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-NTLOisaQCsp0HIMHnhjlnpuAmQEeJsAg/GJNuRNeBGX30VK0vYuyuAH6LVbwHpiwM/uirm5q746lGNnqlCCSCg==}
 
   '@univerjs-pro/bases-dashboard-ui@1.0.0-insiders.20260831-796c4f4':
     resolution: {integrity: sha512-ajbZ26I08NJ9zCwqRuP79rp9lGMZlhbsRaeNS7dVjyl3b8E1h1ywRU64gBuzq8oPI/hTHljOesR0bDWALIP0aA==}
@@ -3266,26 +3266,26 @@ packages:
   '@univerjs-pro/collaboration-embed@1.0.0-insiders.20260831-796c4f4':
     resolution: {integrity: sha512-GsEbxS7SSEq0o6v0LTT8IJJWsQXPpTz00l7N8dYmVY5lED0AecLH7kWQpnPfPuH7fmnhXRCk07rULR1/c3JUcw==}
 
-  '@univerjs-pro/collaboration-endpoint@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-Z4Yk5AW/hbp6+hDMrmeJPmJmSRkvAho8tZJPI0BuhMFSn7g29heF9vprf5xhjqywsQN6bdwtirNicy3VKKeU9A==}
+  '@univerjs-pro/collaboration-endpoint@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-PnvnKUvWMr1FOZ4+ub4H7+kxi+1fdqqLIzPnFDd1lFIklLk50ZiM4+ZoQSRmyUBgDgSWDxeW1VTw/dwLdTShyw==}
 
-  '@univerjs-pro/collaboration-history-endpoint@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-BUM803yEPsu1qbQDFlWeMG+Vz3+ZY7qEV42Vo82q1Oh9R21jGChT4JxanEs85iCBFKYAq4QuueZSuHlnSHTFJA==}
+  '@univerjs-pro/collaboration-history-endpoint@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-UxwdKwufaQ4WLGJ9XoEw3ump0Z44LRDnOBvUHTXFvIjLCoZll/C8a3xFIBaB2xtkmUReI1aOyhtR1/zdHP7Knw==}
 
-  '@univerjs-pro/collaboration-history-service@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-FlgsB/iS42Uay+fO8pz93lnILpV+OPNaHTuTbNflPCDDJ2TFsnpMmr9jGspfr4FF/K1QnTFp7g7CxwFWen2EJA==}
+  '@univerjs-pro/collaboration-history-service@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-ErcAV+35aOG06l502jL5gnmqAEook+R9hbq41EW/J6Omndk+XZrWJ87t649N20FhscWIzq/5PlynI1oqI+UnVg==}
 
-  '@univerjs-pro/collaboration-service@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-nHkfIJQ/VA6pZCXev7vfOTkqEAIjVoNgjdUOJe5e8DCchXLxeLoECVdh+2iJWF3FI4XjxjjQF9K8rrn7a3qvrw==}
+  '@univerjs-pro/collaboration-service@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-ZUdz/HjooWnkri1zca6pZE3OwPqjRNcEAQTcWQHzZ50SRR3huaG9qparWeMPv5OyYPPJWePZf27TqkhfrCUuLg==}
 
-  '@univerjs-pro/collaboration-transport-node@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-iy2u2Kgmchd/WGYPjx30kOZQYX1ETdATb28/5xCJ31AAw8FB1Ss10CnYuJOcJw9ioOM6dtw+F9A4VcfGw0g/+w==}
+  '@univerjs-pro/collaboration-transport-node@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-lsY8NXeL3gM1bbcMEtree6XETWfsm980FmFumMidb50tEzoKeF+KMHj1QMwo99texYJ5p1FSCXzzE7MjYr2cxg==}
 
-  '@univerjs-pro/collaboration-worktree-endpoint@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-/E0+qPF3ml6O9S5Uz2U1ZmZqrrpSUsP+NOikHsCCbzZBYmFgzIBgXk5n6bl1+9I9b1EOVX2oUotZWfDRuX0SVw==}
+  '@univerjs-pro/collaboration-worktree-endpoint@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-WorJLkCx20HZuTJaaMNAxCExCVP9zKiRfhl86duXozYXmaRH09FQPR+JIIKOc9b/sljX0MKWT33AvB5NXd+plA==}
 
-  '@univerjs-pro/collaboration-worktree-service@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-ex9jZHshUZ44vqp/0rLTuAkWYkA3GPeD2JfgpEXQV1bmcfSKw/c7uAa9wWs4W7uuovWbetSya77RjD7zeRd/Ew==}
+  '@univerjs-pro/collaboration-worktree-service@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-hOq/1MNVqoxU0zUtD3xSaalPssV2OKUQiKphlVBrT7jZhWzV0jMZhvemyv+r47VbFTzJBaYvCFNfWsG+s+qBQg==}
 
   '@univerjs-pro/collaboration@1.0.0-insiders.20260831-796c4f4':
     resolution: {integrity: sha512-phceyR/oqZCv7I6AERprORcpTWB7wtOhPJGewpZZtIQ6TsBy/ZqmtQHOcZBPKRwjRXxwSGBUoLXyFdiyn0KeJg==}
@@ -3476,31 +3476,14 @@ packages:
     peerDependencies:
       rxjs: '>=7.0.0'
 
-  '@univerjs-pro/engine-formula-rust-binding-darwin-arm64@1.0.0-insiders.20260819-8209aa8':
-    resolution: {integrity: sha512-VdR/QlBfvXPQ+0BcHYhtZhIAQgEssfSV0v76WvbJbJbUvYQ2y6XXBlfB6PBFr1qwvv8djF1EaCoy9A/FCYCp8A==, tarball: https://registry.npmjs.org/@univerjs-pro/engine-formula-rust-binding-darwin-arm64/-/engine-formula-rust-binding-darwin-arm64-1.0.0-insiders.20260819-8209aa8.tgz}
-    cpu: [arm64]
-    os: [darwin]
-
   '@univerjs-pro/engine-formula-rust-binding-darwin-arm64@1.0.0-insiders.20260829-2e3c387':
     resolution: {integrity: sha512-31GP3q3hBXDQvtCHDBsXU7HqTEfxZTY6fJyMoyf5eEUldSZ7M9/Bzc1UmUpD+LRZvafq/z4Ud5MrLdKW8Rv50g==}
     cpu: [arm64]
     os: [darwin]
 
-  '@univerjs-pro/engine-formula-rust-binding-linux-arm64-gnu@1.0.0-insiders.20260819-8209aa8':
-    resolution: {integrity: sha512-hfgkeHmoMUGql8qfTkUFTC447BBxubHUsRmOI1HHcXAjDDXsTufTrq2XJjmQRbgXjJ0IDHAH9zdJGoDDKNJwMA==, tarball: https://registry.npmjs.org/@univerjs-pro/engine-formula-rust-binding-linux-arm64-gnu/-/engine-formula-rust-binding-linux-arm64-gnu-1.0.0-insiders.20260819-8209aa8.tgz}
-    cpu: [arm64]
-    os: [linux]
-    libc: [glibc]
-
   '@univerjs-pro/engine-formula-rust-binding-linux-arm64-gnu@1.0.0-insiders.20260829-2e3c387':
     resolution: {integrity: sha512-FgYnbBQkSOFcc6z3+pg2LlPXKpdZTE/gTXq20ZMAgGeq0E1inPvHtbPMsdMeEiRmICVV2CCs+TdtxNQRMXvG+A==}
     cpu: [arm64]
-    os: [linux]
-    libc: [glibc]
-
-  '@univerjs-pro/engine-formula-rust-binding-linux-x64-gnu@1.0.0-insiders.20260819-8209aa8':
-    resolution: {integrity: sha512-O4eg3s4JAxj22frK/or7SyIVnSLr7RD0WN+0Q2qb/Id5kcrkGRggN5NYDoq8o+x2cvn1ODC1a0xWRMRlyhNQ4A==, tarball: https://registry.npmjs.org/@univerjs-pro/engine-formula-rust-binding-linux-x64-gnu/-/engine-formula-rust-binding-linux-x64-gnu-1.0.0-insiders.20260819-8209aa8.tgz}
-    cpu: [x64]
     os: [linux]
     libc: [glibc]
 
@@ -3510,24 +3493,16 @@ packages:
     os: [linux]
     libc: [glibc]
 
-  '@univerjs-pro/engine-formula-rust-binding-win32-x64-msvc@1.0.0-insiders.20260819-8209aa8':
-    resolution: {integrity: sha512-kvveICZOiFnvBmkKh769e6E912+q82kWC1bdxZL2GtSYUcROY1MKv4ZQ8bwed4WX9d4ei4hYdtPUDxzVjPyGjA==, tarball: https://registry.npmjs.org/@univerjs-pro/engine-formula-rust-binding-win32-x64-msvc/-/engine-formula-rust-binding-win32-x64-msvc-1.0.0-insiders.20260819-8209aa8.tgz}
-    cpu: [x64]
-    os: [win32]
-
   '@univerjs-pro/engine-formula-rust-binding-win32-x64-msvc@1.0.0-insiders.20260829-2e3c387':
     resolution: {integrity: sha512-XlAFS6bE65pDdY7Rr5L2HAikMMchZtPscdFfQVTtv6SPa/8OkO0ndFMFhlM2CckB+ueRKEsoUHBmKdQEW0gG+A==}
     cpu: [x64]
     os: [win32]
 
-  '@univerjs-pro/engine-formula-rust-binding@1.0.0-insiders.20260819-8209aa8':
-    resolution: {integrity: sha512-ZYEgg21fgW0XvCjAZgyvzquZk1jZtKXnk5Aa7N0WgV73iLIhwOtfqhsnrG+J8RKh/ps9V2BXnDDHR/9x52W6UA==, tarball: https://registry.npmjs.org/@univerjs-pro/engine-formula-rust-binding/-/engine-formula-rust-binding-1.0.0-insiders.20260819-8209aa8.tgz}
-
   '@univerjs-pro/engine-formula-rust-binding@1.0.0-insiders.20260829-2e3c387':
     resolution: {integrity: sha512-2A9Okfy4bKjB4x3NO9BG9uMP5uWG5ToSiZy3Spmkl84hH8/NbJ1B2V1SLZwWehUh3C1epfE5UEYicmPeM9n9aw==}
 
-  '@univerjs-pro/engine-formula-rust@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-MnkMlXf5timQE49e8XglbKmo0FjmRjsPOOW/igDNofDbaRC4Br5Y/IaH+Oou+n3wdJYWSZUWRkzNKJxfqhpQww==}
+  '@univerjs-pro/engine-formula-rust@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-/7rJy0W6BG3q/bMNLxeddfBSwIF+mzipcC4DHIYxfDZ+djJ1zNkzH4MSv2QzyOTYYGD3iYhh/ufiios9Oikuww==}
     peerDependencies:
       rxjs: '>=7.0.0'
 
@@ -3596,8 +3571,8 @@ packages:
   '@univerjs-pro/exchange-node-binding@0.1.1':
     resolution: {integrity: sha512-8P02leiOE8/z4SthVmPYnPGxMb9eLdjc+OqEFn4utl3bo/3T/lhSFWqvwdH9ytaZunhcwif+F54v1cA7ZUg3FQ==}
 
-  '@univerjs-pro/exchange-node@1.0.0-insiders.20260829-2e3c387':
-    resolution: {integrity: sha512-jMQ5oBk9gqPSaiNtAgslZJ7n6uiO6uJBgPbXqQH6Wux4J6uj68RYXyJMM8ZTvgw69xUb5rzK7opbZGR3IB3iaQ==}
+  '@univerjs-pro/exchange-node@1.0.0-insiders.20260831-796c4f4':
+    resolution: {integrity: sha512-sXhTLW5CtY3M0LHpkDwfSox6qiQ5InZrGNS2uFRqzTPVZdlOA8inc9ZnBipM1wV6xVRheydTby8doTm/V4ZzQQ==}
 
   '@univerjs-pro/ink-ui@1.0.0-insiders.20260831-796c4f4':
     resolution: {integrity: sha512-UbHKdmzdf/xs48ZQKSkOULY2/AzY5XTbKYGsY3bss8gs1SOxv+onRcAOahIKI9NlqkKl7Av9z1umjMWwlpwlaw==}
@@ -4886,6 +4861,7 @@ packages:
   typescript@5.9.3:
     resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
     engines: {node: '>=14.17'}
+    hasBin: true
 
   typescript@7.0.2:
     resolution: {integrity: sha512-8FYau96o3NKOhbjKi/qNvG/W5jhzxkbdm5sj9AbZ/5T5sWqn3hJgLfGx27sRKZWTvyzCP8dLRBTf5tBTSRVUNA==}
@@ -6457,59 +6433,59 @@ snapshots:
   '@typescript/typescript-win32-x64@7.0.2':
     optional: true
 
-  '@univer-cli/api-reference-command@1.0.0-insiders.20260829-2e3c387(commander@15.0.0)':
+  '@univer-cli/api-reference-command@1.0.0-insiders.20260831-796c4f4(commander@15.0.0)':
     dependencies:
-      '@univer-cli/api-reference': 1.0.0-insiders.20260829-2e3c387
+      '@univer-cli/api-reference': 1.0.0-insiders.20260831-796c4f4
       commander: 15.0.0
 
-  '@univer-cli/api-reference@1.0.0-insiders.20260829-2e3c387': {}
+  '@univer-cli/api-reference@1.0.0-insiders.20260831-796c4f4': {}
 
-  '@univer-cli/config-command@1.0.0-insiders.20260829-2e3c387(commander@15.0.0)':
+  '@univer-cli/config-command@1.0.0-insiders.20260831-796c4f4(commander@15.0.0)':
     dependencies:
-      '@univer-cli/config': 1.0.0-insiders.20260829-2e3c387
+      '@univer-cli/config': 1.0.0-insiders.20260831-796c4f4
       commander: 15.0.0
 
-  '@univer-cli/config@1.0.0-insiders.20260829-2e3c387':
+  '@univer-cli/config@1.0.0-insiders.20260831-796c4f4':
     dependencies:
       conf: 15.1.0
 
-  '@univer-cli/content-execution@1.0.0-insiders.20260829-2e3c387': {}
+  '@univer-cli/content-execution@1.0.0-insiders.20260831-796c4f4': {}
 
-  '@univer-cli/content-inspection-command@1.0.0-insiders.20260829-2e3c387(commander@15.0.0)(react@19.2.8)(rxjs@7.8.2)':
+  '@univer-cli/content-inspection-command@1.0.0-insiders.20260831-796c4f4(commander@15.0.0)(react@19.2.8)(rxjs@7.8.2)':
     dependencies:
-      '@univer-cli/content-inspection': 1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)
+      '@univer-cli/content-inspection': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       commander: 15.0.0
     transitivePeerDependencies:
       - react
       - rxjs
 
-  '@univer-cli/content-inspection@1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)':
+  '@univer-cli/content-inspection@1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)':
     dependencies:
       '@univerjs/core': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
     transitivePeerDependencies:
       - react
       - rxjs
 
-  '@univer-cli/daemon-command@1.0.0-insiders.20260829-2e3c387(commander@15.0.0)':
+  '@univer-cli/daemon-command@1.0.0-insiders.20260831-796c4f4(commander@15.0.0)':
     dependencies:
-      '@univer-cli/daemon': 1.0.0-insiders.20260829-2e3c387
+      '@univer-cli/daemon': 1.0.0-insiders.20260831-796c4f4
       commander: 15.0.0
 
-  '@univer-cli/daemon@1.0.0-insiders.20260829-2e3c387': {}
+  '@univer-cli/daemon@1.0.0-insiders.20260831-796c4f4': {}
 
-  '@univer-cli/doc-typst-facade-command@1.0.0-insiders.20260829-2e3c387(commander@15.0.0)':
+  '@univer-cli/doc-typst-facade-command@1.0.0-insiders.20260831-796c4f4(commander@15.0.0)':
     dependencies:
-      '@univer-cli/doc-typst-facade': 1.0.0-insiders.20260829-2e3c387
+      '@univer-cli/doc-typst-facade': 1.0.0-insiders.20260831-796c4f4
       commander: 15.0.0
 
-  '@univer-cli/doc-typst-facade@1.0.0-insiders.20260829-2e3c387':
+  '@univer-cli/doc-typst-facade@1.0.0-insiders.20260831-796c4f4':
     dependencies:
       '@univerjs-pro/doc-typst-native-binding': 1.0.0-insiders.20260723-c21613b
       typescript: 5.9.3
 
-  '@univer-cli/generic-keyed-instance-pool@1.0.0-insiders.20260829-2e3c387': {}
+  '@univer-cli/generic-keyed-instance-pool@1.0.0-insiders.20260831-796c4f4': {}
 
-  '@univer-cli/headless-univer@1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)':
+  '@univer-cli/headless-univer@1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)':
     dependencies:
       '@univerjs-pro/bases': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/boards': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
@@ -6528,7 +6504,7 @@ snapshots:
       '@univerjs-pro/embed': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/engine-chart': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/engine-formula': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
-      '@univerjs-pro/engine-formula-rust': 1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/engine-formula-rust': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/engine-pivot': 1.0.0-insiders.20260831-796c4f4
       '@univerjs-pro/engine-shape': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/ink': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
@@ -6569,47 +6545,23 @@ snapshots:
       - react
       - rxjs
 
-  '@univer-cli/resource-library-command@1.0.0-insiders.20260829-2e3c387(commander@15.0.0)':
+  '@univer-cli/resource-library-command@1.0.0-insiders.20260831-796c4f4(commander@15.0.0)':
     dependencies:
-      '@univer-cli/resource-library': 1.0.0-insiders.20260829-2e3c387
+      '@univer-cli/resource-library': 1.0.0-insiders.20260831-796c4f4
       commander: 15.0.0
 
-  '@univer-cli/resource-library@1.0.0-insiders.20260829-2e3c387': {}
+  '@univer-cli/resource-library@1.0.0-insiders.20260831-796c4f4': {}
 
-  '@univer-cli/svg-facade-command@1.0.0-insiders.20260829-2e3c387(commander@15.0.0)':
+  '@univer-cli/svg-facade-command@1.0.0-insiders.20260831-796c4f4(commander@15.0.0)':
     dependencies:
-      '@univer-cli/svg-facade': 1.0.0-insiders.20260829-2e3c387
+      '@univer-cli/svg-facade': 1.0.0-insiders.20260831-796c4f4
       commander: 15.0.0
 
-  '@univer-cli/svg-facade@1.0.0-insiders.20260829-2e3c387': {}
+  '@univer-cli/svg-facade@1.0.0-insiders.20260831-796c4f4': {}
 
-  '@univer-cli/unit-layout-lint-command@1.0.0-insiders.20260829-2e3c387(commander@15.0.0)(react@19.2.8)(rxjs@7.8.2)':
+  '@univer-cli/unit-layout-lint-command@1.0.0-insiders.20260831-796c4f4(commander@15.0.0)(react@19.2.8)(rxjs@7.8.2)':
     dependencies:
-      '@univer-cli/unit-layout-lint': 1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)
-      commander: 15.0.0
-    transitivePeerDependencies:
-      - bufferutil
-      - proxy-agent
-      - react
-      - rxjs
-      - utf-8-validate
-      - yauzl
-
-  '@univer-cli/unit-layout-lint@1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)':
-    dependencies:
-      '@univer-cli/univer-render-runtime': 1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)
-    transitivePeerDependencies:
-      - bufferutil
-      - proxy-agent
-      - react
-      - rxjs
-      - utf-8-validate
-      - yauzl
-
-  '@univer-cli/unit-screenshot-command@1.0.0-insiders.20260829-2e3c387(commander@15.0.0)(react@19.2.8)(rxjs@7.8.2)':
-    dependencies:
-      '@univer-cli/unit-screenshot': 1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)
-      '@univer-cli/univer-render-runtime': 1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)
+      '@univer-cli/unit-layout-lint': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       commander: 15.0.0
     transitivePeerDependencies:
       - bufferutil
@@ -6619,9 +6571,9 @@ snapshots:
       - utf-8-validate
       - yauzl
 
-  '@univer-cli/unit-screenshot@1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)':
+  '@univer-cli/unit-layout-lint@1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)':
     dependencies:
-      '@univer-cli/univer-render-runtime': 1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)
+      '@univer-cli/univer-render-runtime': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
     transitivePeerDependencies:
       - bufferutil
       - proxy-agent
@@ -6630,16 +6582,40 @@ snapshots:
       - utf-8-validate
       - yauzl
 
-  '@univer-cli/univer-collaboration-runtime-pool@1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)':
+  '@univer-cli/unit-screenshot-command@1.0.0-insiders.20260831-796c4f4(commander@15.0.0)(react@19.2.8)(rxjs@7.8.2)':
     dependencies:
-      '@univer-cli/generic-keyed-instance-pool': 1.0.0-insiders.20260829-2e3c387
-      '@univer-cli/univer-collaboration-runtime': 1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)
+      '@univer-cli/unit-screenshot': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univer-cli/univer-render-runtime': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      commander: 15.0.0
+    transitivePeerDependencies:
+      - bufferutil
+      - proxy-agent
+      - react
+      - rxjs
+      - utf-8-validate
+      - yauzl
+
+  '@univer-cli/unit-screenshot@1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)':
+    dependencies:
+      '@univer-cli/univer-render-runtime': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+    transitivePeerDependencies:
+      - bufferutil
+      - proxy-agent
+      - react
+      - rxjs
+      - utf-8-validate
+      - yauzl
+
+  '@univer-cli/univer-collaboration-runtime-pool@1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)':
+    dependencies:
+      '@univer-cli/generic-keyed-instance-pool': 1.0.0-insiders.20260831-796c4f4
+      '@univer-cli/univer-collaboration-runtime': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univerjs/protocol': 1.0.0-insiders.20260831-796c4f4
     transitivePeerDependencies:
       - react
       - rxjs
 
-  '@univer-cli/univer-collaboration-runtime@1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)':
+  '@univer-cli/univer-collaboration-runtime@1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)':
     dependencies:
       '@oxc-project/runtime': 0.142.0
       '@univerjs-pro/bases': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
@@ -6657,9 +6633,9 @@ snapshots:
       - react
       - rxjs
 
-  '@univer-cli/univer-render-page@1.0.0-insiders.20260829-2e3c387(@univer-cli/univer-render-runtime@1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)':
+  '@univer-cli/univer-render-page@1.0.0-insiders.20260831-796c4f4(@univer-cli/univer-render-runtime@1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)':
     dependencies:
-      '@univer-cli/univer-render-runtime': 1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)
+      '@univer-cli/univer-render-runtime': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/bases': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/bases-ui': 1.0.0-insiders.20260831-796c4f4(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/boards': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
@@ -6766,7 +6742,7 @@ snapshots:
       - react-dom
       - rxjs
 
-  '@univer-cli/univer-render-runtime@1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)':
+  '@univer-cli/univer-render-runtime@1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)':
     dependencies:
       '@puppeteer/browsers': 3.2.0
       '@univerjs-pro/boards': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
@@ -7211,21 +7187,21 @@ snapshots:
       - react
       - rxjs
 
-  '@univerjs-pro/collaboration-endpoint@1.0.0-insiders.20260829-2e3c387(react@19.2.8)':
+  '@univerjs-pro/collaboration-endpoint@1.0.0-insiders.20260831-796c4f4(react@19.2.8)':
     dependencies:
-      '@univerjs-pro/collaboration-service': 1.0.0-insiders.20260829-2e3c387(react@19.2.8)
-      '@univerjs-pro/collaboration-transport-node': 1.0.0-insiders.20260829-2e3c387
+      '@univerjs-pro/collaboration-service': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)
+      '@univerjs-pro/collaboration-transport-node': 1.0.0-insiders.20260831-796c4f4
       '@univerjs/protocol': 1.0.0-insiders.20260831-796c4f4
     transitivePeerDependencies:
       - bufferutil
       - react
       - utf-8-validate
 
-  '@univerjs-pro/collaboration-history-endpoint@1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)':
+  '@univerjs-pro/collaboration-history-endpoint@1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)':
     dependencies:
-      '@univerjs-pro/collaboration-history-service': 1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)
-      '@univerjs-pro/collaboration-service': 1.0.0-insiders.20260829-2e3c387(react@19.2.8)
-      '@univerjs-pro/collaboration-transport-node': 1.0.0-insiders.20260829-2e3c387
+      '@univerjs-pro/collaboration-history-service': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/collaboration-service': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)
+      '@univerjs-pro/collaboration-transport-node': 1.0.0-insiders.20260831-796c4f4
       '@univerjs/protocol': 1.0.0-insiders.20260831-796c4f4
     transitivePeerDependencies:
       - bufferutil
@@ -7233,16 +7209,16 @@ snapshots:
       - rxjs
       - utf-8-validate
 
-  '@univerjs-pro/collaboration-history-service@1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)':
+  '@univerjs-pro/collaboration-history-service@1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)':
     dependencies:
       '@univerjs-pro/collaboration': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
-      '@univerjs-pro/collaboration-service': 1.0.0-insiders.20260829-2e3c387(react@19.2.8)
+      '@univerjs-pro/collaboration-service': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)
       '@univerjs/protocol': 1.0.0-insiders.20260831-796c4f4
     transitivePeerDependencies:
       - react
       - rxjs
 
-  '@univerjs-pro/collaboration-service@1.0.0-insiders.20260829-2e3c387(react@19.2.8)':
+  '@univerjs-pro/collaboration-service@1.0.0-insiders.20260831-796c4f4(react@19.2.8)':
     dependencies:
       '@univerjs-pro/bases': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/bases-thread-comment': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
@@ -7259,7 +7235,7 @@ snapshots:
       '@univerjs-pro/docs-shape': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/docs-table': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/embed': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
-      '@univerjs-pro/engine-formula-rust': 1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs-pro/engine-formula-rust': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/sheets-chart': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/sheets-outline': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/sheets-pivot': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
@@ -7294,28 +7270,28 @@ snapshots:
     transitivePeerDependencies:
       - react
 
-  '@univerjs-pro/collaboration-transport-node@1.0.0-insiders.20260829-2e3c387':
+  '@univerjs-pro/collaboration-transport-node@1.0.0-insiders.20260831-796c4f4':
     dependencies:
       ws: 8.21.3
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  '@univerjs-pro/collaboration-worktree-endpoint@1.0.0-insiders.20260829-2e3c387(react@19.2.8)':
+  '@univerjs-pro/collaboration-worktree-endpoint@1.0.0-insiders.20260831-796c4f4(react@19.2.8)':
     dependencies:
-      '@univerjs-pro/collaboration-endpoint': 1.0.0-insiders.20260829-2e3c387(react@19.2.8)
-      '@univerjs-pro/collaboration-service': 1.0.0-insiders.20260829-2e3c387(react@19.2.8)
-      '@univerjs-pro/collaboration-transport-node': 1.0.0-insiders.20260829-2e3c387
-      '@univerjs-pro/collaboration-worktree-service': 1.0.0-insiders.20260829-2e3c387(react@19.2.8)
+      '@univerjs-pro/collaboration-endpoint': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)
+      '@univerjs-pro/collaboration-service': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)
+      '@univerjs-pro/collaboration-transport-node': 1.0.0-insiders.20260831-796c4f4
+      '@univerjs-pro/collaboration-worktree-service': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)
       '@univerjs/protocol': 1.0.0-insiders.20260831-796c4f4
     transitivePeerDependencies:
       - bufferutil
       - react
       - utf-8-validate
 
-  '@univerjs-pro/collaboration-worktree-service@1.0.0-insiders.20260829-2e3c387(react@19.2.8)':
+  '@univerjs-pro/collaboration-worktree-service@1.0.0-insiders.20260831-796c4f4(react@19.2.8)':
     dependencies:
-      '@univerjs-pro/collaboration-service': 1.0.0-insiders.20260829-2e3c387(react@19.2.8)
+      '@univerjs-pro/collaboration-service': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)
       '@univerjs/protocol': 1.0.0-insiders.20260831-796c4f4
     transitivePeerDependencies:
       - react
@@ -7879,36 +7855,17 @@ snapshots:
     transitivePeerDependencies:
       - react
 
-  '@univerjs-pro/engine-formula-rust-binding-darwin-arm64@1.0.0-insiders.20260819-8209aa8':
-    optional: true
-
   '@univerjs-pro/engine-formula-rust-binding-darwin-arm64@1.0.0-insiders.20260829-2e3c387':
-    optional: true
-
-  '@univerjs-pro/engine-formula-rust-binding-linux-arm64-gnu@1.0.0-insiders.20260819-8209aa8':
     optional: true
 
   '@univerjs-pro/engine-formula-rust-binding-linux-arm64-gnu@1.0.0-insiders.20260829-2e3c387':
     optional: true
 
-  '@univerjs-pro/engine-formula-rust-binding-linux-x64-gnu@1.0.0-insiders.20260819-8209aa8':
-    optional: true
-
   '@univerjs-pro/engine-formula-rust-binding-linux-x64-gnu@1.0.0-insiders.20260829-2e3c387':
-    optional: true
-
-  '@univerjs-pro/engine-formula-rust-binding-win32-x64-msvc@1.0.0-insiders.20260819-8209aa8':
     optional: true
 
   '@univerjs-pro/engine-formula-rust-binding-win32-x64-msvc@1.0.0-insiders.20260829-2e3c387':
     optional: true
-
-  '@univerjs-pro/engine-formula-rust-binding@1.0.0-insiders.20260819-8209aa8':
-    optionalDependencies:
-      '@univerjs-pro/engine-formula-rust-binding-darwin-arm64': 1.0.0-insiders.20260819-8209aa8
-      '@univerjs-pro/engine-formula-rust-binding-linux-arm64-gnu': 1.0.0-insiders.20260819-8209aa8
-      '@univerjs-pro/engine-formula-rust-binding-linux-x64-gnu': 1.0.0-insiders.20260819-8209aa8
-      '@univerjs-pro/engine-formula-rust-binding-win32-x64-msvc': 1.0.0-insiders.20260819-8209aa8
 
   '@univerjs-pro/engine-formula-rust-binding@1.0.0-insiders.20260829-2e3c387':
     optionalDependencies:
@@ -7917,7 +7874,7 @@ snapshots:
       '@univerjs-pro/engine-formula-rust-binding-linux-x64-gnu': 1.0.0-insiders.20260829-2e3c387
       '@univerjs-pro/engine-formula-rust-binding-win32-x64-msvc': 1.0.0-insiders.20260829-2e3c387
 
-  '@univerjs-pro/engine-formula-rust@1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)':
+  '@univerjs-pro/engine-formula-rust@1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)':
     dependencies:
       '@univerjs-pro/engine-formula': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/engine-formula-rust-binding': 1.0.0-insiders.20260829-2e3c387
@@ -8006,7 +7963,7 @@ snapshots:
       '@univerjs-pro/exchange-node-binding-linux-x64-gnu': 0.1.1
       '@univerjs-pro/exchange-node-binding-win32-x64-msvc': 0.1.1
 
-  '@univerjs-pro/exchange-node@1.0.0-insiders.20260829-2e3c387(react@19.2.8)(rxjs@7.8.2)':
+  '@univerjs-pro/exchange-node@1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)':
     dependencies:
       '@univerjs-pro/collaboration': 1.0.0-insiders.20260831-796c4f4(react@19.2.8)(rxjs@7.8.2)
       '@univerjs-pro/exchange-node-binding': 0.1.1

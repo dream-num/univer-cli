@@ -15,17 +15,6 @@ export const INDEPENDENT_PACKAGES = new Set([
   "@univerjs-pro/engine-formula-rust-binding",
   "@univerjs-pro/exchange-node-binding",
 ]);
-export const COLLABORATION_SERVER_PACKAGES = new Set([
-  "@univerjs-pro/collaboration-endpoint",
-  "@univerjs-pro/collaboration-history-endpoint",
-  "@univerjs-pro/collaboration-history-service",
-  "@univerjs-pro/collaboration-service",
-  "@univerjs-pro/collaboration-transport-node",
-  "@univerjs-pro/collaboration-worktree-endpoint",
-  "@univerjs-pro/collaboration-worktree-service",
-  "@univerjs-pro/exchange-node",
-]);
-
 export async function validateWorkspaceSdkDependencies(repoRoot) {
   const entries = [];
   for (const parent of ["apps", "packages"]) {
@@ -87,8 +76,6 @@ export function validateSdkDependencyGraph(entries) {
 
 export function sdkCohort(name) {
   if (INDEPENDENT_PACKAGES.has(name)) return undefined;
-  if (name.startsWith("@univer-cli/")) return "cli";
-  if (COLLABORATION_SERVER_PACKAGES.has(name)) return "collaboration-server";
   if (SDK_PREFIXES.some((prefix) => name.startsWith(prefix))) return "univer";
   return undefined;
 }

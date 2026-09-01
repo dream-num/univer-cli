@@ -43,7 +43,7 @@ export function alignManifestSdkDependencies(manifest, version, workspaceNames =
       }
       if (!SDK_PREFIXES.some((prefix) => name.startsWith(prefix))) continue;
       assertExactDependency(manifest.name, field, name, specifier);
-      if (sdkCohort(name) !== "univer") continue;
+      if (sdkCohort(name) === undefined) continue;
       if (specifier !== version) {
         manifest[field][name] = version;
         changed += 1;

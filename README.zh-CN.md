@@ -163,15 +163,15 @@ pnpm unlink:cli
 
 ### SDK 升级
 
-主 Univer SDK、Univer CLI SDK 与 Collaboration Server SDK 是分别发布的精确版本 cohort。
-以下命令只升级主 `@univerjs/*` 与 `@univerjs-pro/*` cohort：
+Univer SDK、Univer CLI SDK 与 Collaboration Server SDK 使用同一个精确版本基线。
+使用以下命令升级完整 SDK dependency graph：
 
 ```bash
 pnpm update:sdk --sdk_version <exact-sdk-version>
 ```
 
-升级器会保留 `@univer-cli/*` 和 Collaboration Server package 各自内部一致的版本。
-必须同时提交所有受影响的 manifest 与 `pnpm-lock.yaml`，不得手工只更新任一 cohort 的一部分。
+升级器只保留 native binding、icon 等独立发布 package 的版本。必须同时提交所有受影响的 manifest
+与 `pnpm-lock.yaml`，不得手工只更新部分 SDK dependency。
 
 ## 许可证
 

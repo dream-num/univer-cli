@@ -3,18 +3,16 @@ import { validateSdkDependencyGraph } from "../scripts/release/sdk-graph.mjs";
 
 describe("release SDK graph", () => {
   const univer = "1.0.0-insiders.20260831-796c4f4";
-  const cli = "1.0.0-insiders.20260829-2e3c387";
-  const collaboration = "1.0.0-insiders.20260829-2e3c387";
 
-  it("accepts independently published exact SDK cohorts", () => {
+  it("accepts one exact SDK cohort and separately versioned independent packages", () => {
     expect(
       validateSdkDependencyGraph([
         {
           manifestPath: "apps/cli/package.json",
           manifest: {
             dependencies: {
-              "@univer-cli/headless-univer": cli,
-              "@univerjs-pro/collaboration-service": collaboration,
+              "@univer-cli/headless-univer": univer,
+              "@univerjs-pro/collaboration-service": univer,
               "@univerjs-pro/engine-formula-rust-binding": "1.0.0-insiders.20260819-8209aa8",
               "@univerjs/core": univer,
             },
@@ -28,11 +26,7 @@ describe("release SDK graph", () => {
     ).toMatchObject({
       dependencyCount: 5,
       sdkVersion: univer,
-      cohorts: {
-        cli,
-        "collaboration-server": collaboration,
-        univer,
-      },
+      cohorts: { univer },
     });
   });
 
@@ -53,6 +47,19 @@ describe("release SDK graph", () => {
             dependencies: {
               "@univerjs/core": univer,
               "@univerjs/docs": "1.0.0-insiders.other",
+            },
+          },
+        },
+      ]),
+    ).toThrow(/cohort mismatch/u);
+    expect(() =>
+      validateSdkDependencyGraph([
+        {
+          manifestPath: "apps/cli/package.json",
+          manifest: {
+            dependencies: {
+              "@univer-cli/headless-univer": "1.0.0-insiders.other",
+              "@univerjs/core": univer,
             },
           },
         },

@@ -169,16 +169,16 @@ pnpm unlink:cli
 
 ### SDK upgrades
 
-The main Univer SDK, Univer CLI SDK, and Collaboration Server SDK are independently published exact
-version cohorts. Upgrade only the main `@univerjs/*` and `@univerjs-pro/*` cohort with:
+The Univer SDK, Univer CLI SDK, and Collaboration Server SDK use one exact version baseline. Upgrade
+the complete SDK dependency graph with:
 
 ```bash
 pnpm update:sdk --sdk_version <exact-sdk-version>
 ```
 
-The updater preserves `@univer-cli/*` and the Collaboration Server packages at their own internally
-aligned versions. Commit every affected manifest together with `pnpm-lock.yaml`; partial manual
-updates within any cohort are not allowed.
+The updater preserves only independently versioned packages such as native bindings and icons.
+Commit every affected manifest together with `pnpm-lock.yaml`; partial manual SDK updates are not
+allowed.
 
 ## License
 
