@@ -28,7 +28,7 @@ describe("authoritative Browser View rendering composition", () => {
     expectInOrder(preset, [
       "registerBasePlugins(",
       "registerDocPlugins(univer);",
-      "registerSheetPlugins(univer);",
+      "registerSheetPlugins(univer, options.sheetTableUI);",
       "registerSlidePlugins(univer);",
       "registerBaseUnitPlugins(univer, collaborationOwnsAssetIo);",
       "registerBoardPlugins(univer);",
@@ -65,10 +65,17 @@ describe("authoritative Browser View rendering composition", () => {
     expect(occurrences(human, "assetIoOwner: ViewAssetIoOwner.Local")).toBe(1);
     expect(occurrences(human, "enableAuthServer: true")).toBe(1);
     expect(occurrences(human, 'loginUrlKey: "/login"')).toBe(1);
-    expect(occurrences(human, 'ribbonType: "grid"')).toBe(2);
+    expect(occurrences(human, 'ribbonType: "grid"')).toBe(1);
+    expect(occurrences(human, 'workbenchChrome: "hidden"')).toBe(1);
+    expect(human).toContain(
+      'workbenchChrome: opts.unitType === UNIT_TYPE_SHEET ? "visible" : "hidden"'
+    );
     expect(occurrences(human, "unitType: toUniverInstanceType(opts.unitType)")).toBe(2);
     expect(occurrences(human, "darkMode: opts.darkMode")).toBe(2);
-    expect(occurrences(human, "api.toggleDarkMode(isDarkMode)")).toBe(2);
+    expect(occurrences(human, "api.toggleDarkMode(isDarkMode)")).toBe(1);
+    expect(human).toContain(
+      "univer.__getInjector().get(ThemeService).setDarkMode(isDarkMode)"
+    );
   });
 
   it("owns the shared Browser View facade surface", async () => {
@@ -198,10 +205,10 @@ describe("authoritative Browser View rendering composition", () => {
       "univer.registerPlugin(UniverSlidesHistoryUIPlugin, historyConfig)",
       "univer.registerPlugin(UniverBasesHistoryUIPlugin, historyConfig)",
       "univer.registerPlugin(UniverBoardsHistoryUIPlugin, historyConfig)",
-      "univer.registerPlugin(UniverSheetsHistoryUIPlugin, {"
+      "univer.registerPlugin(UniverSheetsHistoryUIPlugin, historyConfig)"
     ]);
     expect(human).toContain("historyServerUrl: urls.historyListServerUrl");
-    expect(human).toContain("historyListServerUrl: urls.historyListServerUrl");
+    expect(human).not.toContain("historyListServerUrl: urls.historyListServerUrl");
 
     for (const packageName of [
       "bases-history-ui",
@@ -227,4 +234,5 @@ describe("authoritative Browser View rendering composition", () => {
     expect(styles).toContain("html.gateway-dark {");
     expect(styles).toContain("--color-background: #0a0a0a;");
   });
+
 });

@@ -1,9 +1,49 @@
 import { messagesFromVocabulary, type MessageVocabulary } from "./from-vocabulary";
 
 const vocabulary = {
+  showFormulas: "Tampilkan rumus",
   title: "Penampil kolaborasi",
   file: "file",
   modification: "perubahan",
+  compare: "Bandingkan",
+  workbook: "Buku kerja",
+  worksheet: "Lembar kerja",
+  content: "Konten",
+  formatting: "Pemformatan",
+  search: "Cari",
+  row: "Baris",
+  styles: "Gaya",
+  sheetCategories: {
+    chart: "Bagan",
+    cell: "Sel",
+    conditionFormat: "Format bersyarat",
+    dataValidation: "Validasi data",
+    move: "Pemindahan",
+    pivot: "Tabel pivot",
+    rowColumn: "Baris dan kolom",
+    shape: "Bentuk",
+    sparkline: "Grafik mini",
+    table: "Tabel",
+    formula: "Rumus",
+    value: "Nilai",
+    start: "Mulai",
+    count: "Jumlah",
+    position: "Posisi",
+    name: "Nama",
+    background: "Latar belakang",
+    bold: "Tebal",
+    textColor: "Warna teks",
+    fontSize: "Ukuran font",
+    italic: "Miring",
+    numberFormat: "Format angka",
+    column: "Kolom",
+    inserted: "Disisipkan",
+    deleted: "Dihapus",
+    moved: "Dipindahkan",
+    changed: "Diubah",
+    sheet: "Lembar",
+    renamed: "Diubah namanya"
+  },
   currentVersion: "versi saat ini",
   aiAssistant: "asisten AI",
   no: "tidak ada",
@@ -58,4 +98,4 @@ const vocabulary = {
   empty: "Tidak ada file terbuka"
 } satisfies MessageVocabulary;
 
-export const ID_ID_MESSAGES = messagesFromVocabulary(vocabulary);
+export const ID_ID_MESSAGES = messagesFromVocabulary(vocabulary, "id-ID");

@@ -83,6 +83,30 @@ Every content type supports isolated draft editing, review, revision, merge, and
 6. It marks the Worktree `ready` and returns a local Viewer URL.
 7. The user reviews the result and explicitly chooses merge, reopen, or discard.
 
+Inside a Worktree, the Viewer offers read-only **View** and **Compare** modes for Sheet, Doc, Slide,
+Base, and Board Units. Diff compares the current Worktree with a pinned Trunk state by default; the
+left side can instead be another active Worktree. Both sides are materialized through their pinned
+heads before comparison, and a stale comparison is refreshed explicitly.
+
+Sheet Compare offers independent **Content / Formatting** filters and a **Show formulas** switch
+for both grids. Content uses plain display copies without original cell, rich-text, table-theme or
+conditional formatting, retaining diff colors and row/column geometry; Formatting keeps the original
+styles. Formula display resolves shared formulas without changing stored values or results;
+worksheet/workbook scope is selected in the change-tree header.
+
+Univer Pro History owns semantic diff computation. The application only maps its returned changes,
+inline segments, and native alignment to localized navigation, read-only coloring, and linked viewports.
+
+The pinned result is also available through the Server API as a versioned, UI-independent Agent
+context. CLI clients and agents can page or filter normalized insert/delete/update items by entity
+type, stable parent ID, or search text;
+each item carries stable paths and side-specific navigation targets for Sheet, Doc, Slide, Base, and
+Board. Normalized leaf changes expose semantic property paths, typed before/after values, and bounded
+inline text/formula hunks. Normalized paths retain an exact `sourcePath` when needed. Doc alignment
+has independent context pagination; Sheet row/column alignment uses compact native index runs.
+Callers can select `summary`, `changes`, or `full` detail without changing
+item identity. See the [Agent diff contract and executable example](packages/collab-gateway-contract/README.md#agent-diff-contract).
+
 The operational Skills ship with Univer CLI so their commands and Facade guidance match the installed application version.
 
 ## CLI capabilities
@@ -145,13 +169,16 @@ pnpm unlink:cli
 
 ### SDK upgrades
 
-Every Univer SDK dependency (`@univer-cli/*`, `@univerjs/*`, `@univerjs-pro/*`) moves as one exact version cohort, while `@univerjs/icons`, `@univerjs-pro/cli-assets`, `@univerjs-pro/engine-formula-rust-binding`, and `@univerjs-pro/exchange-node-binding` keep their own release chains. Upgrade the cohort with:
+The Univer SDK, Univer CLI SDK, and Collaboration Server SDK use one exact version baseline. Upgrade
+the complete SDK dependency graph with:
 
 ```bash
 pnpm update:sdk --sdk_version <exact-sdk-version>
 ```
 
-Commit all affected manifests together with `pnpm-lock.yaml`; updating only part of the cohort by hand is not allowed.
+The updater preserves only independently versioned packages such as native bindings and icons.
+Commit every affected manifest together with `pnpm-lock.yaml`; partial manual SDK updates are not
+allowed.
 
 ## License
 

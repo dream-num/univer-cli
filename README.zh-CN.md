@@ -83,6 +83,24 @@ https://discord.gg/nThHPupraR
 6. Agent 将 Worktree 标记为 `ready`，并返回本地 Viewer URL。
 7. 用户审阅结果，并明确选择合并、重新打开或放弃。
 
+进入 Worktree 后，Viewer 为 Sheet、Doc、Slide、Base 和 Board Unit 提供只读的 **查看** 与
+**对比** 模式。默认对比当前 Worktree 与固定的 Trunk 状态；左侧也可以改选另一个 active Worktree。
+对比前，两侧都会物化到各自固定的 head；对比过期后由用户显式刷新。
+
+Sheet 对比提供独立的**内容／格式**筛选和作用于两侧网格的**显示公式**开关。
+内容模式使用去掉单元格、富文本、表格主题和条件格式的展示副本，保留差异着色及行列尺寸；格式模式保留原始样式。
+公式显示支持解析共享公式，不修改存储值或计算结果；工作表／工作簿范围在变更树的 header 中切换。
+
+语义差异由 Univer Pro History 计算。应用只把返回的变更、内联片段和原生对齐信息映射为本地化导航、
+只读着色和视口联动。
+
+同一份固定结果也会通过 Server API 以带版本、且不依赖 UI 的 Agent context 提供。CLI client 与 Agent
+可以按 entity type、稳定 parent ID 或搜索文本分页和筛选标准化的新增/删除/修改项；每一项都带有稳定 path 与左右侧导航目标，
+覆盖 Sheet、Doc、Slide、Base 和 Board。标准化 leaf change 还会提供语义属性 path、带类型的前后值，以及
+有长度上限的文字/公式内联片段。语义 path 必要时保留精确的 `sourcePath`；Doc 对齐数据独立分页，
+Sheet 行列对齐采用紧凑的原生索引区间。调用方可选择 `summary`、`changes` 或 `full` 详情级别，且不会改变 item
+identity。详见 [Agent diff contract 与可执行案例](packages/collab-gateway-contract/README.md#agent-diff-contract)。
+
 Operational Skills 随 Univer CLI 一同提供，确保其中的 command 和 Facade guidance 与已安装 application 版本一致。
 
 ## CLI 能力
@@ -145,13 +163,15 @@ pnpm unlink:cli
 
 ### SDK 升级
 
-所有 Univer SDK 依赖（`@univer-cli/*`、`@univerjs/*`、`@univerjs-pro/*`）作为一个精确版本 cohort 统一升级；`@univerjs/icons`、`@univerjs-pro/cli-assets`、`@univerjs-pro/engine-formula-rust-binding` 与 `@univerjs-pro/exchange-node-binding` 保持独立发布链。升级运行：
+Univer SDK、Univer CLI SDK 与 Collaboration Server SDK 使用同一个精确版本基线。
+使用以下命令升级完整 SDK dependency graph：
 
 ```bash
 pnpm update:sdk --sdk_version <exact-sdk-version>
 ```
 
-必须同时提交所有受影响的 manifest 与 `pnpm-lock.yaml`，不得手工只更新其中一部分。
+升级器只保留 native binding、icon 等独立发布 package 的版本。必须同时提交所有受影响的 manifest
+与 `pnpm-lock.yaml`，不得手工只更新部分 SDK dependency。
 
 ## 许可证
 

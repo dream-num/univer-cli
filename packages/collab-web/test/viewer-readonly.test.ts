@@ -19,6 +19,7 @@ import {
 } from "@univer/collab-gateway-contract";
 import {
   blockLocalEditingCommands,
+  enforceUnitViewerReadOnlyPermission,
   enforceSheetViewerReadOnlyPermissions,
   resolveViewerReadOnlyEnforcement
 } from "../src/core/viewer-readonly";
@@ -68,6 +69,27 @@ describe("viewer read-only command policy", () => {
     ];
     expect(added).toEqual(expected);
     expect(updated).toEqual(expected.map((id) => [id, false]));
+  });
+
+  it("sets each non-Sheet product's public unit edit permission to false", () => {
+    for (const unitType of [UNIT_TYPE_DOC, UNIT_TYPE_SLIDE, UNIT_TYPE_BASE, UNIT_TYPE_BOARD]) {
+      const added: string[] = [];
+      const updated: Array<[string, boolean]> = [];
+      const permissionService = {
+        getPermissionPoint: () => undefined,
+        addPermissionPoint: (point: { id: string }) => {
+          added.push(point.id);
+        },
+        updatePermissionPoint: (id: string, value: boolean) => {
+          updated.push([id, value]);
+        }
+      } as unknown as IPermissionService;
+
+      enforceUnitViewerReadOnlyPermission(permissionService, unitType, "unit-1");
+
+      expect(added).toHaveLength(1);
+      expect(updated).toEqual([[added[0]!, false]]);
+    }
   });
 
   it("blocks mutations that enter collaboration submit", () => {

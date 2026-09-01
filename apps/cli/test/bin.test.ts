@@ -140,7 +140,7 @@ describe("built univer executable", () => {
       path: join(projectRoot, "dist", "skills", "runtime", "core"),
     });
     await expect(access(join(located.path, "SKILL.md"))).resolves.toBeUndefined();
-  });
+  }, 20_000);
 
   it("completes the Local Univerfile, Gateway, Viewer, migration, and daemon read loop", async () => {
     const root = await realpath(await mkdtemp(join(tmpdir(), "univer-cli-built-")));

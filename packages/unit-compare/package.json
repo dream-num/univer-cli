@@ -1,0 +1,22 @@
+{
+  "name": "@univer/unit-compare",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Private Compare presentation models used by the Univer CLI Web application.",
+  "type": "module",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.test.json --noEmit --pretty false"
+  },
+  "dependencies": {
+    "@univer/collab-gateway-contract": "workspace:*"
+  }
+}

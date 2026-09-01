@@ -2,7 +2,12 @@ import { spawnSync } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { DEPENDENCY_FIELDS, INDEPENDENT_PACKAGES, SDK_PREFIXES } from "./release/sdk-graph.mjs";
+import {
+  DEPENDENCY_FIELDS,
+  SDK_PREFIXES,
+  sdkCohort,
+  validateSdkDependencyGraph,
+} from "./release/sdk-graph.mjs";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const LOCKFILE_PATH = join(REPO_ROOT, "pnpm-lock.yaml");
@@ -36,10 +41,9 @@ export function alignManifestSdkDependencies(manifest, version, workspaceNames =
         }
         continue;
       }
-      if (!isSdkPackage(name) || INDEPENDENT_PACKAGES.has(name)) {
-        continue;
-      }
+      if (!SDK_PREFIXES.some((prefix) => name.startsWith(prefix))) continue;
       assertExactDependency(manifest.name, field, name, specifier);
+      if (sdkCohort(name) === undefined) continue;
       if (specifier !== version) {
         manifest[field][name] = version;
         changed += 1;
@@ -73,7 +77,6 @@ export function resolveWorkspaceSdkBaseline(packages) {
 
 export function validateWorkspaceSdkDependencies(packages, baselineVersion) {
   const workspaceNames = new Set(packages.map(({ manifest }) => manifest.name));
-  let declarations = 0;
   for (const { manifest } of packages) {
     for (const field of DEPENDENCY_FIELDS) {
       for (const [name, specifier] of Object.entries(manifest[field] ?? {})) {
@@ -83,23 +86,21 @@ export function validateWorkspaceSdkDependencies(packages, baselineVersion) {
           }
           continue;
         }
-        if (!isSdkPackage(name) || INDEPENDENT_PACKAGES.has(name)) {
-          continue;
-        }
-        assertExactDependency(manifest.name, field, name, specifier);
-        if (specifier !== baselineVersion) {
-          throw new Error(
-            `${manifest.name} ${field}.${name} must equal SDK baseline ${baselineVersion}, got ${specifier}.`,
-          );
-        }
-        declarations += 1;
       }
     }
   }
-  if (declarations === 0) {
-    throw new Error("Workspace does not declare any Univer SDK dependencies.");
+  const graph = validateSdkDependencyGraph(
+    packages.map(({ manifest, packagePath }) => ({
+      manifest,
+      manifestPath: packagePath ?? manifest.name,
+    })),
+  );
+  if (graph.sdkVersion !== baselineVersion) {
+    throw new Error(
+      `Workspace Univer SDK baseline must equal ${baselineVersion}, got ${graph.sdkVersion}.`,
+    );
   }
-  return declarations;
+  return graph.dependencyCount;
 }
 
 export async function discoverWorkspacePackages(repoRoot = REPO_ROOT) {
@@ -142,10 +143,6 @@ export async function main(argv) {
   process.stdout.write(
     `Aligned ${changed} SDK dependency declarations across ${packages.length} workspace packages to ${version}.\n`,
   );
-}
-
-function isSdkPackage(name) {
-  return SDK_PREFIXES.some((prefix) => name.startsWith(prefix));
 }
 
 function assertExactDependency(packageName, field, name, specifier) {

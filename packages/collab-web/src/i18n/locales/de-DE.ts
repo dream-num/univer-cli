@@ -1,9 +1,49 @@
 import { messagesFromVocabulary, type MessageVocabulary } from "./from-vocabulary";
 
 const vocabulary = {
+  showFormulas: "Formeln anzeigen",
   title: "Kollaborative Ansicht",
   file: "Datei",
   modification: "Änderung",
+  compare: "Vergleichen",
+  workbook: "Arbeitsmappe",
+  worksheet: "Arbeitsblatt",
+  content: "Inhalt",
+  formatting: "Formatierung",
+  search: "Suchen",
+  row: "Zeile",
+  styles: "Stile",
+  sheetCategories: {
+    chart: "Diagramme",
+    cell: "Zellen",
+    conditionFormat: "Bedingte Formatierungen",
+    dataValidation: "Datenüberprüfung",
+    move: "Verschiebungen",
+    pivot: "Pivot-Tabellen",
+    rowColumn: "Zeilen und Spalten",
+    shape: "Formen",
+    sparkline: "Sparklines",
+    table: "Tabellen",
+    formula: "Formel",
+    value: "Wert",
+    start: "Start",
+    count: "Anzahl",
+    position: "Position",
+    name: "Name",
+    background: "Hintergrund",
+    bold: "Fett",
+    textColor: "Textfarbe",
+    fontSize: "Schriftgröße",
+    italic: "Kursiv",
+    numberFormat: "Zahlenformat",
+    column: "Spalten",
+    inserted: "Eingefügt",
+    deleted: "Gelöscht",
+    moved: "Verschoben",
+    changed: "Geändert",
+    sheet: "Blatt",
+    renamed: "Umbenannt"
+  },
   currentVersion: "aktuelle Version",
   aiAssistant: "KI-Assistent",
   no: "keine",
@@ -58,4 +98,4 @@ const vocabulary = {
   empty: "Keine Datei geöffnet"
 } satisfies MessageVocabulary;
 
-export const DE_DE_MESSAGES = messagesFromVocabulary(vocabulary);
+export const DE_DE_MESSAGES = messagesFromVocabulary(vocabulary, "de-DE");

@@ -1,9 +1,49 @@
 import { messagesFromVocabulary, type MessageVocabulary } from "./from-vocabulary";
 
 const vocabulary = {
+  showFormulas: "数式を表示",
   title: "共同編集ビューアー",
   file: "ファイル",
   modification: "変更",
+  compare: "比較",
+  workbook: "ブック",
+  worksheet: "ワークシート",
+  content: "内容",
+  formatting: "書式",
+  search: "検索",
+  row: "行",
+  styles: "スタイル",
+  sheetCategories: {
+    chart: "グラフ",
+    cell: "セル",
+    conditionFormat: "条件付き書式",
+    dataValidation: "データの入力規則",
+    move: "移動",
+    pivot: "ピボットテーブル",
+    rowColumn: "行と列",
+    shape: "図形",
+    sparkline: "スパークライン",
+    table: "テーブル",
+    formula: "数式",
+    value: "値",
+    start: "開始",
+    count: "件数",
+    position: "位置",
+    name: "名前",
+    background: "背景",
+    bold: "太字",
+    textColor: "文字色",
+    fontSize: "フォントサイズ",
+    italic: "斜体",
+    numberFormat: "表示形式",
+    column: "列",
+    inserted: "挿入",
+    deleted: "削除",
+    moved: "移動",
+    changed: "変更",
+    sheet: "シート",
+    renamed: "名前を変更"
+  },
   currentVersion: "現在のバージョン",
   aiAssistant: "AI アシスタント",
   no: "なし",
@@ -58,4 +98,4 @@ const vocabulary = {
   empty: "ファイルが開かれていません"
 } satisfies MessageVocabulary;
 
-export const JA_JP_MESSAGES = messagesFromVocabulary(vocabulary);
+export const JA_JP_MESSAGES = messagesFromVocabulary(vocabulary, "ja-JP");

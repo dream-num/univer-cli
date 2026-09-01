@@ -1,9 +1,49 @@
 import { messagesFromVocabulary, type MessageVocabulary } from "./from-vocabulary";
 
 const vocabulary = {
+  showFormulas: "Pokaż formuły",
   title: "Przeglądarka współpracy",
   file: "plik",
   modification: "zmiana",
+  compare: "Porównaj",
+  workbook: "Skoroszyt",
+  worksheet: "Arkusz",
+  content: "Zawartość",
+  formatting: "Formatowanie",
+  search: "Szukaj",
+  row: "Wiersz",
+  styles: "Style",
+  sheetCategories: {
+    chart: "Wykresy",
+    cell: "Komórki",
+    conditionFormat: "Formatowanie warunkowe",
+    dataValidation: "Sprawdzanie poprawności danych",
+    move: "Przeniesienia",
+    pivot: "Tabele przestawne",
+    rowColumn: "Wiersze i kolumny",
+    shape: "Kształty",
+    sparkline: "Wykresy przebiegu w czasie",
+    table: "Tabele",
+    formula: "Formuła",
+    value: "Wartość",
+    start: "Początek",
+    count: "Liczba",
+    position: "Pozycja",
+    name: "Nazwa",
+    background: "Tło",
+    bold: "Pogrubienie",
+    textColor: "Kolor tekstu",
+    fontSize: "Rozmiar czcionki",
+    italic: "Kursywa",
+    numberFormat: "Format liczbowy",
+    column: "Kolumny",
+    inserted: "Wstawiono",
+    deleted: "Usunięto",
+    moved: "Przeniesiono",
+    changed: "Zmieniono",
+    sheet: "Arkusz",
+    renamed: "Zmieniono nazwę"
+  },
   currentVersion: "bieżąca wersja",
   aiAssistant: "asystent AI",
   no: "brak",
@@ -58,4 +98,4 @@ const vocabulary = {
   empty: "Nie otwarto pliku"
 } satisfies MessageVocabulary;
 
-export const PL_PL_MESSAGES = messagesFromVocabulary(vocabulary);
+export const PL_PL_MESSAGES = messagesFromVocabulary(vocabulary, "pl-PL");

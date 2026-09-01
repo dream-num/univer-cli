@@ -49,6 +49,24 @@ describe("collab-web worktree actions", () => {
     expect(discard).toHaveBeenCalledOnce();
   });
 
+  it("gives view and compare a full-width narrow row and a compact wide-screen slot", () => {
+    const { app } = createApp("draft");
+    render(app);
+
+    const switcher = document.querySelector('[data-testid="view-diff-center"]');
+    const compareButton = [...(switcher?.querySelectorAll("button") ?? [])].find(
+      (button) => button.textContent === "Compare"
+    );
+    expect(switcher).not.toBeNull();
+    expect(switcher?.classList.contains("w-full")).toBe(true);
+    expect(switcher?.classList.contains("@min-[1100px]/workbench:w-auto")).toBe(true);
+    expect(switcher?.firstElementChild?.classList.contains("h-12")).toBe(true);
+    expect(compareButton?.classList.contains("h-11")).toBe(true);
+    expect(compareButton?.classList.contains("@min-[1100px]/workbench:h-7")).toBe(true);
+    expect(compareButton?.classList.contains("px-5")).toBe(true);
+    expect(document.querySelector(".topbar select")).toBeNull();
+  });
+
   function render(app: App): void {
     const host = document.getElementById("root");
     if (host === null) {

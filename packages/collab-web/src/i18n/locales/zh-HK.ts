@@ -1,9 +1,49 @@
 import { messagesFromVocabulary, type MessageVocabulary } from "./from-vocabulary";
 
 const vocabulary = {
+  showFormulas: "顯示公式",
   title: "協作檢視器",
   file: "檔案",
   modification: "修改",
+  compare: "比較",
+  workbook: "活頁簿",
+  worksheet: "工作表",
+  content: "內容",
+  formatting: "格式",
+  search: "搜尋",
+  row: "列",
+  styles: "樣式",
+  sheetCategories: {
+    chart: "圖表",
+    cell: "儲存格",
+    conditionFormat: "條件式格式",
+    dataValidation: "資料驗證",
+    move: "移動",
+    pivot: "樞紐分析表",
+    rowColumn: "列與欄",
+    shape: "圖形",
+    sparkline: "走勢圖",
+    table: "表格",
+    formula: "公式",
+    value: "值",
+    start: "開始",
+    count: "數量",
+    position: "位置",
+    name: "名稱",
+    background: "背景",
+    bold: "粗體",
+    textColor: "文字顏色",
+    fontSize: "字型大小",
+    italic: "斜體",
+    numberFormat: "數字格式",
+    column: "欄",
+    inserted: "已新增",
+    deleted: "已刪除",
+    moved: "已移動",
+    changed: "已修改",
+    sheet: "工作表",
+    renamed: "已重新命名"
+  },
   currentVersion: "目前版本",
   aiAssistant: "AI 助手",
   no: "沒有",
@@ -57,4 +97,4 @@ const vocabulary = {
   empty: "未有開啟的檔案"
 } satisfies MessageVocabulary;
 
-export const ZH_HK_MESSAGES = messagesFromVocabulary(vocabulary);
+export const ZH_HK_MESSAGES = messagesFromVocabulary(vocabulary, "zh-HK");

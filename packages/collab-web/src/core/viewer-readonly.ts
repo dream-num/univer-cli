@@ -9,7 +9,19 @@ import {
   WorkbookEditablePermission,
   WorkbookPrintPermission
 } from "@univerjs/sheets";
-import { UNIT_TYPE_SHEET, type UnitType } from "@univer/collab-gateway-contract";
+import { setDocumentPermissionValue } from "@univerjs/docs";
+import { setSlidePermissionValue } from "@univerjs-pro/slides";
+import { setBasePermissionValue } from "@univerjs-pro/bases";
+import { setBoardPermissionValue } from "@univerjs-pro/boards";
+import { UnitAction } from "@univerjs/protocol";
+import {
+  UNIT_TYPE_BASE,
+  UNIT_TYPE_BOARD,
+  UNIT_TYPE_DOC,
+  UNIT_TYPE_SHEET,
+  UNIT_TYPE_SLIDE,
+  type UnitType
+} from "@univer/collab-gateway-contract";
 
 type ViewerReadOnlyEnforcement = "none" | "sheet-permission" | "mutation-gate";
 
@@ -42,6 +54,25 @@ export function enforceSheetViewerReadOnlyPermissions(
       permissionService.addPermissionPoint(point);
     }
     permissionService.updatePermissionPoint(point.id, false);
+  }
+}
+
+/** Apply the product's public unit-level Edit permission after preview mutations are materialized. */
+export function enforceUnitViewerReadOnlyPermission(
+  permissionService: IPermissionService,
+  unitType: UnitType,
+  unitId: string
+): void {
+  if (unitType === UNIT_TYPE_SHEET) {
+    enforceSheetViewerReadOnlyPermissions(permissionService, unitId);
+  } else if (unitType === UNIT_TYPE_DOC) {
+    setDocumentPermissionValue(permissionService, unitId, unitId, UnitAction.Edit, false);
+  } else if (unitType === UNIT_TYPE_SLIDE) {
+    setSlidePermissionValue(permissionService, unitId, unitId, UnitAction.Edit, false);
+  } else if (unitType === UNIT_TYPE_BASE) {
+    setBasePermissionValue(permissionService, unitId, unitId, UnitAction.Edit, false);
+  } else if (unitType === UNIT_TYPE_BOARD) {
+    setBoardPermissionValue(permissionService, unitId, unitId, UnitAction.Edit, false);
   }
 }
 

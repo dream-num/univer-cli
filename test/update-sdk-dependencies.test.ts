@@ -17,7 +17,7 @@ describe("update:sdk dependency alignment", () => {
     expect(() => parseSdkUpdateVersion(["^1.0.0"])).toThrow(/--sdk_version/u);
   });
 
-  it("aligns SDK dependencies and preserves independent and workspace versions", () => {
+  it("aligns every Univer SDK dependency and preserves independent packages", () => {
     const manifest = {
       name: "consumer",
       dependencies: {
@@ -79,7 +79,7 @@ describe("update:sdk dependency alignment", () => {
     );
   });
 
-  it("every workspace consumer uses one SDK baseline", async () => {
+  it("every workspace consumer uses one exact SDK baseline", async () => {
     const packages = await discoverWorkspacePackages();
     const baseline = resolveWorkspaceSdkBaseline(packages);
     expect(validateWorkspaceSdkDependencies(packages, baseline)).toBeGreaterThan(0);

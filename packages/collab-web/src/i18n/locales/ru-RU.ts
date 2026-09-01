@@ -1,9 +1,49 @@
 import { messagesFromVocabulary, type MessageVocabulary } from "./from-vocabulary";
 
 const vocabulary = {
+  showFormulas: "Показать формулы",
   title: "Совместный просмотр",
   file: "файл",
   modification: "изменение",
+  compare: "Сравнить",
+  workbook: "Книга",
+  worksheet: "Лист",
+  content: "Содержимое",
+  formatting: "Форматирование",
+  search: "Поиск",
+  row: "Строка",
+  styles: "Стили",
+  sheetCategories: {
+    chart: "Диаграммы",
+    cell: "Ячейки",
+    conditionFormat: "Условное форматирование",
+    dataValidation: "Проверка данных",
+    move: "Перемещения",
+    pivot: "Сводные таблицы",
+    rowColumn: "Строки и столбцы",
+    shape: "Фигуры",
+    sparkline: "Спарклайны",
+    table: "Таблицы",
+    formula: "Формула",
+    value: "Значение",
+    start: "Начало",
+    count: "Количество",
+    position: "Позиция",
+    name: "Имя",
+    background: "Фон",
+    bold: "Полужирный",
+    textColor: "Цвет текста",
+    fontSize: "Размер шрифта",
+    italic: "Курсив",
+    numberFormat: "Числовой формат",
+    column: "Столбцы",
+    inserted: "Добавлено",
+    deleted: "Удалено",
+    moved: "Перемещено",
+    changed: "Изменено",
+    sheet: "Лист",
+    renamed: "Переименовано"
+  },
   currentVersion: "текущая версия",
   aiAssistant: "ИИ-помощник",
   no: "нет",
@@ -58,4 +98,4 @@ const vocabulary = {
   empty: "Файл не открыт"
 } satisfies MessageVocabulary;
 
-export const RU_RU_MESSAGES = messagesFromVocabulary(vocabulary);
+export const RU_RU_MESSAGES = messagesFromVocabulary(vocabulary, "ru-RU");

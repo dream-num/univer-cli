@@ -15,7 +15,6 @@ export const INDEPENDENT_PACKAGES = new Set([
   "@univerjs-pro/engine-formula-rust-binding",
   "@univerjs-pro/exchange-node-binding",
 ]);
-
 export async function validateWorkspaceSdkDependencies(repoRoot) {
   const entries = [];
   for (const parent of ["apps", "packages"]) {
@@ -34,7 +33,7 @@ export async function validateWorkspaceSdkDependencies(repoRoot) {
 
 export function validateSdkDependencyGraph(entries) {
   const versions = new Map();
-  let sdkVersion;
+  const cohortVersions = new Map();
   for (const entry of entries) {
     for (const field of DEPENDENCY_FIELDS) {
       for (const [name, version] of Object.entries(entry.manifest[field] ?? {})) {
@@ -47,22 +46,36 @@ export function validateSdkDependencyGraph(entries) {
           );
         }
         versions.set(name, version);
-        if (INDEPENDENT_PACKAGES.has(name)) continue;
-        if (sdkVersion === undefined) sdkVersion = version;
-        else if (sdkVersion !== version) {
-          throw new Error(`SDK cohort mismatch: ${name} uses ${version}, expected ${sdkVersion}.`);
+        const cohort = sdkCohort(name);
+        if (cohort === undefined) continue;
+        const cohortVersion = cohortVersions.get(cohort);
+        if (cohortVersion === undefined) cohortVersions.set(cohort, version);
+        else if (cohortVersion !== version) {
+          throw new Error(
+            `SDK ${cohort} cohort mismatch: ${name} uses ${version}, expected ${cohortVersion}.`,
+          );
         }
       }
     }
   }
+  const sdkVersion = cohortVersions.get("univer");
   if (sdkVersion === undefined) {
     throw new Error("Workspace does not declare a main Univer SDK cohort.");
   }
   return {
     dependencyCount: versions.size,
     sdkVersion,
+    cohorts: Object.fromEntries(
+      [...cohortVersions].sort(([left], [right]) => left.localeCompare(right)),
+    ),
     versions: Object.fromEntries(
       [...versions].sort(([left], [right]) => left.localeCompare(right)),
     ),
   };
+}
+
+export function sdkCohort(name) {
+  if (INDEPENDENT_PACKAGES.has(name)) return undefined;
+  if (SDK_PREFIXES.some((prefix) => name.startsWith(prefix))) return "univer";
+  return undefined;
 }

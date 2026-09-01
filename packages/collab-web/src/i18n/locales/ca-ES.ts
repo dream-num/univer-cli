@@ -1,9 +1,49 @@
 import { messagesFromVocabulary, type MessageVocabulary } from "./from-vocabulary";
 
 const vocabulary = {
+  showFormulas: "Mostra les fórmules",
   title: "Visor col·laboratiu",
   file: "fitxer",
   modification: "modificació",
+  compare: "Comparar",
+  workbook: "Llibre de treball",
+  worksheet: "Full de càlcul",
+  content: "Contingut",
+  formatting: "Format",
+  search: "Cerca",
+  row: "Fila",
+  styles: "Estils",
+  sheetCategories: {
+    chart: "Gràfics",
+    cell: "Cel·les",
+    conditionFormat: "Formats condicionals",
+    dataValidation: "Validació de dades",
+    move: "Moviments",
+    pivot: "Taules dinàmiques",
+    rowColumn: "Files i columnes",
+    shape: "Formes",
+    sparkline: "Minigràfics",
+    table: "Taules",
+    formula: "Fórmula",
+    value: "Valor",
+    start: "Inici",
+    count: "Recompte",
+    position: "Posició",
+    name: "Nom",
+    background: "Fons",
+    bold: "Negreta",
+    textColor: "Color del text",
+    fontSize: "Mida de lletra",
+    italic: "Cursiva",
+    numberFormat: "Format numèric",
+    column: "Columnes",
+    inserted: "Afegit",
+    deleted: "Eliminat",
+    moved: "Mogut",
+    changed: "Modificat",
+    sheet: "Full",
+    renamed: "Canviat de nom"
+  },
   currentVersion: "versió actual",
   aiAssistant: "assistent d’IA",
   no: "cap",
@@ -58,4 +98,4 @@ const vocabulary = {
   empty: "No hi ha cap fitxer obert"
 } satisfies MessageVocabulary;
 
-export const CA_ES_MESSAGES = messagesFromVocabulary(vocabulary);
+export const CA_ES_MESSAGES = messagesFromVocabulary(vocabulary, "ca-ES");

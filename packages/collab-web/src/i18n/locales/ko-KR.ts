@@ -1,9 +1,49 @@
 import { messagesFromVocabulary, type MessageVocabulary } from "./from-vocabulary";
 
 const vocabulary = {
+  showFormulas: "수식 표시",
   title: "협업 뷰어",
   file: "파일",
   modification: "변경 사항",
+  compare: "비교",
+  workbook: "통합 문서",
+  worksheet: "워크시트",
+  content: "내용",
+  formatting: "서식",
+  search: "검색",
+  row: "행",
+  styles: "스타일",
+  sheetCategories: {
+    chart: "차트",
+    cell: "셀",
+    conditionFormat: "조건부 서식",
+    dataValidation: "데이터 유효성 검사",
+    move: "이동",
+    pivot: "피벗 테이블",
+    rowColumn: "행과 열",
+    shape: "도형",
+    sparkline: "스파크라인",
+    table: "표",
+    formula: "수식",
+    value: "값",
+    start: "시작",
+    count: "개수",
+    position: "위치",
+    name: "이름",
+    background: "배경",
+    bold: "굵게",
+    textColor: "텍스트 색",
+    fontSize: "글꼴 크기",
+    italic: "기울임꼴",
+    numberFormat: "숫자 형식",
+    column: "열",
+    inserted: "삽입됨",
+    deleted: "삭제됨",
+    moved: "이동됨",
+    changed: "변경됨",
+    sheet: "시트",
+    renamed: "이름 변경됨"
+  },
   currentVersion: "현재 버전",
   aiAssistant: "AI 어시스턴트",
   no: "없음",
@@ -57,4 +97,4 @@ const vocabulary = {
   empty: "열린 파일 없음"
 } satisfies MessageVocabulary;
 
-export const KO_KR_MESSAGES = messagesFromVocabulary(vocabulary);
+export const KO_KR_MESSAGES = messagesFromVocabulary(vocabulary, "ko-KR");

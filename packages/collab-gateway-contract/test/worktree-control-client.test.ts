@@ -85,3 +85,66 @@ describe("WorktreeControlClient same-origin file key", () => {
     expect(calls[0]!.url).toBe(`${ORIGIN}/uf/${gatewayFileKey}/units`);
   });
 });
+
+describe("WorktreeControlClient pinned comparisons", () => {
+  it("creates a Trunk-to-Worktree comparison by default", async () => {
+    const { client, calls } = clientWith(() =>
+      jsonResponse({
+        error: { code: 1, message: "" },
+        comparisonId: "cmp-1",
+        createdAt: "2026-08-29T00:00:00.000Z",
+        left: { kind: "trunk", label: "Trunk", heads: {} },
+        right: { kind: "worktree", worktreeId: "wt-right", label: "Right", heads: {} },
+        units: [],
+      }),
+    );
+
+    await client.createUnitComparison("wt-right");
+
+    expect(calls[0]!.url).toBe(`${ORIGIN}/uf/${ENC}/worktrees/wt-right/comparisons`);
+    expect(calls[0]!.init?.method).toBe("POST");
+    expect(JSON.parse(String(calls[0]!.init?.body))).toEqual({});
+  });
+
+  it("addresses one pinned Unit comparison", async () => {
+    const { client, calls } = clientWith(() => jsonResponse({ error: { code: 1, message: "" } }));
+
+    await client.getUnitComparison("wt-right", "cmp-1", "unit/1");
+
+    expect(calls[0]!.url).toBe(
+      `${ORIGIN}/uf/${ENC}/worktrees/wt-right/comparisons/cmp-1/units/unit%2F1`,
+    );
+    expect(calls[0]!.init?.method).toBeUndefined();
+  });
+
+  it("requests a filtered and paged agent diff context", async () => {
+    const { client, calls } = clientWith(() => jsonResponse({ error: { code: 1, message: "" } }));
+
+    await client.getUnitComparisonContext("wt-right", "cmp-1", "unit/1", {
+      offset: 20,
+      limit: 10,
+      kinds: ["update"],
+      entityTypes: ["cell", "formula"],
+      parentStableId: "sheet-1",
+      search: "revenue",
+      detail: "changes",
+    });
+
+    expect(calls[0]!.url).toBe(
+      `${ORIGIN}/uf/${ENC}/worktrees/wt-right/comparisons/cmp-1/units/unit%2F1/diff?offset=20&limit=10&kind=update&entityType=cell%2Cformula&parentStableId=sheet-1&search=revenue&detail=changes`,
+    );
+    expect(calls[0]!.init?.method).toBeUndefined();
+  });
+
+  it("keeps includeValues as a backward-compatible query alias", async () => {
+    const { client, calls } = clientWith(() => jsonResponse({ error: { code: 1, message: "" } }));
+
+    await client.getUnitComparisonContext("wt-right", "cmp-1", "unit/1", {
+      includeValues: false,
+    });
+
+    expect(calls[0]!.url).toBe(
+      `${ORIGIN}/uf/${ENC}/worktrees/wt-right/comparisons/cmp-1/units/unit%2F1/diff?includeValues=false`,
+    );
+  });
+});

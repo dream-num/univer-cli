@@ -1,9 +1,49 @@
 import { messagesFromVocabulary, type MessageVocabulary } from "./from-vocabulary";
 
 const vocabulary = {
+  showFormulas: "Afficher les formules",
   title: "Visionneuse collaborative",
   file: "fichier",
   modification: "modification",
+  compare: "Comparer",
+  workbook: "Classeur",
+  worksheet: "Feuille",
+  content: "Contenu",
+  formatting: "Mise en forme",
+  search: "Rechercher",
+  row: "Ligne",
+  styles: "Styles",
+  sheetCategories: {
+    chart: "Graphiques",
+    cell: "Cellules",
+    conditionFormat: "Mises en forme conditionnelles",
+    dataValidation: "Validation des données",
+    move: "Déplacements",
+    pivot: "Tableaux croisés dynamiques",
+    rowColumn: "Lignes et colonnes",
+    shape: "Formes",
+    sparkline: "Graphiques sparkline",
+    table: "Tableaux",
+    formula: "Formule",
+    value: "Valeur",
+    start: "Début",
+    count: "Nombre",
+    position: "Position",
+    name: "Nom",
+    background: "Arrière-plan",
+    bold: "Gras",
+    textColor: "Couleur du texte",
+    fontSize: "Taille de police",
+    italic: "Italique",
+    numberFormat: "Format numérique",
+    column: "Colonnes",
+    inserted: "Inséré",
+    deleted: "Supprimé",
+    moved: "Déplacé",
+    changed: "Modifié",
+    sheet: "Feuille",
+    renamed: "Renommé"
+  },
   currentVersion: "version actuelle",
   aiAssistant: "assistant IA",
   no: "aucun",
@@ -58,4 +98,4 @@ const vocabulary = {
   empty: "Aucun fichier ouvert"
 } satisfies MessageVocabulary;
 
-export const FR_FR_MESSAGES = messagesFromVocabulary(vocabulary);
+export const FR_FR_MESSAGES = messagesFromVocabulary(vocabulary, "fr-FR");

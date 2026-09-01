@@ -96,7 +96,7 @@ import { UniverSheetsNumfmtUIPlugin } from "@univerjs/sheets-numfmt-ui";
 import { UniverSheetsSortPlugin } from "@univerjs/sheets-sort";
 import { UniverSheetsSortUIPlugin } from "@univerjs/sheets-sort-ui";
 import { UniverSheetsTablePlugin } from "@univerjs/sheets-table";
-import { UniverSheetsTableUIPlugin } from "@univerjs/sheets-table-ui";
+import { UniverSheetsTableUIPlugin, type IUniverSheetsTableUIConfig } from "@univerjs/sheets-table-ui";
 // import { UniverSheetsThreadCommentPlugin } from "@univerjs/sheets-thread-comment";
 // import { UniverSheetsThreadCommentUIPlugin } from "@univerjs/sheets-thread-comment-ui";
 import { UniverSheetsUIPlugin } from "@univerjs/sheets-ui";
@@ -192,7 +192,7 @@ function registerDocPlugins(univer: Univer): void {
  * sparkline, table, shape, hyperlink, note, crosshair. `sheets-formula-ui` owns the cell editor's
  * input layer; without it the editor can't take keyboard input (only toolbar style commands work).
  */
-function registerSheetPlugins(univer: Univer): void {
+function registerSheetPlugins(univer: Univer, tableUI?: Pick<IUniverSheetsTableUIConfig, "hideAnchor">): void {
   univer.registerPlugin(UniverSheetsNumfmtPlugin);
   univer.registerPlugin(UniverSheetsNumfmtUIPlugin);
   univer.registerPlugin(UniverSheetsPlugin);
@@ -223,7 +223,7 @@ function registerSheetPlugins(univer: Univer): void {
   univer.registerPlugin(UniverSheetSparklinePlugin);
   univer.registerPlugin(UniverSheetSparklineUIPlugin);
   univer.registerPlugin(UniverSheetsTablePlugin);
-  univer.registerPlugin(UniverSheetsTableUIPlugin);
+  univer.registerPlugin(UniverSheetsTableUIPlugin, tableUI);
   univer.registerPlugin(UniverSheetsShapePlugin);
   univer.registerPlugin(UniverSheetsShapeUIPlugin);
   univer.registerPlugin(UniverSheetsHyperLinkPlugin);
@@ -356,6 +356,8 @@ export interface ViewRenderingOptions {
   license: string;
   workbenchChrome: "hidden" | "visible";
   ribbonType?: RibbonType;
+  /** Hide native table editing anchors in comparison panes without removing table rendering. */
+  sheetTableUI?: Pick<IUniverSheetsTableUIConfig, "hideAnchor">;
   /** Browser Viewer Unit type. Omit only for the headless multi-Unit render page. */
   unitType?: UniverInstanceType;
   exchangeClientConfig?: ViewExchangeClientConfig;
@@ -381,7 +383,7 @@ export function registerViewRendering(univer: Univer, options: ViewRenderingOpti
     options.ribbonType
   );
   registerDocPlugins(univer);
-  registerSheetPlugins(univer);
+  registerSheetPlugins(univer, options.sheetTableUI);
   registerSlidePlugins(univer);
   registerBaseUnitPlugins(univer, collaborationOwnsAssetIo);
   registerBoardPlugins(univer);
