@@ -16,6 +16,7 @@ export function structuralDiffItemsFromContext(
       category: itemCategory(item),
       entityType: item.entityType,
       ...(item.parentStableId === undefined ? {} : { parentStableId: item.parentStableId }),
+      ...(item.scope === undefined ? {} : { scope: item.scope }),
       path: item.path,
       label: item.title,
       kind: item.kind,

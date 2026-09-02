@@ -78,6 +78,7 @@ function context(left: IWorkbookData, right: IWorkbookData): UnitComparisonConte
     page: { offset: 0, limit: 1000, matched: result.items.length, hasMore: false },
     coverage: { supportedEntityTypes: result.supportedEntityTypes },
     diagnostics: { readiness: "ready", unsupportedMutationIds: [], codes: [] },
+    scopes: result.scopes ?? [],
     productContext: {
       kind: "sheet",
       sheets: result.productContext.sheets.map((sheet) => ({
@@ -192,6 +193,122 @@ describe("SDK Sheet presentation projection", () => {
       base: expect.objectContaining({ sheets: { sheet: expect.objectContaining({ freeze: { startColumn: -1, startRow: -1, xSplit: 0, ySplit: 0 } }) } }),
       current: expect.objectContaining({ sheets: { sheet: expect.objectContaining({ freeze: { startColumn: -1, startRow: -1, xSplit: 0, ySplit: 0 } }) } }),
     });
+  });
+
+  it("navigates to Sheet resource ranges without painting every affected cell", () => {
+    const left = workbook(false);
+    const right = workbook(true);
+    const api = context(left, right);
+    const resourceItems: UnitComparisonContext["items"] = [
+      {
+        id: "table:table-1",
+        stableId: "table-1",
+        parentStableId: "sheet",
+        kind: "update",
+        entityType: "table",
+        path: ["sheets", "sheet", "tables", "table-1"],
+        title: "Revenue table",
+        moved: false,
+        changes: [{ path: ["name"], kind: "update", valueType: "text", before: "Old", after: "New" }],
+        details: [],
+        locations: {
+          left: {
+            path: ["sheets", "sheet", "tables", "table-1"],
+            stableId: "table-1",
+            parentStableId: "sheet",
+            target: {
+              kind: "sheet-range",
+              entityType: "table",
+              stableId: "table-1",
+              comparisonStableId: "table-1",
+              parentStableId: "sheet",
+              range: { startRow: 0, endRow: 7, startColumn: 0, endColumn: 5 },
+            },
+          },
+          right: {
+            path: ["sheets", "sheet", "tables", "table-1"],
+            stableId: "table-1",
+            parentStableId: "sheet",
+            target: {
+              kind: "sheet-range",
+              entityType: "table",
+              stableId: "table-1",
+              comparisonStableId: "table-1",
+              parentStableId: "sheet",
+              range: { startRow: 0, endRow: 8, startColumn: 0, endColumn: 6 },
+            },
+          },
+        },
+      },
+      {
+        id: "data-validation:validation-1",
+        stableId: "validation-1",
+        parentStableId: "sheet",
+        kind: "insert",
+        entityType: "data-validation",
+        path: ["sheets", "sheet", "dataValidations", "validation-1"],
+        title: "Status validation",
+        moved: false,
+        changes: [{ path: [], kind: "insert", valueType: "object", after: {} }],
+        details: [],
+        locations: {
+          left: null,
+          right: {
+            path: ["sheets", "sheet", "dataValidations", "validation-1"],
+            stableId: "validation-1",
+            parentStableId: "sheet",
+            target: {
+              kind: "sheet-range",
+              entityType: "data-validation",
+              stableId: "validation-1",
+              comparisonStableId: "validation-1",
+              parentStableId: "sheet",
+              ranges: [{ startRow: 1, endRow: 8, startColumn: 5, endColumn: 5 }],
+            },
+          },
+        },
+      },
+    ];
+    const model = workbookComparisonFromContext({
+      context: { ...api, items: resourceItems },
+      left,
+      right,
+      mode: "value",
+    });
+    const sheet = model.compareInfo.worksheets.sheet!;
+
+    expect(sheet.items.find((item) => item.id === "table:table-1")?.selection).toEqual({
+      base: { sheetId: "sheet", startRow: 0, endRow: 7, startColumn: 0, endColumn: 5 },
+      current: { sheetId: "sheet", startRow: 0, endRow: 8, startColumn: 0, endColumn: 6 },
+    });
+    expect(
+      sheet.items.find((item) => item.id === "data-validation:validation-1")?.selection?.current,
+    ).toEqual({ sheetId: "sheet", startRow: 1, endRow: 8, startColumn: 5, endColumn: 5 });
+    expect(sheet.presentation.baseRangeHighlights).toEqual([]);
+    expect(sheet.presentation.currentRangeHighlights).toEqual([]);
+  });
+
+  it("keeps deleted Sheet cells red on the base side", () => {
+    const left = workbook(false);
+    const right = workbook(true);
+    const api = context(left, right);
+    const cell = api.items.find((item) => item.entityType === "cell")!;
+    const deleted = {
+      ...cell,
+      id: "cell:deleted",
+      kind: "delete" as const,
+      locations: { left: cell.locations.left ?? cell.locations.right, right: null },
+    };
+    const model = workbookComparisonFromContext({
+      context: { ...api, items: [deleted] },
+      left,
+      right,
+      mode: "value",
+    });
+
+    expect(model.compareInfo.worksheets.sheet?.presentation.baseRangeHighlights).toContainEqual(
+      expect.objectContaining({ kind: "delete" }),
+    );
   });
 
   it.each(["value", "style"] as const)("disables canvas freeze in %s mode without mutating semantic snapshots", (mode) => {

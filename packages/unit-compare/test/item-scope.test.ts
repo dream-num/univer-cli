@@ -35,6 +35,20 @@ describe("Unit structural diff scopes", () => {
     expect(slidePageIdOfDiffItem(slideElement)).toBe("page");
     expect(baseTableIdOfDiffItem(baseCell)).toBe("table");
   });
+
+  it("prefers the SDK-owned scope over inferred parent metadata", () => {
+    const slideElement = {
+      ...diffItem("slide-element", "shape", "legacy-page"),
+      scope: { entityType: "slide", stableId: "sdk-page" },
+    };
+    const baseCell = {
+      ...diffItem("cell", "record:field", "legacy-table"),
+      scope: { entityType: "table", stableId: "sdk-table" },
+    };
+
+    expect(slidePageIdOfDiffItem(slideElement)).toBe("sdk-page");
+    expect(baseTableIdOfDiffItem(baseCell)).toBe("sdk-table");
+  });
 });
 
 function diffItem(

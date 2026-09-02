@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState, type ReactElement, type ReactNode } from 
 import type { IWorkbookData } from "@univerjs/core";
 import type { UnitComparisonContext } from "@univer/collab-gateway-contract";
 import { BookOpen, ChevronRight, FunctionSquare, Table2 } from "lucide-react";
-import { isWorkbookCompareDetailVisible, workbookComparisonFromContext } from "../core/workbook-comparison-context.js";
+import {
+  isWorkbookCompareDetailVisible,
+  isWorkbookCompareResourceCategory,
+  workbookComparisonFromContext,
+} from "../core/workbook-comparison-context.js";
 import {
   buildWorkbookCompareSidebarTree,
   collectWorkbookCompareSidebarItemIds,
@@ -30,6 +34,7 @@ import { t } from "../i18n/index.js";
 import { ComparisonPageTabs } from "./comparison-page-tabs.js";
 import { formatComparisonValue } from "./comparison-value.js";
 import { shouldClearDiffSidebarSelection } from "./diff-sidebar-selection.js";
+import { structuralDiffItemsFromContext } from "../core/structural-diff-from-context.js";
 import { WorkbookDiffFxStrip } from "./workbook-diff-fx-strip.js";
 import { useEnsureSelectedDiffVisible } from "./use-ensure-selected-diff-visible.js";
 import {
@@ -128,6 +133,15 @@ export function WorkbookDiffViewer(input: {
       sheetOptions: changedSheetOptions.length > 0 ? changedSheetOptions : diffModel.sheetOptions
     },
     activeSheetId
+  );
+  const floatingItems = useMemo(
+    () =>
+      structuralDiffItemsFromContext(input.compare.context).filter(
+        (item) =>
+          (item.entityType === "shape" || item.entityType === "chart") &&
+          item.parentStableId === selectedSheetId
+      ),
+    [input.compare.context, selectedSheetId]
   );
   const scopedItems = useMemo(
     () =>
@@ -375,6 +389,7 @@ export function WorkbookDiffViewer(input: {
           activeSheetId={selectedSheetId}
           controlledScroll={scrollSync?.sourceRole === "base" ? null : scrollSync}
           controlledSelection={selectionSync?.sourceRole === "base" ? null : selectionSync}
+          floatingItems={floatingItems}
           label={input.compare.leftLabel}
           sourceControl={input.leftSourceControl}
           gapConfig={
@@ -403,6 +418,7 @@ export function WorkbookDiffViewer(input: {
           activeSheetId={selectedSheetId}
           controlledScroll={scrollSync?.sourceRole === "current" ? null : scrollSync}
           controlledSelection={selectionSync?.sourceRole === "current" ? null : selectionSync}
+          floatingItems={floatingItems}
           label={input.compare.rightLabel}
           sourceControl={undefined}
           gapConfig={
@@ -438,6 +454,7 @@ function DiffPane(input: {
   readonly activeSheetId: string | null;
   readonly controlledScroll: ReadonlyWorkbookControlledScroll | null;
   readonly controlledSelection: ReadonlyWorkbookControlledSelection | null;
+  readonly floatingItems: ReturnType<typeof structuralDiffItemsFromContext>;
   readonly fx: WorkbookComparePaneFxState;
   readonly fxDiff: WorkbookCompareFxDiffPane;
   readonly gapConfig: WorkbookCompareSheetGapConfig | null;
@@ -490,13 +507,25 @@ function DiffPane(input: {
         ) : (
           <ReadonlyUniverWorkbookView
             activeSheetId={input.activeSheetId}
+            comparison={{
+              items: input.floatingItems,
+              side: input.pane === "base" ? "left" : "right",
+              ...(input.selectedItem === null
+                ? {}
+                : { selectedItemId: input.selectedItem.id })
+            }}
             controlledScroll={input.controlledScroll}
             controlledSelection={input.controlledSelection}
             gapConfig={input.gapConfig}
             highlights={input.highlights}
             onScrollChange={input.onPaneScrollChange}
             onSelectionChange={input.onPaneSelectionChange}
-            selectedKind={input.selectedItem?.kind ?? null}
+            selectedKind={
+              input.selectedItem === null ||
+              isWorkbookCompareResourceCategory(input.selectedItem.category)
+                ? null
+                : input.selectedItem.kind
+            }
             selectedRange={input.selectedRange ?? null}
             showFooter={false}
             showFormulaText={input.showFormulaText}

@@ -24,9 +24,18 @@ Pinned comparisons expose the same normalized Server API context to CLI, Agent, 
 
 ```ts
 const comparison = await control.createUnitComparison(worktreeId);
+const overview = await control.getUnitComparisonContext(
+  worktreeId,
+  comparison.comparisonId,
+  unitId,
+  {
+    detail: "summary",
+  },
+);
+const selectedScope = overview.context.scopes[0];
 const page = await control.getUnitComparisonContext(worktreeId, comparison.comparisonId, unitId, {
   entityTypes: ["cell"], // Formula changes are leaf changes of a cell, not a separate entity.
-  parentStableId: sheetId,
+  ...(selectedScope === undefined ? {} : { scope: selectedScope }),
   limit: 100,
   detail: "changes",
 });
@@ -52,6 +61,9 @@ for (const item of page.context.items) {
   `diagnostics.readiness` 使用稳定的 `ready | degraded`，`diagnostics.codes` 使用稳定的机器可读 code，
   当前包含 `sheet-snapshot-axis-identity-ambiguous` 与
   `sheet-structural-history-partially-falls-back-to-snapshot-coordinates`；
+- `scopes` 由 Pro History 统一返回有变化的工作表、幻灯片、Base 表或 Board 页，并包含稳定 ID、名称、
+  insert/delete/update、变更数和左右位置。`item.scope` 指向同一对象身份；调用方可直接构建 Tab/树，
+  再用 `query.scope` 获取当前视图，不需要解析产品 snapshot；
 - `productContext` 补充 SDK 计算的导航与对齐数据：Doc paragraph alignment 包含两侧原生段落 ID，
   Sheet 提供紧凑的行列索引区间。应用不根据 snapshot 或 mutation 重算这些关系。
 
@@ -64,7 +76,8 @@ for (const item of page.context.items) {
 | `full`    | 再返回 `item.values.left/right` 原始产品 projection                      | 深度诊断与兼容旧 consumer     |
 
 `includeValues=false|true` 仍作为 `summary|full` 的兼容别名；新 consumer 应显式使用 `detail`。
-`offset/limit` 只控制变更项；`contextOffset/contextLimit` 独立控制 Doc 对齐行（每页最多 1000）。
+`offset/limit` 只控制变更项；`query.scope` 按 SDK 视图收窄 item；`contextOffset/contextLimit` 独立控制
+Doc 对齐行（每页最多 1000）。
 即使变更项已读完，渲染完整 Doc 仍需读取 `paragraphAlignment.page.hasMore` 指向的后续对齐页。
 颜色只是上述对称语义的 UI 表达：insert 为绿色、delete 为红色、update/move 为蓝色。交换左右侧时，
 insert/delete 互换、before/after 与 location 互换，update 保持 update。
@@ -87,7 +100,8 @@ node packages/collab-gateway-contract/examples/agent-diff-context.mjs \
 
 默认左侧是 Trunk；加入 `--left-worktree wt-base` 可比较两个未合入 Worktree。示例会先固定 comparison，
 再读取所有分页并输出一个完整 JSON context。可用 `--entity-type`、`--kind`、`--parent` 和 `--search`
-收窄结果；运行 `node packages/collab-gateway-contract/examples/agent-diff-context.mjs --help` 查看全部参数。
+收窄结果；`--scope-type/--scope-id` 可直接读取 `scopes` 中的一个视图。运行
+`node packages/collab-gateway-contract/examples/agent-diff-context.mjs --help` 查看全部参数。
 
 ```bash
 pnpm --filter @univer/collab-gateway-contract test

@@ -43,6 +43,7 @@ export type {
   UnitComparisonProductContext,
   UnitComparisonContextSummary,
   UnitComparisonContextPage,
+  UnitComparisonContextScope,
   UnitComparisonContext,
   UnitComparisonAxisAlignment,
   UnitComparisonContextResponse,

@@ -2,6 +2,10 @@
 // 不在此定义;modify 的 mutations 在契约里保持不透明(unknown[]),由 server/cli 用真实类型构造。
 
 import { UniverInstanceType } from "@univerjs/core";
+import type {
+  IUnitComparisonAxisAlignment,
+  IUnitComparisonLocation,
+} from "@univerjs-pro/edit-history";
 
 /** Gateway-owning business failures carried alongside the numeric SDK error code. */
 export enum GatewaySemanticErrorCode {
@@ -387,6 +391,11 @@ export interface UnitComparisonContextQuery {
   readonly entityTypes?: readonly string[];
   /** Keep entities contained by this stable Sheet/page/table/record identity. */
   readonly parentStableId?: string;
+  /** Keep only entities rendered inside this SDK-owned product view scope. */
+  readonly scope?: {
+    readonly entityType: string;
+    readonly stableId: string;
+  };
   /** Case-insensitive search across identity, title, paths, details, and returned leaf values. */
   readonly search?: string;
   /** Requested response detail. Defaults to `full` for compatibility with the original API. */
@@ -406,16 +415,8 @@ export interface UnitComparisonContextDetail {
   readonly kind?: UnitComparisonContextDiffKind | null;
 }
 
-export interface UnitComparisonContextLocation {
-  /** Unit-root semantic path for this side; it may differ when native IDs differ by side. */
-  readonly path: readonly string[];
-  /** Native identity to pass to the product-specific focus adapter. */
-  readonly stableId: string;
-  readonly parentStableId?: string;
-  readonly position?: number | null;
-  /** Product-specific semantic target, for example a Sheet range or Base cell coordinate. */
-  readonly target?: unknown;
-}
+/** SDK-owned serializable semantic location and product-specific navigation target. */
+export type UnitComparisonContextLocation = IUnitComparisonLocation;
 
 export interface UnitComparisonContextItem {
   /** Stable diff identity within this pinned comparison and schema version. */
@@ -424,6 +425,11 @@ export interface UnitComparisonContextItem {
   readonly stableId: string;
   /** Stable identity of the containing Sheet, page, table, or other parent object. */
   readonly parentStableId?: string;
+  /** SDK-owned worksheet, slide, Base table, or Board page containing this item. */
+  readonly scope?: {
+    readonly entityType: string;
+    readonly stableId: string;
+  };
   readonly kind: UnitComparisonContextDiffKind;
   /** Product entity family, drawn from `coverage.supportedEntityTypes`. */
   readonly entityType: string;
@@ -451,11 +457,8 @@ export interface UnitComparisonContextItem {
   };
 }
 
-export interface UnitComparisonAxisAlignment {
-  readonly leftStart: number | null;
-  readonly rightStart: number | null;
-  readonly count: number;
-}
+/** SDK-owned compact symmetric row or column alignment run. */
+export type UnitComparisonAxisAlignment = IUnitComparisonAxisAlignment;
 
 export type UnitComparisonProductContext =
   | {
@@ -510,6 +513,20 @@ export interface UnitComparisonContextPage {
   readonly hasMore: boolean;
 }
 
+/** One changed, independently navigable product view reported by Pro History. */
+export interface UnitComparisonContextScope {
+  readonly entityType: string;
+  readonly stableId: string;
+  readonly displayName: string;
+  readonly kind: UnitComparisonContextDiffKind;
+  readonly changeCount: number;
+  readonly moved: boolean;
+  readonly locations: {
+    readonly left: UnitComparisonContextLocation | null;
+    readonly right: UnitComparisonContextLocation | null;
+  };
+}
+
 /**
  * Versioned, UI-independent Server API projection of Pro History semantic comparison. The same
  * payload is suitable for CLI clients, agents, and the Compare UI; paths and semantic locations
@@ -529,6 +546,8 @@ export interface UnitComparisonContext {
     /** Entity families this API version can detect for the Unit product. */
     readonly supportedEntityTypes: readonly string[];
   };
+  /** SDK-owned product views used by tabs, trees, and follow-up agent queries. */
+  readonly scopes: readonly UnitComparisonContextScope[];
   readonly page: UnitComparisonContextPage;
   readonly items: readonly UnitComparisonContextItem[];
   readonly diagnostics: {

@@ -164,15 +164,16 @@ pnpm unlink:cli
 
 ### SDK 升级
 
-Univer SDK、Univer CLI SDK 与 Collaboration Server SDK 使用同一个精确版本基线。
-使用以下命令升级完整 SDK dependency graph：
+Univer OSS 与 Pro SDK package 使用同一个精确版本基线。使用以下命令升级这个 cohort：
 
 ```bash
 pnpm update:sdk --sdk_version <exact-sdk-version>
 ```
 
-升级器只保留 native binding、icon 等独立发布 package 的版本。必须同时提交所有受影响的 manifest
-与 `pnpm-lock.yaml`，不得手工只更新部分 SDK dependency。
+Univer CLI SDK 与 Collaboration Server SDK 是独立发布的 cohort，会保留各自现有版本。为避免安装第二套
+Univer runtime graph，升级器也会同步对齐这些独立发布的 server package 所使用的共享 runtime override。
+native binding、icon 等独立发布 package 的版本保持不变。必须同时提交所有受影响的 manifest、
+`pnpm-workspace.yaml` 与 `pnpm-lock.yaml`，不得手工只更新部分 SDK dependency。
 
 ## 许可证
 

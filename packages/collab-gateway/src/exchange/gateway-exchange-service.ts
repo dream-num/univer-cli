@@ -459,6 +459,7 @@ async function importUnitData(
     case UniverInstanceType.UNIVER_SLIDE:
       return { ...(await importBuffer(buffer, options)) };
   }
+  throw new Error("Unsupported import unit type.");
 }
 
 function snapshotToJson(input: ISnapshotWithBlocks): {

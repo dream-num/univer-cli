@@ -61,7 +61,6 @@ import { sdkLocaleOf } from "../i18n";
 import type { Appearance } from "../appearance";
 import { cn } from "../lib/utils";
 import {
-  buildChangedSlidePages,
   filterSlidePageDiffItems,
   slidePageIdOfDiffItem,
   type UnitStructuralDiffItem
@@ -1092,8 +1091,15 @@ function CanvasNativeUnitDiff({ app, snap }: { app: App; snap: AppSnapshot }): R
   const rightHandleRef = useRef<PreviewViewerHandle | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | undefined>(undefined);
   const [activePageId, setActivePageId] = useState<string | null>(null);
+  const [readyComparisonKey, setReadyComparisonKey] = useState<string | null>(null);
   const data = snap.comparisonData;
   const session = snap.comparisonSession;
+  const comparisonKey =
+    data === undefined || session === undefined
+      ? null
+      : `${session.comparisonId}:${data.response.unit.unitId}`;
+  const nativePanesReady =
+    data?.response.unit.type !== UNIT_TYPE_BOARD || readyComparisonKey === comparisonKey;
   const items = useMemo(
     () =>
       data === undefined
@@ -1104,9 +1110,15 @@ function CanvasNativeUnitDiff({ app, snap }: { app: App; snap: AppSnapshot }): R
   const pageTabs = useMemo(
     () =>
       data?.response.unit.type === UNIT_TYPE_SLIDE
-        ? buildChangedSlidePages({ left: data.leftUnitData, right: data.rightUnitData, items })
+        ? (data.context.scopes ?? [])
+            .filter((scope) => scope.entityType === "slide")
+            .map((scope) => ({
+              id: scope.stableId,
+              label: scope.displayName,
+              status: scope.kind
+            }))
         : [],
-    [data, items]
+    [data]
   );
   const selectedPageId =
     activePageId !== null && pageTabs.some((page) => page.id === activePageId)
@@ -1185,7 +1197,17 @@ function CanvasNativeUnitDiff({ app, snap }: { app: App; snap: AppSnapshot }): R
     void Promise.all([
       mount(leftRef.current, data.response.left, leftHandleRef, "left", data.rightUnitData),
       mount(rightRef.current, data.response.right, rightHandleRef, "right", data.leftUnitData)
-    ]).then(() => {
+    ]).then(async () => {
+      if (data.response.unit.type === UNIT_TYPE_BOARD) {
+        await waitForNativeCanvases(
+          [
+            data.response.left.snapshot === undefined ? null : leftRef.current,
+            data.response.right.snapshot === undefined ? null : rightRef.current
+          ],
+          () => disposed
+        );
+      }
+      if (disposed) return;
       disposeLinkedBoardViewport = attachLinkedBoardViewport(
         leftRef.current,
         rightRef.current,
@@ -1193,19 +1215,23 @@ function CanvasNativeUnitDiff({ app, snap }: { app: App; snap: AppSnapshot }): R
         rightHandleRef.current
       );
       const initialItem =
-        selectedPageId === null
+        data.response.unit.type === UNIT_TYPE_BOARD
+          ? undefined
+          : selectedPageId === null
           ? scopedItems[0]
           : (scopedItems.find((item) => item.entityType === "slide-element") ??
             scopedItems.find((item) => item.entityType === "slide"));
-      if (disposed || initialItem === undefined) return;
-      void Promise.all([
-        leftHandleRef.current?.focusComparisonTarget(
-          structuralDiffFocusTarget(initialItem, "left")
-        ),
-        rightHandleRef.current?.focusComparisonTarget(
-          structuralDiffFocusTarget(initialItem, "right")
-        )
-      ]);
+      if (initialItem !== undefined) {
+        await Promise.all([
+          leftHandleRef.current?.focusComparisonTarget(
+            structuralDiffFocusTarget(initialItem, "left")
+          ),
+          rightHandleRef.current?.focusComparisonTarget(
+            structuralDiffFocusTarget(initialItem, "right")
+          )
+        ]);
+      }
+      if (!disposed && comparisonKey !== null) setReadyComparisonKey(comparisonKey);
     });
     const disposeLinkedNavigation =
       data.response.unit.type === UNIT_TYPE_BOARD
@@ -1286,6 +1312,7 @@ function CanvasNativeUnitDiff({ app, snap }: { app: App; snap: AppSnapshot }): R
           <div className="grid min-h-0 grid-cols-2 gap-px bg-border max-[1023px]:h-full max-[1023px]:grid-cols-1 max-[1023px]:grid-rows-2" data-testid="native-diff-panes">
             <NativeDiffSide
               activePageId={selectedPageId}
+              contentReady={nativePanesReady}
               hostRef={leftRef}
               hideSlideAddControl={data.response.unit.type === UNIT_TYPE_SLIDE}
               itemCount={scopedItems.length}
@@ -1299,6 +1326,7 @@ function CanvasNativeUnitDiff({ app, snap }: { app: App; snap: AppSnapshot }): R
             />
             <NativeDiffSide
               activePageId={selectedPageId}
+              contentReady={nativePanesReady}
               hostRef={rightRef}
               hideSlideAddControl={data.response.unit.type === UNIT_TYPE_SLIDE}
               itemCount={scopedItems.length}
@@ -1315,6 +1343,21 @@ function CanvasNativeUnitDiff({ app, snap }: { app: App; snap: AppSnapshot }): R
       </div>
     </div>
   );
+}
+
+async function waitForNativeCanvases(
+  roots: readonly (HTMLDivElement | null)[],
+  cancelled: () => boolean
+): Promise<void> {
+  const expectedRoots = roots.filter((root): root is HTMLDivElement => root !== null);
+  for (let attempt = 0; attempt < 120; attempt += 1) {
+    if (cancelled()) return;
+    if (expectedRoots.every((root) => root.querySelector("canvas") !== null)) {
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      return;
+    }
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  }
 }
 
 function attachLinkedBoardViewport(
@@ -1511,6 +1554,7 @@ export function attachLinkedWheelNavigation(
 
 function NativeDiffSide({
   activePageId,
+  contentReady,
   hostRef,
   hideSlideAddControl,
   itemCount,
@@ -1523,6 +1567,7 @@ function NativeDiffSide({
   onSelectPage
 }: {
   activePageId: string | null;
+  contentReady: boolean;
   hostRef: MutableRefObject<HTMLDivElement | null>;
   hideSlideAddControl: boolean;
   itemCount: number;
@@ -1572,13 +1617,22 @@ function NativeDiffSide({
         />
       ) : null}
       {present ? (
-        <div className="relative min-h-0 overflow-hidden">
+        <div className="relative min-h-0 overflow-hidden" aria-busy={!contentReady}>
           <div
             ref={hostRef}
-            className="absolute inset-0"
+            className={cn(
+              "absolute inset-0 transition-opacity duration-100",
+              contentReady ? "opacity-100" : "opacity-0"
+            )}
             data-native-diff-host="true"
+            data-native-diff-ready={contentReady ? "true" : "false"}
             data-native-diff-product={hideSlideAddControl ? "slide" : "other"}
           />
+          {!contentReady && pagePresent ? (
+            <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center bg-background">
+              <Spinner className="size-5" />
+            </div>
+          ) : null}
           {!pagePresent ? (
             <div
               className={cn(

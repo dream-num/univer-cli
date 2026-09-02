@@ -36,6 +36,42 @@ describe("preview comparison stable-ID focus", () => {
     });
   });
 
+  it("maps Slide and Board resource changes to their containing canvas page", () => {
+    const baseItem = {
+      id: "resource:update:object-1",
+      stableId: "object-1",
+      category: "resource",
+      path: ["resource", "object-1"],
+      label: "Resource",
+      kind: "update",
+      moved: false,
+      changes: [],
+      position: { left: 0, right: 0 },
+      values: {}
+    } as const;
+
+    expect(
+      structuralDiffFocusTarget(
+        {
+          ...baseItem,
+          entityType: "slide-chart",
+          scope: { entityType: "slide", stableId: "slide-1" }
+        },
+        "left"
+      )
+    ).toEqual({ category: "slide-element:slide-1", stableId: "object-1" });
+    expect(
+      structuralDiffFocusTarget(
+        {
+          ...baseItem,
+          entityType: "board-table",
+          scope: { entityType: "board-page", stableId: "page-1" }
+        },
+        "right"
+      )
+    ).toEqual({ category: "board-element:page-1", stableId: "object-1" });
+  });
+
   it("selects the matching Doc paragraph and SectionBreak offsets", async () => {
     const setSelection = vi.fn();
     const api = {

@@ -103,6 +103,7 @@ function toSdkQuery(query: UnitComparisonContextQuery): IUnitComparisonQuery {
     ...(query.kinds === undefined ? {} : { kinds: query.kinds }),
     ...(query.entityTypes === undefined ? {} : { entityTypes: query.entityTypes }),
     ...(query.parentStableId === undefined ? {} : { parentStableId: query.parentStableId }),
+    ...(query.scope === undefined ? {} : { scope: query.scope }),
     ...(query.search === undefined ? {} : { search: query.search }),
     detail,
   } as IUnitComparisonQuery;

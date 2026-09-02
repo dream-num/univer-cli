@@ -478,7 +478,7 @@ export async function createPreviewViewer(opts: PreviewViewerOptions): Promise<P
   }
 
   const comparisonHighlights =
-    opts.comparison === undefined || opts.unitType === UNIT_TYPE_DOC
+    opts.comparison === undefined
       ? undefined
       : createNativeComparisonHighlightController({
           univer,
@@ -490,7 +490,10 @@ export async function createPreviewViewer(opts: PreviewViewerOptions): Promise<P
             ? {}
             : { selectedItemId: opts.comparison.selectedItemId })
         });
-  await comparisonHighlights?.refresh();
+  // Native objects may materialize over several frames. Start their overlays without holding the
+  // comparison pane behind the retry budget; the controller paints newly available objects as it
+  // discovers them and cancels stale retries when selection or scene state changes.
+  void comparisonHighlights?.refresh();
 
   if (unitId !== "") {
     enforceUnitViewerReadOnlyPermission(
@@ -528,7 +531,6 @@ export async function createPreviewViewer(opts: PreviewViewerOptions): Promise<P
     setComparisonSelection: async (itemId) => {
       if (updateDocumentComparisonSelection !== undefined) {
         await updateDocumentComparisonSelection(itemId);
-        return;
       }
       await comparisonHighlights?.setSelectedItem(itemId);
     },

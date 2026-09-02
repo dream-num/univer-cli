@@ -139,6 +139,9 @@ class ViewerController {
   /** The React content pane hands its host element to the viewer once mounted. */
   public bind(content: HTMLElement): void {
     this.content = content;
+    if (this.handle !== undefined && this.host !== undefined && this.host.parentElement !== content) {
+      content.append(this.host);
+    }
   }
 
   public async show(view: View, unit: UnitSummary, editable: boolean): Promise<void> {
@@ -180,6 +183,15 @@ class ViewerController {
     this.key = "";
     this.last = undefined;
     this.teardown();
+  }
+
+  /**
+   * Detach the live viewer while Compare owns the content pane without destroying its Univer
+   * instance. Returning to View reattaches the same host in `bind()`, avoiding a synchronous
+   * teardown/rebuild on every mode switch while the collaboration model keeps receiving updates.
+   */
+  public suspendView(): void {
+    this.content = undefined;
   }
 
   /** Replace the content pane with a plain message (e.g. a unit that won't render in preview). */
@@ -968,7 +980,10 @@ export class App {
       if (selected !== undefined) await this.selectWorktreeUnit(this.view.worktreeId, selected);
       return;
     }
-    this.viewer.clearView();
+    this.viewer.suspendView();
+    // Commit the lightweight Compare shell before fetching snapshots or mounting native panes.
+    // In particular, do not make the click wait for a live Board Univer instance to dispose.
+    this.emit();
     await this.refreshUnitComparison();
   }
 

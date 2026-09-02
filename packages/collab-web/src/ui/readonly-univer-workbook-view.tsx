@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type MutableRefObject, type ReactElement } from "react";
 import type { WorkbookCompareRangeHighlight, WorkbookCompareSheetGapConfig } from "@univer/workbook-compare";
+import type { UnitStructuralDiffItem } from "@univer/unit-compare";
+import { UNIT_TYPE_SHEET } from "@univer/collab-gateway-contract";
 import {
   getIntersectRange,
   ICommandService,
@@ -31,6 +33,10 @@ import {
 import { currentLang, sdkLocaleOf, t } from "../i18n/index.js";
 import { loadViewerLocale } from "../core/locales/generated/load.js";
 import { registerFormulaTextDisplay } from "../core/formula-text-display.js";
+import {
+  createNativeComparisonHighlightController,
+  type NativeComparisonHighlightController
+} from "../core/native-comparison-highlights.js";
 import { compactHighlightRanges } from "./compact-highlight-ranges.js";
 
 import "@univerjs/engine-formula/facade";
@@ -46,6 +52,11 @@ import "@univerjs/ui/facade";
 export function ReadonlyUniverWorkbookView(input: {
   readonly activeSheetId?: string | null;
   readonly createUniver?: (container: HTMLElement, options: { readonly footer: boolean }) => Univer;
+  readonly comparison?: {
+    readonly items: readonly UnitStructuralDiffItem[];
+    readonly selectedItemId?: string;
+    readonly side: "left" | "right";
+  };
   readonly controlledScroll?: ReadonlyWorkbookControlledScroll | null;
   readonly controlledSelection?: ReadonlyWorkbookControlledSelection | null;
   readonly gapConfig?: WorkbookCompareSheetGapConfig | null;
@@ -63,6 +74,7 @@ export function ReadonlyUniverWorkbookView(input: {
   const univerRef = useRef<Univer | null>(null);
   const formulaDisplayRef = useRef<IDisposable | null>(null);
   const selectedHighlightRef = useRef<IDisposable | null>(null);
+  const comparisonHighlightRef = useRef<NativeComparisonHighlightController | null>(null);
   const selectedKindRef = useRef(input.selectedKind ?? null);
   const selectedRangeRef = useRef(input.selectedRange ?? null);
   const showFormulaTextRef = useRef(input.showFormulaText ?? false);
@@ -129,6 +141,26 @@ export function ReadonlyUniverWorkbookView(input: {
         }
         activeWorkbookRef.current = activeWorkbook;
         currentWorkbookIdRef.current = activeWorkbook.getId();
+        if (input.comparison !== undefined) {
+          const controller = createNativeComparisonHighlightController({
+            univer,
+            unitId: activeWorkbook.getId(),
+            unitType: UNIT_TYPE_SHEET,
+            side: input.comparison.side,
+            items: input.comparison.items,
+            ...(input.comparison.selectedItemId === undefined
+              ? {}
+              : { selectedItemId: input.comparison.selectedItemId })
+          });
+          comparisonHighlightRef.current = controller;
+          cleanup.push(() => {
+            controller.dispose();
+            if (comparisonHighlightRef.current === controller) {
+              comparisonHighlightRef.current = null;
+            }
+          });
+          await controller.refresh();
+        }
         applySelectedRange(
           activeWorkbook,
           input.activeSheetId ?? null,
@@ -261,6 +293,8 @@ export function ReadonlyUniverWorkbookView(input: {
       formulaDisplayRef.current = null;
       selectedHighlightRef.current?.dispose();
       selectedHighlightRef.current = null;
+      comparisonHighlightRef.current?.dispose();
+      comparisonHighlightRef.current = null;
       univer?.dispose();
       viewerHost.remove();
       return;
@@ -292,7 +326,16 @@ export function ReadonlyUniverWorkbookView(input: {
         viewerHost.remove();
       }, 0);
     };
-  }, [input.activeSheetId, input.gapConfig, input.highlights, input.showFooter, input.snapshot, locale]);
+  }, [input.activeSheetId, input.comparison?.items, input.comparison?.side, input.gapConfig, input.highlights, input.showFooter, input.snapshot, locale]);
+
+  useEffect(() => {
+    comparisonHighlightRef.current
+      ?.setSelectedItem(input.comparison?.selectedItemId)
+      .catch((error: unknown) => {
+        console.error("Failed to update workbook object comparison highlight", error);
+        setRenderError(error instanceof Error ? error.message : String(error));
+      });
+  }, [input.comparison?.selectedItemId]);
 
   useEffect(() => {
     showFormulaTextRef.current = input.showFormulaText ?? false;

@@ -162,7 +162,8 @@ export class WorktreeControlClient {
    *
    * Use `detail: "summary"` to discover changed entities cheaply, `detail: "changes"` to receive
    * agent-ready leaf changes and text/formula hunks, and `detail: "full"` only when the original
-   * product projections are required. A comparison remains pinned; `context.stale` tells callers
+   * product projections are required. Discover product views through `context.scopes`, then pass
+   * one scope back to query a worksheet, slide, Base table, or Board page. A comparison remains pinned; `context.stale` tells callers
    * to create a new comparison when either source advances.
    */
   public getUnitComparisonContext(
@@ -184,6 +185,10 @@ export class WorktreeControlClient {
     }
     if (query.parentStableId !== undefined) {
       params.set("parentStableId", query.parentStableId);
+    }
+    if (query.scope !== undefined) {
+      params.set("scopeEntityType", query.scope.entityType);
+      params.set("scopeStableId", query.scope.stableId);
     }
     if (query.search !== undefined) params.set("search", query.search);
     if (query.detail !== undefined) params.set("detail", query.detail);

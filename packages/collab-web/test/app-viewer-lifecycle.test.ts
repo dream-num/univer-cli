@@ -45,7 +45,7 @@ const session: CreateUnitComparisonResponse = {
   units: [{ ...unit, presence: "paired" }],
 };
 
-describe("viewer host lifecycle when leaving comparison", () => {
+describe("viewer host lifecycle across comparison mode", () => {
   let app: App | undefined;
 
   beforeEach(async () => {
@@ -95,14 +95,14 @@ describe("viewer host lifecycle when leaving comparison", () => {
     return createUnitComparison;
   }
 
-  it("mounts each fresh viewer into the visible host across repeated Compare → View clicks", async () => {
+  it("reattaches the live viewer across repeated Compare → View clicks", async () => {
     await start();
     for (let cycle = 0; cycle < 3; cycle += 1) {
       clickMode("Compare");
       await vi.waitFor(() => expect(document.body.textContent).toContain("Comparison preview"));
       expect(document.querySelector(".content")).toBeNull();
       clickMode("View");
-      await expectVisibleViewer(cycle + 2);
+      await expectVisibleViewer(1);
     }
   });
 
@@ -125,7 +125,7 @@ describe("viewer host lifecycle when leaving comparison", () => {
     clickMode("Compare");
     await vi.waitFor(() => expect(document.querySelector(".content")).toBeNull());
     clickMode("View");
-    await expectVisibleViewer(2);
+    await expectVisibleViewer(1);
     finish(session);
     await vi.waitFor(() => expect(app?.getSnapshot().busy).toBe(false));
     expect(app?.getSnapshot().comparisonMode).toBe(false);

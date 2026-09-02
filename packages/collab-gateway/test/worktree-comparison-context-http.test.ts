@@ -42,7 +42,11 @@ describe("agent comparison context HTTP endpoint", () => {
       `${fileEndpoint}/worktrees/${right.worktreeId}/comparisons/${session.comparisonId}/units/${sheet.unitId}/diff?entityType=cell&limit=1&detail=changes`,
     );
     const body = (await response.json()) as {
-      context: { detail: string; items: readonly unknown[] };
+      context: {
+        detail: string;
+        items: readonly unknown[];
+        scopes: readonly { entityType: string; stableId: string }[];
+      };
     };
 
     expect(response.status).toBe(200);
@@ -65,6 +69,18 @@ describe("agent comparison context HTTP endpoint", () => {
       },
     });
     expect(body.context.items[0]).not.toHaveProperty("values");
+    const scope = body.context.scopes[0];
+    if (scope === undefined) throw new Error("Expected a changed worksheet scope");
+    const scopedResponse = await fetch(
+      `${fileEndpoint}/worktrees/${right.worktreeId}/comparisons/${session.comparisonId}/units/${sheet.unitId}/diff?scopeEntityType=${scope.entityType}&scopeStableId=${scope.stableId}`,
+    );
+    const scopedBody = (await scopedResponse.json()) as {
+      context: { items: readonly { scope?: { stableId: string } }[] };
+    };
+    expect(scopedBody.context.items.length).toBeGreaterThan(0);
+    expect(scopedBody.context.items.every((item) => item.scope?.stableId === scope.stableId)).toBe(
+      true,
+    );
   });
 
   it("returns a typed business error for an invalid context query", async () => {
@@ -80,6 +96,21 @@ describe("agent comparison context HTTP endpoint", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({
       error: { code: 0, message: "kind must contain only delete, insert, or update" },
+    });
+  });
+
+  it("rejects an incomplete scope query", async () => {
+    const service = server.manager.resolveByKey(key).collab;
+    const sheet = await service.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "Sheet" });
+    const right = service.createWorktree("agent", "Right");
+    const session = service.createUnitComparison(right.worktreeId);
+
+    const response = await fetch(
+      `${fileEndpoint}/worktrees/${right.worktreeId}/comparisons/${session.comparisonId}/units/${sheet.unitId}/diff?scopeEntityType=worksheet`,
+    );
+
+    expect(await response.json()).toMatchObject({
+      error: { code: 0, message: "scopeEntityType and scopeStableId must be supplied together" },
     });
   });
 

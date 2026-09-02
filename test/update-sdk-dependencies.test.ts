@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   alignManifestSdkDependencies,
+  alignWorkspaceSdkOverrides,
   discoverWorkspacePackages,
   parseSdkUpdateVersion,
   resolveWorkspaceSdkBaseline,
@@ -17,13 +18,14 @@ describe("update:sdk dependency alignment", () => {
     expect(() => parseSdkUpdateVersion(["^1.0.0"])).toThrow(/--sdk_version/u);
   });
 
-  it("aligns every Univer SDK dependency and preserves independent packages", () => {
+  it("aligns the Univer SDK cohort and preserves separately released SDK cohorts", () => {
     const manifest = {
       name: "consumer",
       dependencies: {
         "@univer-cli/config": "1.0.0-insiders.old",
         "@univerjs/core": "1.0.0-insiders.old",
         "@univerjs-pro/cli-assets": "0.1.0",
+        "@univerjs-pro/collaboration-endpoint": "1.0.0-insiders.old",
         "@univerjs-pro/collaboration-service": "1.0.0-insiders.old",
         "@univerjs-pro/engine-formula-rust-binding": "1.0.0-insiders.formula",
         "@univerjs-pro/exchange-node-binding": "0.1.0",
@@ -47,14 +49,17 @@ describe("update:sdk dependency alignment", () => {
       "1.0.0-insiders.new",
       new Set(["@univer/local"]),
     );
-    expect(changed).toBe(7);
-    expect(manifest.dependencies["@univer-cli/config"]).toBe("1.0.0-insiders.new");
+    expect(changed).toBe(4);
+    expect(manifest.dependencies["@univer-cli/config"]).toBe("1.0.0-insiders.old");
     expect(manifest.dependencies["@univerjs/core"]).toBe("1.0.0-insiders.new");
-    expect(manifest.dependencies["@univerjs-pro/collaboration-service"]).toBe("1.0.0-insiders.new");
+    expect(manifest.dependencies["@univerjs-pro/collaboration-endpoint"]).toBe(
+      "1.0.0-insiders.old",
+    );
+    expect(manifest.dependencies["@univerjs-pro/collaboration-service"]).toBe("1.0.0-insiders.old");
     expect(manifest.peerDependencies["@univerjs-pro/embed"]).toBe("1.0.0-insiders.new");
     expect(manifest.devDependencies["@univerjs/docs"]).toBe("1.0.0-insiders.new");
     expect(manifest.devDependencies["@univer-cli/univer-render-runtime"]).toBe(
-      "1.0.0-insiders.new",
+      "1.0.0-insiders.old",
     );
     expect(manifest.optionalDependencies["@univerjs/sheets"]).toBe("1.0.0-insiders.new");
     expect(manifest.dependencies["@univerjs/icons"]).toBe("1.34.0");
@@ -77,6 +82,24 @@ describe("update:sdk dependency alignment", () => {
     expect(() => alignManifestSdkDependencies(manifest, "1.0.0-insiders.new")).toThrow(
       /must use an exact SemVer/u,
     );
+  });
+
+  it("aligns shared runtime overrides without changing separate SDK cohorts", () => {
+    const source = `overrides:
+  "@univerjs/core": "1.0.0-insiders.old"
+  "@univerjs-pro/embed": "1.0.0-insiders.old"
+  "@univerjs-pro/collaboration-service": "1.0.0-insiders.server"
+  "@univerjs/icons": "1.34.0"
+`;
+    expect(alignWorkspaceSdkOverrides(source, "1.0.0-insiders.new")).toEqual({
+      changed: 2,
+      source: `overrides:
+  "@univerjs/core": "1.0.0-insiders.new"
+  "@univerjs-pro/embed": "1.0.0-insiders.new"
+  "@univerjs-pro/collaboration-service": "1.0.0-insiders.server"
+  "@univerjs/icons": "1.34.0"
+`,
+    });
   });
 
   it("every workspace consumer uses one exact SDK baseline", async () => {
