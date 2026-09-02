@@ -68,7 +68,7 @@ describe("authoritative Browser View rendering composition", () => {
     expect(occurrences(human, 'ribbonType: "grid"')).toBe(1);
     expect(occurrences(human, 'workbenchChrome: "hidden"')).toBe(1);
     expect(human).toContain(
-      'workbenchChrome: opts.unitType === UNIT_TYPE_SHEET ? "visible" : "hidden"'
+      "workbenchChrome: resolveViewerWorkbenchChrome(opts.unitType, opts.editable === true)"
     );
     expect(occurrences(human, "unitType: toUniverInstanceType(opts.unitType)")).toBe(2);
     expect(occurrences(human, "darkMode: opts.darkMode")).toBe(2);

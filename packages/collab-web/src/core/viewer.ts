@@ -69,7 +69,8 @@ import {
 } from "@univer/collab-gateway-contract";
 import {
   blockLocalEditingCommands,
-  resolveViewerReadOnlyEnforcement
+  resolveViewerReadOnlyEnforcement,
+  resolveViewerWorkbenchChrome
 } from "./viewer-readonly";
 import { LocalReadOnlyAuthzIoService } from "./local-read-only-authz-io.service";
 import { createCollaborationSheetResourceRefDataProvider } from "./collaboration-sheet-resource-ref-data-provider";
@@ -204,10 +205,7 @@ export async function createViewer(opts: ViewerOptions): Promise<ViewerHandle> {
     container: opts.container,
     assetIoOwner: ViewAssetIoOwner.CollaborationClient,
     license: TEST_LICENSE,
-    // Sheets keep their familiar grid chrome in the read-only viewer. The other four products
-    // are document/canvas inspection surfaces here, so a ribbon would advertise editing actions
-    // that the permission and command guards deliberately reject.
-    workbenchChrome: opts.unitType === UNIT_TYPE_SHEET ? "visible" : "hidden",
+    workbenchChrome: resolveViewerWorkbenchChrome(opts.unitType, opts.editable === true),
     ribbonType: "grid",
     unitType: toUniverInstanceType(opts.unitType),
     ...(opts.worktreeId === undefined && opts.unitType !== UNIT_TYPE_BOARD
