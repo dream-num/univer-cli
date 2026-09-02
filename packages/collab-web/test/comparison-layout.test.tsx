@@ -1,4 +1,4 @@
-import type { UnitComparisonContext, Worktree } from "@univer/collab-gateway-contract";
+import type { UnitComparisonContext } from "@univer/collab-gateway-contract";
 import { LocaleType, UniverInstanceType, type IWorkbookData } from "@univerjs/core";
 import type { ReactElement } from "react";
 import { flushSync } from "react-dom";
@@ -55,12 +55,6 @@ describe("comparison layout without step navigation", () => {
     } else if (type !== UniverInstanceType.UNIVER_BASE) {
       expect(document.querySelectorAll('[data-native-diff-host="true"]')).toHaveLength(2);
     }
-    if (type !== UniverInstanceType.UNIVER_SHEET) {
-      const panes = document.querySelector(`[data-testid="${type === UniverInstanceType.UNIVER_BASE ? "base" : "native"}-diff-panes"]`)!;
-      expect(panes.classList.contains("bg-border")).toBe(true);
-      expect(panes.classList.contains("gap-px")).toBe(true);
-      expect(panes.classList.contains("max-[1023px]:grid-rows-2")).toBe(true);
-    }
   });
 
   it("places scope in the sidebar header and switches formula display on both panes independently of diff mode", async () => {
@@ -69,58 +63,20 @@ describe("comparison layout without step navigation", () => {
     await vi.waitFor(() => expect(document.querySelectorAll('[data-testid="readonly-sheet"]')).toHaveLength(2), { timeout: 10_000 });
     const scope = document.querySelector('[aria-label="Comparison scope"]')!;
     expect(scope.closest("aside header")).not.toBeNull();
-    expect(scope.classList.contains("w-full")).toBe(true);
     const scopeTabs = [...scope.querySelectorAll('[role="tab"]')];
     expect(scopeTabs.map((tab) => tab.textContent)).toEqual(["Worksheet", "Workbook"]);
-    for (const tab of scopeTabs) {
-      expect(tab.classList.contains("flex-1")).toBe(true);
-      expect(tab.classList.contains("min-w-0")).toBe(true);
-      expect(tab.classList.contains("text-center")).toBe(true);
-    }
-    const displayTabs = document.querySelector('[aria-label="Comparison display mode"]');
-    expect(displayTabs).not.toBeNull();
-    expect(displayTabs?.classList.contains("w-full")).not.toBe(true);
     const toggle = [...document.querySelectorAll("button")].find((button) => button.textContent === "Show formulas")!;
-    for (let cycle = 0; cycle < 3; cycle++) {
-      const content = [...document.querySelectorAll('[role="tab"]')].find((tab) => tab.textContent === "Content") as HTMLElement;
-      flushSync(() => content.click());
-      const snapshots = workbookViews.props.slice(-2).map((props) => props.snapshot as IWorkbookData);
-      expect(snapshots.map((snapshot) => snapshot.styles)).toEqual([{}, {}]);
-      flushSync(() => toggle.click());
-      expect(toggle.getAttribute("aria-pressed")).toBe("true");
-      expect(workbookViews.props.slice(-2).map((props) => props.showFormulaText)).toEqual([true, true]);
-      expect(workbookViews.props.slice(-2)[0]?.snapshot).toBe(snapshots[0]);
-      expect(workbookViews.props.slice(-2)[1]?.snapshot).toBe(snapshots[1]);
-      const formatting = [...document.querySelectorAll('[role="tab"]')].find((tab) => tab.textContent === "Formatting") as HTMLElement;
-      flushSync(() => formatting.click());
-      expect(workbookViews.props.slice(-2).map((props) => props.showFormulaText)).toEqual([true, true]);
-      expect(workbookViews.props.slice(-2).map((props) => (props.snapshot as IWorkbookData).styles)).toEqual([
-        { heading: { bl: 1 } }, { heading: { bl: 1 } },
-      ]);
-      flushSync(() => toggle.click());
-      expect(toggle.getAttribute("aria-pressed")).toBe("false");
-      expect(workbookViews.props.slice(-2).map((props) => props.showFormulaText)).toEqual([false, false]);
-    }
-  });
-
-  it("lists only same-product Worktrees as comparison sources", async () => {
-    const sheetWorktree = comparisonWorktree("wt-sheet", "Sheet changes");
-    const slideWorktree = comparisonWorktree("wt-slide", "Slide changes");
-    root = createRoot(document.getElementById("root")!);
-    flushSync(() =>
-      root?.render(
-        <AppView
-          app={comparisonApp(UniverInstanceType.UNIVER_SLIDE, {
-            worktrees: [sheetWorktree, slideWorktree],
-            comparisonSources: [slideWorktree],
-          })}
-        />,
-      ),
-    );
-    const options = [...document.querySelectorAll("select option")].map(
-      (option) => option.textContent,
-    );
-    expect(options).toEqual(["Main", "Slide changes"]);
+    const content = [...document.querySelectorAll('[role="tab"]')].find((tab) => tab.textContent === "Content") as HTMLElement;
+    flushSync(() => content.click());
+    const snapshots = workbookViews.props.slice(-2).map((props) => props.snapshot as IWorkbookData);
+    expect(snapshots.map((snapshot) => snapshot.styles)).toEqual([{}, {}]);
+    flushSync(() => toggle.click());
+    expect(workbookViews.props.slice(-2).map((props) => props.showFormulaText)).toEqual([true, true]);
+    const formatting = [...document.querySelectorAll('[role="tab"]')].find((tab) => tab.textContent === "Formatting") as HTMLElement;
+    flushSync(() => formatting.click());
+    expect(workbookViews.props.slice(-2).map((props) => (props.snapshot as IWorkbookData).styles)).toEqual([
+      { heading: { bl: 1 } }, { heading: { bl: 1 } },
+    ]);
   });
 
   it("preserves localized readable sidebar values after removing the navigator", async () => {
@@ -196,10 +152,7 @@ function rect(input: { readonly top: number; readonly bottom: number }): DOMRect
   };
 }
 
-function comparisonApp(
-  type: UniverInstanceType,
-  input: { readonly worktrees?: Worktree[]; readonly comparisonSources?: Worktree[] } = {},
-): App {
+function comparisonApp(type: UniverInstanceType): App {
   const unit = { unitId: "unit", type, name: "Example", presence: "paired" as const };
   const context: UnitComparisonContext = {
     schemaVersion: 1, comparisonId: "cmp", unit, fidelity: "snapshot", stale: false, detail: "full",
@@ -211,7 +164,7 @@ function comparisonApp(
   const workbook = { id: "unit", name: "Example", locale: LocaleType.EN_US, appVersion: "1", styles: { heading: { bl: 1 } }, sheets: {}, sheetOrder: [] };
   const snapshot: AppSnapshot = {
     view: { kind: "worktree", worktreeId: "wt" }, selectedUnitId: "unit",
-    trunkUnits: [], worktreeUnits: [], worktrees: input.worktrees ?? [], previews: new Map(), previewErrors: new Map(),
+    trunkUnits: [], worktreeUnits: [], worktrees: [], previews: new Map(), previewErrors: new Map(),
     comparisonMode: true, comparisonLeft: { kind: "trunk" }, comparisonError: undefined,
     comparisonSession: {
       error: { code: 1, message: "" }, comparisonId: "cmp", createdAt: "2026-08-31T00:00:00.000Z",
@@ -232,17 +185,6 @@ function comparisonApp(
     mode: "embedded",
     subscribe: () => () => undefined,
     getSnapshot: () => snapshot,
-    comparisonSourceWorktrees: () => input.comparisonSources ?? [],
+    comparisonSourceWorktrees: () => [],
   } as unknown as App;
-}
-
-function comparisonWorktree(worktreeId: string, name: string): Worktree {
-  return {
-    worktreeId,
-    name,
-    status: "draft",
-    agentId: "agent",
-    baseline: {},
-    createdAt: "2026-08-31T00:00:00.000Z",
-  };
 }

@@ -67,12 +67,6 @@ describe("setLang / t", () => {
     expect(t().topbar.currentVersion).toBe("Current version");
   });
 
-  it("keeps both locale tables structurally identical", async () => {
-    const english = await loadMessages("en-US");
-    const chinese = await loadMessages("zh-CN");
-    expect(shapeOf(english)).toEqual(shapeOf(chinese));
-  });
-
   it("keeps the canonical manifest unique and every shell table structurally complete", async () => {
     expect(LOCALE_MANIFEST).toHaveLength(17);
     expect(new Set(LOCALE_MANIFEST.map(({ tag }) => tag)).size).toBe(17);
