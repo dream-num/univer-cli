@@ -7,55 +7,13 @@ import {
   type UnitComparisonTranslate
 } from "./comparison-labels.js";
 
-const COMPARISON_PATH_LABELS: Readonly<Record<string, string>> = {
-  text: "文字",
-  value: "值",
-  formula: "公式",
-  formulaName: "公式名称",
-  name: "名称",
-  type: "类型",
-  language: "语言",
-  config: "设置",
-  columns: "列",
-  rowCount: "行数", columnCount: "列数",
-  h: "行高", w: "列宽", hd: "隐藏", ia: "自动行高",
-  bg: "背景", rgb: "颜色", cl: "文字颜色", fs: "字号", bl: "粗体", it: "斜体",
-  range: "范围", ranges: "范围", rangeInfo: "范围", rule: "规则", operator: "比较方式",
-  startRow: "起始行", endRow: "结束行", startColumn: "起始列", endColumn: "结束列",
-  transform: "变换", left: "水平位置", top: "垂直位置", angle: "旋转角度",
-  cfId: "规则标识", uid: "标识", id: "标识", palette: "配色", content: "内容", titles: "标题", title: "标题",
-  sparklines: "迷你图", fieldsConfig: "透视字段", collection: "数据源", filters: "筛选", options: "选项",
-  gap: "栏间距",
-  position: "位置",
-  start: "起始位置",
-  count: "数量",
-  geometry: "位置与尺寸",
-  "geometry.x": "水平位置",
-  "geometry.y": "垂直位置",
-  style: "格式",
-  "style.bg": "背景",
-  "style.bl": "粗体",
-  "style.cl": "文字颜色",
-  "style.fs": "字号",
-  "style.it": "斜体",
-  "style.n": "数字格式",
-  "style.backgroundColor.rgb": "背景色",
-  "style.background": "背景色",
-  backgroundColor: "背景色",
-  color: "颜色",
-  width: "宽度",
-  height: "高度",
-  tableRows: "行",
-  tableCells: "单元格"
-};
-
 /**
  * Chinese shell copy. This table defines the `Messages` shape; en-US must mirror it exactly.
  * Entries that need interpolation or language-specific word order are functions.
  */
 export function createZhCnMessages(translateComparison: UnitComparisonTranslate): Messages {
   const comparisonPathLabel = (path: readonly string[]): string =>
-    localizedComparisonPath(translateComparison, path, (key) => COMPARISON_PATH_LABELS[key]);
+    localizedComparisonPath(translateComparison, path);
   const comparisonEntityLabel = (category: string): string =>
     localizedComparisonEntity(translateComparison, category);
   return {

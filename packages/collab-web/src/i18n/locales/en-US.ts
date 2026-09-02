@@ -6,52 +6,10 @@ import {
   type UnitComparisonTranslate
 } from "./comparison-labels.js";
 
-const COMPARISON_PATH_LABELS: Readonly<Record<string, string>> = {
-  text: "Text",
-  value: "Value",
-  formula: "Formula",
-  formulaName: "Formula name",
-  name: "Name",
-  type: "Type",
-  language: "Language",
-  config: "Settings",
-  columns: "Columns",
-  rowCount: "Row count", columnCount: "Column count",
-  h: "Row height", w: "Column width", hd: "Hidden", ia: "Automatic height",
-  bg: "Background", rgb: "Color", cl: "Text color", fs: "Font size", bl: "Bold", it: "Italic",
-  range: "Range", ranges: "Ranges", rangeInfo: "Range", rule: "Rule", operator: "Operator",
-  startRow: "Start row", endRow: "End row", startColumn: "Start column", endColumn: "End column",
-  transform: "Transform", left: "Horizontal position", top: "Vertical position", angle: "Rotation",
-  cfId: "Rule identity", uid: "Identity", id: "Identity", palette: "Palette", content: "Content", titles: "Titles", title: "Title",
-  sparklines: "Sparklines", fieldsConfig: "Pivot fields", collection: "Data source", filters: "Filters", options: "Options",
-  gap: "Column spacing",
-  position: "Position",
-  start: "Start",
-  count: "Count",
-  geometry: "Position and size",
-  "geometry.x": "Horizontal position",
-  "geometry.y": "Vertical position",
-  style: "Formatting",
-  "style.bg": "Background",
-  "style.bl": "Bold",
-  "style.cl": "Text color",
-  "style.fs": "Font size",
-  "style.it": "Italic",
-  "style.n": "Number format",
-  "style.backgroundColor.rgb": "Background color",
-  "style.background": "Background color",
-  backgroundColor: "Background color",
-  color: "Color",
-  width: "Width",
-  height: "Height",
-  tableRows: "Rows",
-  tableCells: "Cells"
-};
-
 /** English shell copy; this table is the structural authority for every other language. */
 function buildEnUsMessages(translateComparison: UnitComparisonTranslate) {
   const comparisonPathLabel = (path: readonly string[]): string =>
-    localizedComparisonPath(translateComparison, path, (key) => COMPARISON_PATH_LABELS[key]);
+    localizedComparisonPath(translateComparison, path);
   const comparisonEntityLabel = (category: string): string =>
     localizedComparisonEntity(translateComparison, category);
   return {

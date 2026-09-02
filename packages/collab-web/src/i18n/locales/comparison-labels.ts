@@ -12,8 +12,6 @@ import {
 /** Translate an SDK descriptor through a host-owned Univer LocaleService. */
 export type UnitComparisonTranslate = (descriptor: IUnitComparisonLabelDescriptor) => string;
 
-type ComparisonPathLookup = (key: string) => string | undefined;
-
 /** Resolve one SDK-owned comparison term through the standard History UI locale. */
 export function comparisonTerm(
   translate: UnitComparisonTranslate,
@@ -30,18 +28,13 @@ export function localizedComparisonEntity(
   return translate(getUnitComparisonEntityLabel(entityType));
 }
 
-/** Resolve typed SDK path descriptors while preserving application-specific exact labels. */
+/** Resolve typed SDK path descriptors without exposing persisted schema identifiers. */
 export function localizedComparisonPath(
   translate: UnitComparisonTranslate,
-  path: readonly string[],
-  lookup: ComparisonPathLookup
+  path: readonly string[]
 ): string {
-  const exact = lookup(path.join("."));
-  if (exact !== undefined) {
-    return exact;
-  }
   return getUnitComparisonPathLabels(path)
-    .map((descriptor, index) => lookup(path[index] ?? "") ?? translate(descriptor))
+    .map((descriptor) => translate(descriptor))
     .join(" · ");
 }
 
