@@ -15,7 +15,6 @@ describe("CI quality gate", () => {
     expect(workflow).toContain("pnpm typecheck");
     expect(workflow).toContain("pnpm check:locales");
     expect(workflow).toContain("pnpm test");
-    expect(workflow).toContain("NODE_OPTIONS: --max-old-space-size=6144");
     expect(workflow).toContain("pnpm --filter univer-cli pack:check");
   });
 

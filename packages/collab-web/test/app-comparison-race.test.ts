@@ -23,6 +23,7 @@ interface ComparisonControl {
   createUnitComparison: ReturnType<typeof vi.fn>;
   getUnitComparison: ReturnType<typeof vi.fn>;
   getUnitComparisonContext: ReturnType<typeof vi.fn>;
+  previewMerge: ReturnType<typeof vi.fn>;
 }
 
 interface AppInternals {
@@ -132,6 +133,31 @@ describe("comparison request races", () => {
 
     internals.selectedUnitId = "doc-unit";
     expect(app.comparisonSourceWorktrees()).toEqual([]);
+  });
+
+  it("reuses cached Worktree previews when preparing comparison sources", async () => {
+    const { app, control, internals } = createComparisonApp(apps, "wt-right");
+    const current = comparisonWorktree("wt-right", "Current");
+    const cached = comparisonWorktree("wt-cached", "Cached");
+    const missing = comparisonWorktree("wt-missing", "Missing");
+    internals.worktrees = new Map(
+      [current, cached, missing].map((worktree) => [worktree.worktreeId, worktree]),
+    );
+    internals.previews = new Map([
+      ["wt-right", comparisonPreview("wt-right", UniverInstanceType.UNIVER_SHEET)],
+      ["wt-cached", comparisonPreview("wt-cached", UniverInstanceType.UNIVER_SHEET)],
+    ]);
+    control.previewMerge.mockResolvedValue(
+      comparisonPreview("wt-missing", UniverInstanceType.UNIVER_SHEET),
+    );
+    control.createUnitComparison.mockResolvedValue(
+      comparisonSession("cmp-current", "wt-right", { kind: "trunk" }),
+    );
+
+    await app.refreshUnitComparison();
+
+    expect(control.previewMerge).toHaveBeenCalledTimes(1);
+    expect(control.previewMerge).toHaveBeenCalledWith("wt-missing");
   });
 
   it("keeps the newest source session busy when an older create request succeeds", async () => {
@@ -289,6 +315,7 @@ function createComparisonApp(
     createUnitComparison: vi.fn(),
     getUnitComparison: vi.fn(),
     getUnitComparisonContext: vi.fn().mockResolvedValue(unitComparisonContext()),
+    previewMerge: vi.fn(),
   };
   const internals = app as unknown as AppInternals;
   internals.control = control;

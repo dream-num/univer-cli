@@ -33,7 +33,7 @@ import {
 const SHEET_TYPE = 2;
 const UNIT_COMPARISON_ENTITY_TYPES = new Set<string>(Object.values(UnitComparisonEntityType));
 
-function isUnitComparisonEntityType(value: string): boolean {
+function isUnitComparisonEntityType(value: string): value is UnitComparisonEntityType {
   return UNIT_COMPARISON_ENTITY_TYPES.has(value);
 }
 

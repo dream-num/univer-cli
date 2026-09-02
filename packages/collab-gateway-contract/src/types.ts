@@ -4,7 +4,12 @@
 import { UniverInstanceType } from "@univerjs/core";
 import type {
   IUnitComparisonAxisAlignment,
+  IUnitComparisonLeafChange,
   IUnitComparisonLocation,
+  IUnitComparisonResult,
+  IUnitComparisonScope,
+  IUnitComparisonScopeReference,
+  IUnitComparisonTextSegment,
 } from "@univerjs-pro/edit-history";
 
 /** Gateway-owning business failures carried alongside the numeric SDK error code. */
@@ -313,7 +318,7 @@ export interface UnitComparisonResponse extends ErrorEnvelope {
 }
 
 /** Product-neutral change semantics exposed to SDK and agent consumers. */
-export type UnitComparisonContextDiffKind = "delete" | "insert" | "update";
+export type UnitComparisonContextDiffKind = `${IUnitComparisonLeafChange["kind"]}`;
 
 /**
  * Controls how much changed content is returned for every comparison item.
@@ -324,57 +329,48 @@ export type UnitComparisonContextDiffKind = "delete" | "insert" | "update";
  *   leaf paths; scalar or empty values may use an empty path.
  * - `full` additionally returns each product's original projected entity in `item.values`.
  */
-export type UnitComparisonContextDetailLevel = "summary" | "changes" | "full";
+export type UnitComparisonContextDetailLevel = `${IUnitComparisonResult["detail"]}`;
 
 /** Whether the SDK produced a complete comparison or a safe degraded projection. */
-export type UnitComparisonReadiness = "ready" | "degraded";
+export type UnitComparisonReadiness = `${IUnitComparisonResult["diagnostics"]["readiness"]}`;
 
 /** Stable SDK diagnostic codes serialized for agents and UI consumers. */
 export type UnitComparisonDiagnosticCode =
-  | "sheet-snapshot-axis-identity-ambiguous"
-  | "sheet-structural-history-partially-falls-back-to-snapshot-coordinates";
+  `${IUnitComparisonResult["diagnostics"]["codes"][number]}`;
 
 /** Coarse value family that lets an agent choose an appropriate explanation or renderer. */
-export type UnitComparisonContextValueType =
-  | "array"
-  | "boolean"
-  | "color"
-  | "formula"
-  | "geometry"
-  | "null"
-  | "number"
-  | "object"
-  | "position"
-  | "reference"
-  | "style"
-  | "text"
-  | "unknown";
+export type UnitComparisonContextValueType = `${IUnitComparisonLeafChange["valueType"]}`;
 
 /** One side of a character/token diff. Equal spans are retained so consumers can render context. */
-export interface UnitComparisonContextSegment {
-  readonly kind: "delete" | "equal" | "insert";
-  readonly text: string;
-}
+export type UnitComparisonContextSegment = Omit<IUnitComparisonTextSegment, "kind"> & {
+  readonly kind: `${IUnitComparisonTextSegment["kind"]}`;
+};
 
 /**
  * One normalized leaf change inside a changed entity. `path` is relative to the parent item, not
  * the Unit root. For example a Slide element may report `["geometry", "x"]`, while a Sheet cell
  * reports `["formula"]`. Insert/delete entities use an empty path to represent the whole entity.
  */
-export interface UnitComparisonContextChange {
-  readonly path: readonly string[];
-  /** Original SDK entity-value path when it differs from the human-facing semantic path. */
-  readonly sourcePath?: readonly string[];
+export type UnitComparisonContextChange = Omit<
+  IUnitComparisonLeafChange,
+  "kind" | "segments" | "valueType"
+> & {
   readonly kind: UnitComparisonContextDiffKind;
   readonly valueType: UnitComparisonContextValueType;
-  readonly before?: unknown;
-  readonly after?: unknown;
   /** Present for comparable text/formula values when the bounded tokenizer can produce hunks. */
   readonly segments?: {
     readonly left: readonly UnitComparisonContextSegment[];
     readonly right: readonly UnitComparisonContextSegment[];
   };
-}
+};
+
+/** JSON-friendly view of the SDK-owned product scope reference. */
+export type UnitComparisonContextScopeReference = Omit<
+  IUnitComparisonScopeReference,
+  "entityType"
+> & {
+  readonly entityType: `${IUnitComparisonScopeReference["entityType"]}`;
+};
 
 export interface UnitComparisonContextQuery {
   /** Independent offset into SDK-owned product context, such as Doc alignment rows. */
@@ -392,10 +388,7 @@ export interface UnitComparisonContextQuery {
   /** Keep entities contained by this stable Sheet/page/table/record identity. */
   readonly parentStableId?: string;
   /** Keep only entities rendered inside this SDK-owned product view scope. */
-  readonly scope?: {
-    readonly entityType: string;
-    readonly stableId: string;
-  };
+  readonly scope?: UnitComparisonContextScopeReference;
   /** Case-insensitive search across identity, title, paths, details, and returned leaf values. */
   readonly search?: string;
   /** Requested response detail. Defaults to `full` for compatibility with the original API. */
@@ -426,10 +419,7 @@ export interface UnitComparisonContextItem {
   /** Stable identity of the containing Sheet, page, table, or other parent object. */
   readonly parentStableId?: string;
   /** SDK-owned worksheet, slide, Base table, or Board page containing this item. */
-  readonly scope?: {
-    readonly entityType: string;
-    readonly stableId: string;
-  };
+  readonly scope?: UnitComparisonContextScopeReference;
   readonly kind: UnitComparisonContextDiffKind;
   /** Product entity family, drawn from `coverage.supportedEntityTypes`. */
   readonly entityType: string;
@@ -506,26 +496,13 @@ export interface UnitComparisonContextSummary {
   readonly byEntityType: Readonly<Record<string, number>>;
 }
 
-export interface UnitComparisonContextPage {
-  readonly offset: number;
-  readonly limit: number;
-  readonly matched: number;
-  readonly hasMore: boolean;
-}
+export type UnitComparisonContextPage = IUnitComparisonResult["page"];
 
 /** One changed, independently navigable product view reported by Pro History. */
-export interface UnitComparisonContextScope {
-  readonly entityType: string;
-  readonly stableId: string;
-  readonly displayName: string;
-  readonly kind: UnitComparisonContextDiffKind;
-  readonly changeCount: number;
-  readonly moved: boolean;
-  readonly locations: {
-    readonly left: UnitComparisonContextLocation | null;
-    readonly right: UnitComparisonContextLocation | null;
+export type UnitComparisonContextScope = Omit<IUnitComparisonScope, "entityType" | "kind"> &
+  UnitComparisonContextScopeReference & {
+    readonly kind: UnitComparisonContextDiffKind;
   };
-}
 
 /**
  * Versioned, UI-independent Server API projection of Pro History semantic comparison. The same

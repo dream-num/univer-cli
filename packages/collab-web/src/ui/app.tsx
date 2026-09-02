@@ -606,7 +606,8 @@ export class App {
   /** Refresh the change summaries used to decide which Worktrees can compare this product. */
   private refreshComparisonSourcePreviews(): Promise<void> | undefined {
     const candidates = [...this.worktrees.values()].filter(
-      (worktree) => isViewableWorktreeStatus(worktree.status),
+      (worktree) =>
+        isViewableWorktreeStatus(worktree.status) && !this.previews.has(worktree.worktreeId),
     );
     if (candidates.length === 0) {
       return undefined;

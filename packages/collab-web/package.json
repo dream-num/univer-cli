@@ -11,7 +11,7 @@
     "check:locales": "node scripts/generate-viewer-locales.mjs --check && node scripts/check-sdk-locales.mjs",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit --pretty false",
-    "build:browser": "vite build --config vite.browser.config.ts"
+    "build:browser": "NODE_OPTIONS=--max-old-space-size=6144 vite build --config vite.browser.config.ts"
   },
   "dependencies": {
     "@base-ui-components/react": "1.0.0-rc.0",
