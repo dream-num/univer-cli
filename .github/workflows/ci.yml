@@ -74,7 +74,7 @@ jobs:
       - name: Build and test
         run: pnpm test
         env:
-          NODE_OPTIONS: --max-old-space-size=4096
+          NODE_OPTIONS: --max-old-space-size=6144
 
       - name: Check package contents
         run: pnpm --filter univer-cli pack:check
