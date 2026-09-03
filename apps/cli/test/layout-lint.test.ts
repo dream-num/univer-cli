@@ -160,6 +160,15 @@ function fakeRender(overrides: Partial<LocalRenderApplication> = {}): LocalRende
         unitData: { id: input.unitId, name: "Deck", slideOrder: [], slides: {} },
       } as never;
     },
+    async printPdf(input) {
+      return {
+        location: input.destination,
+        ok: true,
+        pageCount: 1,
+        unitId: input.unitId ?? "unit-1",
+        unitKind: "sheet",
+      };
+    },
     ...overrides,
   };
 }

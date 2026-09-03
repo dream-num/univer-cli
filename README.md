@@ -63,13 +63,13 @@ with the Slide chart reading data from the Sheet.
 
 ## Capabilities
 
-| Content | Create and edit                                                                               | Verify and review                                                     | Import                               | Export                |
-| ------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------ | --------------------- |
-| Sheet   | Cells, formulas, styles, tables, charts, pivots, filters, validation, images, and more        | Structured workbook/range inspection and screenshots                  | `.xls` `.xlsx` `.xlsm` `.csv` `.tsv` | `.xlsx` `.csv` `.tsv` |
-| Doc     | Paragraphs, rich text, lists, tasks, tables, images, charts, headers, footers, and pagination | Document/paragraph readback and page screenshots                      | `.doc` `.docx`                       | `.docx`               |
-| Slide   | Pages, text, shapes, images, tables, charts, SVG layouts, and transitions                     | Structure inspection, layout lint, and page/contact-sheet screenshots | `.ppt` `.pptx`                       | `.pptx`               |
-| Base    | Tables, fields, records, views, formulas, filters, sorting, and grouping                      | Structured data checks and workbench screenshots                      | `.xls` `.xlsx` `.xlsm` `.csv` `.tsv` | `.xlsx` `.csv` `.tsv` |
-| Board   | Shapes, text, connectors, images, native charts, and routing                                  | Element/connector analysis and overview/region/element screenshots    | —                                    | —                     |
+| Content | Create and edit                                                                               | Verify and review                                                   | Import                               | Export                |
+| ------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------ | --------------------- |
+| Sheet   | Cells, formulas, styles, tables, charts, pivots, filters, validation, images, and more        | Structured workbook/range inspection, screenshots, and PDF printing | `.xls` `.xlsx` `.xlsm` `.csv` `.tsv` | `.xlsx` `.csv` `.tsv` |
+| Doc     | Paragraphs, rich text, lists, tasks, tables, images, charts, headers, footers, and pagination | Document/paragraph readback, page screenshots, and PDF printing     | `.doc` `.docx`                       | `.docx`               |
+| Slide   | Pages, text, shapes, images, tables, charts, SVG layouts, and transitions                     | Structure inspection, layout lint, screenshots, and PDF printing    | `.ppt` `.pptx`                       | `.pptx`               |
+| Base    | Tables, fields, records, views, formulas, filters, sorting, and grouping                      | Structured data checks and workbench screenshots                    | `.xls` `.xlsx` `.xlsm` `.csv` `.tsv` | `.xlsx` `.csv` `.tsv` |
+| Board   | Shapes, text, connectors, images, native charts, and routing                                  | Element/connector analysis, screenshots, and PDF printing           | —                                    | —                     |
 
 Every content type supports isolated draft editing, review, revision, merge, and discard. Board file import and export are not currently supported.
 
@@ -120,7 +120,7 @@ The Skill selects these capabilities automatically. Most users do not need to ca
 | `worktree`                                         | Create, prepare, reopen, merge, or discard isolated changes                       |
 | `inspect`                                          | Read Workbook, Worksheet, Range, Document, Paragraph, Presentation, or Slide data |
 | `execute`                                          | Read or edit content through trusted Univer Facade code                           |
-| `screenshot`, `lint`                               | Render content and diagnose Slide layout issues                                   |
+| `screenshot`, `print`, `lint`                      | Render content, print PDF, and diagnose Slide layout issues                       |
 | `compile-svg`, `compile-typst`                     | Turn SVG or Typst sources into editable Univer content                            |
 | `export`, `open`                                   | Export Office files or return a local Viewer URL                                  |
 | `api`, `resources`, `skills`                       | Find Facade APIs, visual resources, and operational guidance                      |
@@ -131,7 +131,7 @@ See the [complete CLI reference](apps/cli/README.md) for command options, select
 ## Requirements and current limits
 
 - An agent that supports Agent Skills, plus Node.js 24.0 or later and npm/npx.
-- Screenshot, Slide layout lint, and browser text measurement require Chrome, Chromium, or Edge. The agent can prepare the browser through `univer screenshot setup`.
+- Screenshot, PDF printing, Slide layout lint, and browser text measurement require Chrome, Chromium, or Edge. The agent can prepare the browser through `univer screenshot setup`.
 - `execute` runs trusted JavaScript and is not a sandbox for untrusted code.
 - `.univer` files, the Gateway, Viewer, daemon, runtime workers, and browser cache stay on the local machine. Explicit HTTP imports, resource downloads, and update checks can access the network.
 - Board supports structural and visual verification but does not currently support file import or export.
