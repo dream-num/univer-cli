@@ -1,6 +1,6 @@
 ---
 name: univer-cli
-description: "Use when installing or operating Univer CLI for .univer files, spreadsheets, documents, slides, Base databases, Board canvases, cross-Unit embedding, worktrees, Facade authoring, inspection, verification, import/export, screenshots, or viewer handoff."
+description: "Use when installing or operating Univer CLI for .univer files, spreadsheets, documents, slides, Base databases, Board canvases, cross-Unit embedding, worktrees, Facade authoring, inspection, verification, import/export, PDF printing, screenshots, or viewer handoff."
 ---
 
 # Univer CLI
@@ -100,7 +100,7 @@ univer skills get cross-unit-formula
 - Worktrees isolate agent changes until review and merge.
 - Offline `api find` searches the installed SDK index by keyword; `api show` resolves exact Facade symbols and details.
 - Runtime readback and the viewer verify the stored model and rendered result.
-- Import/export and screenshots use the product runtime rather than unrelated file writers.
+- Import/export, PDF printing, and screenshots use the product runtime rather than unrelated file writers.
 
 Do not edit `.univer` storage directly or substitute unrelated writers. Follow the loaded core and
 Unit Skills for the supported path.
