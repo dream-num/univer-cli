@@ -9,7 +9,6 @@ import {
   type ILanguagePack,
   type IRange,
   type IWorkbookData,
-  IPermissionService,
   IUniverInstanceService,
   LocaleType,
   LogLevel,
@@ -38,6 +37,7 @@ import {
   type NativeComparisonHighlightController
 } from "../core/native-comparison-highlights.js";
 import { compactHighlightRanges } from "./compact-highlight-ranges.js";
+import { blockLocalEditingCommands } from "../core/viewer-readonly.js";
 
 import "@univerjs/engine-formula/facade";
 import "@univer/render-preset/facades";
@@ -167,12 +167,7 @@ export function ReadonlyUniverWorkbookView(input: {
           input.selectedRange ?? null
         );
 
-        cleanup.push(
-          ...applyWorkbookReadonlyGuards(
-            activeWorkbook,
-            univer.__getInjector().get(IPermissionService)
-          )
-        );
+        blockLocalEditingCommands(injector.get(ICommandService));
 
         const renderManagerService = univer.__getInjector().get(IRenderManagerService);
         const workbookId = activeWorkbook.getId();
@@ -761,21 +756,6 @@ function readFacadeRange(targetSheet: FWorksheet, range: IRange) {
     Math.max(1, range.endRow - range.startRow + 1),
     Math.max(1, range.endColumn - range.startColumn + 1)
   );
-}
-
-function applyWorkbookReadonlyGuards(
-  activeWorkbook: FWorkbook,
-  permissionService: IPermissionService
-): Array<() => void> {
-  const previousShowComponents = permissionService.getShowComponents();
-  permissionService.setShowComponents(false);
-  void activeWorkbook.getWorkbookPermission().setMode("viewer");
-
-  return [
-    () => {
-      permissionService.setShowComponents(previousShowComponents);
-    }
-  ];
 }
 
 function applySelectionRangeInteractionGuards(

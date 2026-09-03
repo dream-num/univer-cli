@@ -72,7 +72,7 @@ describe("version-matched Board composition", () => {
     expect(viewer).toContain("assetIoOwner: ViewAssetIoOwner.CollaborationClient");
     expect(viewer).toContain("assetIoOwner: ViewAssetIoOwner.Local");
     expect(viewer).toContain(
-      'workbenchChrome: opts.unitType === UNIT_TYPE_SHEET ? "visible" : "hidden"'
+      "workbenchChrome: resolveViewerWorkbenchChrome(opts.unitType, opts.editable === true)"
     );
     expect(viewer).toContain('workbenchChrome: "hidden"');
     expect(preset).toContain("{ header: false, toolbar: false, headerMenu: false, footer: false }");
