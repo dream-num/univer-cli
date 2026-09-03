@@ -121,8 +121,10 @@ Sheet/Base → XLSX/CSV/TSV、Doc → DOCX、Slide → PPTX。CSV/TSV 使用 `--
 `screenshot` 使用 CLI SDK screenshot/render capability，并由 application 提供 Univerfile、Worktree、browser
 cache 与 local asset adapter。Sheet、Base、Doc、Slide 和 Board 均可渲染，默认输出目录为 `./screenshots`。
 
-`print-pdf` 可将 Sheet、Doc、Slide 或 Board Unit 导出为 PDF，并保留原有的页面布局和分页效果；Base Unit
-不支持打印。command 默认读取 trunk，`--worktree` 可打印所选 Worktree 且不修改内容。
+`print-pdf` 通过浏览器页面所使用的同一个 live Viewer print capability 导出 Sheet、Doc、Slide 或 Board
+Unit。Chromium 保存当前 Viewer 准备的 print document，因此其布局、分页、字体和当前版本行为是唯一真源；CLI
+不提供按 Unit 区分的 PDF renderer 或 fallback。Base Unit 不支持打印。command 默认读取 trunk，
+`--worktree` 可打印所选 Worktree 且不修改内容。
 
 ```bash
 univer screenshot setup

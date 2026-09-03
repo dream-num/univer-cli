@@ -1,5 +1,4 @@
 import type {
-  UniverPrintPdfRuntime,
   UniverRenderRuntime,
   UniverSlideLayoutRuntime,
   UniverRenderUnit,
@@ -172,10 +171,7 @@ describe("Local render application", () => {
     const root = await mkdtemp(join(tmpdir(), "univer-render-app-"));
     const renderCalls: unknown[] = [];
     let closeCount = 0;
-    const runtime: UniverPrintPdfRuntime &
-      UniverRenderRuntime &
-      UniverSlideLayoutRuntime &
-      UniverTextMeasureRuntime = {
+    const runtime: UniverRenderRuntime & UniverSlideLayoutRuntime & UniverTextMeasureRuntime = {
       async captureSlideLayout(input) {
         const pages = input.pages ?? [1];
         return {
@@ -206,9 +202,6 @@ describe("Local render application", () => {
           lineCount: 1,
         };
       },
-      async printPdf() {
-        return { bytes: new TextEncoder().encode("%PDF-1.7\ntest"), pageCount: 2 };
-      },
       async render(input) {
         renderCalls.push(input);
         return { bytes: Uint8Array.from([1, 2, 3]), height: 20, width: 30 };
@@ -219,6 +212,9 @@ describe("Local render application", () => {
         if (input.unitId === "slide-1") return slideSource();
         if (input.unitId === "base-1") return baseSource();
         return sheetSource();
+      },
+      async viewerUrl() {
+        return "http://127.0.0.1:9123/collab-web/?file=test";
       },
     };
     const paths = {
@@ -254,18 +250,6 @@ describe("Local render application", () => {
       expect(await readFile(result.outputs[0]!.location)).toEqual(Buffer.from([1, 2, 3]));
       expect(renderCalls).toHaveLength(1);
 
-      const printed = await application.printPdf({
-        cwd: root,
-        destination: "reports/book.pdf",
-        path: "book.univer",
-      });
-      expect(printed).toMatchObject({
-        location: join(root, "reports/book.pdf"),
-        pageCount: 2,
-        unitId: "sheet-1",
-        unitKind: "sheet",
-      });
-      expect(await readFile(printed.location, "utf8")).toBe("%PDF-1.7\ntest");
       await expect(
         application.printPdf({ cwd: root, destination: "book.txt", path: "book.univer" }),
       ).rejects.toMatchObject({ code: "UNIT_PRINT_PDF_OUTPUT_INVALID" });
@@ -277,7 +261,7 @@ describe("Local render application", () => {
           unitId: "base-1",
         }),
       ).rejects.toMatchObject({ code: "UNIT_PRINT_PDF_TYPE_UNSUPPORTED" });
-      expect(closeCount).toBe(2);
+      expect(closeCount).toBe(1);
 
       const measurer = application.createTextMeasurer();
       expect(
@@ -288,7 +272,7 @@ describe("Local render application", () => {
         }),
       ).toEqual({ width: 42, ascent: 9, descent: 3 });
       await measurer.close();
-      expect(closeCount).toBe(3);
+      expect(closeCount).toBe(2);
 
       const lintSource = await application.loadLayoutLintSource({
         cwd: root,
@@ -303,7 +287,7 @@ describe("Local render application", () => {
         coverage: { pages: [{ page: 1, pageId: "slide-page-1" }] },
         findings: [],
       });
-      expect(closeCount).toBe(4);
+      expect(closeCount).toBe(3);
       await expect(
         application.loadLayoutLintSource({
           cwd: root,
@@ -311,6 +295,89 @@ describe("Local render application", () => {
           unitId: "sheet-1",
         }),
       ).rejects.toMatchObject({ code: "UNIT_LAYOUT_LINT_TYPE_UNSUPPORTED" });
+    } finally {
+      await rm(root, { force: true, recursive: true });
+    }
+  });
+
+  it("prints every supported Unit through one live Viewer browser path", async () => {
+    const root = await mkdtemp(join(tmpdir(), "univer-viewer-pdf-"));
+    const viewerRequests: unknown[] = [];
+    const printRequests: unknown[] = [];
+    let runtimeOpened = false;
+    const source: LocalRenderSource = {
+      async load(input) {
+        if (input.unitId === "sheet-1") return sheetSource();
+        if (input.unitId === "slide-1") return slideSource();
+        if (input.unitId === "board-1") return boardSource();
+        return docSource();
+      },
+      async viewerUrl(input) {
+        viewerRequests.push(input);
+        return `http://127.0.0.1:9123/collab-web/?file=test&unit=${input.unitId}`;
+      },
+    };
+    const paths = {
+      configPath: join(root, "config.json"),
+      daemonDir: join(root, "daemon"),
+      homeDir: root,
+      socketPath: join(root, "daemon", "daemon.sock"),
+    };
+    const application = createLocalRenderApplication({
+      browserCacheRoot: join(root, "browsers"),
+      browserRuntimeRoot: join(root, "runtime"),
+      config: createApplicationConfig(paths),
+      env: { UNIVER_LICENSE: "test-license" },
+      source,
+      async runtimeFactory() {
+        runtimeOpened = true;
+        throw new Error("render runtime should not open for browser PDF printing");
+      },
+      viewerPdfPrinter: {
+        async print(input) {
+          printRequests.push(input);
+          return { bytes: new TextEncoder().encode("%PDF-1.7\nviewer"), pageCount: 2 };
+        },
+      },
+    });
+
+    try {
+      for (const [unitId, unitKind] of [
+        ["doc-1", "doc"],
+        ["sheet-1", "sheet"],
+        ["slide-1", "slide"],
+        ["board-1", "board"],
+      ] as const) {
+        const result = await application.printPdf({
+          cwd: root,
+          destination: `reports/${unitKind}.pdf`,
+          path: "book.univer",
+          unitId,
+          worktreeId: "review",
+        });
+        expect(result).toEqual({
+          location: join(root, `reports/${unitKind}.pdf`),
+          ok: true,
+          pageCount: 2,
+          unitId,
+          unitKind,
+        });
+        expect(await readFile(result.location, "utf8")).toBe("%PDF-1.7\nviewer");
+      }
+      expect(viewerRequests).toEqual(
+        ["doc-1", "sheet-1", "slide-1", "board-1"].map((unitId) => ({
+          cwd: root,
+          path: "book.univer",
+          unitId,
+          worktreeId: "review",
+        })),
+      );
+      expect(printRequests).toEqual(
+        ["doc-1", "sheet-1", "slide-1", "board-1"].map((unitId) => ({
+          url: `http://127.0.0.1:9123/collab-web/?file=test&unit=${unitId}`,
+        })),
+      );
+      expect(runtimeOpened).toBe(false);
     } finally {
       await rm(root, { force: true, recursive: true });
     }
@@ -432,5 +499,24 @@ function baseSource(): UniverRenderUnit {
   return {
     unitData: { id: "base-1", name: "Base" },
     unitType: "base",
+  } as unknown as UniverRenderUnit;
+}
+
+function boardSource(): UniverRenderUnit {
+  return {
+    unitData: { id: "board-1", name: "Board", pageOrder: [], pages: {} },
+    unitType: "board",
+  } as unknown as UniverRenderUnit;
+}
+
+function docSource(): UniverRenderUnit {
+  return {
+    unitData: {
+      id: "doc-1",
+      body: { dataStream: "\r\n", paragraphs: [{ startIndex: 0 }] },
+      documentStyle: {},
+      title: "Document",
+    },
+    unitType: "doc",
   } as unknown as UniverRenderUnit;
 }

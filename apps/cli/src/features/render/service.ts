@@ -13,7 +13,6 @@ import {
   type UnitScreenshotInput,
   type UnitScreenshotResult,
 } from "@univer-cli/unit-screenshot";
-import { createUnitPdfPrinter, type UnitPdfPrintInput } from "@univer-cli/unit-pdf-printer";
 import type { UniverRenderBrowserSetupCommandDependencies } from "@univer-cli/unit-screenshot-command";
 import {
   createUnitLayoutLint,
@@ -26,7 +25,6 @@ import {
   probeUniverRenderBrowser,
   resolveUniverRenderBrowser,
   UNIVER_RENDER_BROWSER_CACHE_ENV_VAR,
-  type UniverPrintPdfRuntime,
   type UniverRenderRuntime,
   type UniverSlideLayoutRuntime,
   type UniverRenderUnit,
@@ -37,7 +35,9 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { basename, dirname, extname, resolve } from "node:path";
 import { resolveRuntimeLicense, resolveScreenshotLimits } from "../../environment/config.js";
 import { resolveLocalUniverfile } from "../../environment/univerfile-path.js";
+import { createLocalUniverfileApplication } from "../univerfile/service.js";
 import { CONTENT_RENDER_SOURCE_METHOD, parseContentRenderSourceResult } from "./protocol.js";
+import { createViewerPdfPrinter, type ViewerPdfPrinter } from "./viewer-pdf.js";
 
 const DEFAULT_SCREENSHOT_DIRECTORY = "./screenshots";
 
@@ -92,9 +92,16 @@ export interface LocalRenderSource {
     readonly unitId?: string;
     readonly worktreeId?: string;
   }): Promise<UniverRenderUnit>;
+  viewerUrl(input: {
+    readonly cwd?: string;
+    readonly path: string;
+    readonly unitId: string;
+    readonly worktreeId?: string;
+  }): Promise<string>;
 }
 
 export function createLocalRenderSource(daemon: DaemonClient): LocalRenderSource {
+  const univerfiles = createLocalUniverfileApplication(daemon);
   return {
     async load(input) {
       const cwd = input.cwd ?? process.cwd();
@@ -105,6 +112,16 @@ export function createLocalRenderSource(daemon: DaemonClient): LocalRenderSource
           ...(input.worktreeId === undefined ? {} : { worktreeId: input.worktreeId }),
         }),
       );
+    },
+    async viewerUrl(input) {
+      return (
+        await univerfiles.open({
+          path: input.path,
+          unitId: input.unitId,
+          ...(input.cwd === undefined ? {} : { cwd: input.cwd }),
+          ...(input.worktreeId === undefined ? {} : { worktreeId: input.worktreeId }),
+        })
+      ).openUrl;
     },
   };
 }
@@ -142,16 +159,12 @@ export interface CreateLocalRenderApplicationOptions {
   readonly config: Config;
   readonly source: LocalRenderSource;
   readonly env?: NodeJS.ProcessEnv;
+  readonly viewerPdfPrinter?: ViewerPdfPrinter;
   readonly runtimeFactory?: (input: {
     readonly browserRuntimeRoot: string;
     readonly env: NodeJS.ProcessEnv;
     readonly license: string;
-  }) => Promise<
-    UniverPrintPdfRuntime &
-      UniverRenderRuntime &
-      UniverSlideLayoutRuntime &
-      UniverTextMeasureRuntime
-  >;
+  }) => Promise<UniverRenderRuntime & UniverSlideLayoutRuntime & UniverTextMeasureRuntime>;
 }
 
 /** Bind local paths/config/output files to the target-neutral render and screenshot SDKs. */
@@ -167,12 +180,10 @@ export function createLocalRenderApplication(
         env: input.env,
         license: input.license,
       }));
+  const viewerPdfPrinter = options.viewerPdfPrinter ?? createViewerPdfPrinter({ env });
 
   async function openRuntime(): Promise<
-    UniverPrintPdfRuntime &
-      UniverRenderRuntime &
-      UniverSlideLayoutRuntime &
-      UniverTextMeasureRuntime
+    UniverRenderRuntime & UniverSlideLayoutRuntime & UniverTextMeasureRuntime
   > {
     try {
       return await runtimeFactory({
@@ -256,21 +267,23 @@ export function createLocalRenderApplication(
           code: "UNIT_PRINT_PDF_TYPE_UNSUPPORTED",
         });
       }
-      const runtime = await openRuntime();
-      try {
-        const result = await createUnitPdfPrinter({ runtime }).print(source as UnitPdfPrintInput);
-        await mkdir(dirname(location), { recursive: true });
-        await writeFile(location, result.bytes);
-        return {
-          location,
-          ok: true,
-          pageCount: result.pageCount,
-          unitId: result.unitId,
-          unitKind: result.unitType,
-        };
-      } finally {
-        await runtime.close();
-      }
+      const result = await viewerPdfPrinter.print({
+        url: await options.source.viewerUrl({
+          path: input.path,
+          unitId: source.unitData.id,
+          ...(input.cwd === undefined ? {} : { cwd: input.cwd }),
+          ...(input.worktreeId === undefined ? {} : { worktreeId: input.worktreeId }),
+        }),
+      });
+      await mkdir(dirname(location), { recursive: true });
+      await writeFile(location, result.bytes);
+      return {
+        location,
+        ok: true,
+        pageCount: result.pageCount,
+        unitId: source.unitData.id,
+        unitKind: source.unitType,
+      };
     },
     layoutLint: {
       async lint(input) {
@@ -284,18 +297,10 @@ export function createLocalRenderApplication(
     },
     createTextMeasurer() {
       let runtime:
-        | Promise<
-            UniverPrintPdfRuntime &
-              UniverRenderRuntime &
-              UniverSlideLayoutRuntime &
-              UniverTextMeasureRuntime
-          >
+        | Promise<UniverRenderRuntime & UniverSlideLayoutRuntime & UniverTextMeasureRuntime>
         | undefined;
       const getRuntime = (): Promise<
-        UniverPrintPdfRuntime &
-          UniverRenderRuntime &
-          UniverSlideLayoutRuntime &
-          UniverTextMeasureRuntime
+        UniverRenderRuntime & UniverSlideLayoutRuntime & UniverTextMeasureRuntime
       > => {
         runtime ??= openRuntime();
         return runtime;

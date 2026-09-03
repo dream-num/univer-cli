@@ -109,7 +109,7 @@ The editable `univer open` Viewer can import and export through its Ribbon. Impo
 
 `screenshot` uses CLI SDK screenshot and render capabilities with application-owned Univerfile, Worktree, browser-cache, and local-asset adapters. Sheet, Base, Doc, Slide, and Board can all be rendered. The default output directory is `./screenshots`.
 
-`print-pdf` exports a Sheet, Doc, Slide, or Board Unit to PDF while preserving its page layout and pagination. Base Units are not printable. The command reads trunk by default; `--worktree` prints the selected Worktree without modifying it.
+`print-pdf` exports a Sheet, Doc, Slide, or Board Unit through the same live Viewer print capability used by the browser page. Chromium saves the print document prepared by the current Viewer, so its layout, pagination, fonts, and current-version behavior are the source of truth; the CLI has no Unit-specific PDF renderer or fallback. Base Units are not printable. The command reads trunk by default; `--worktree` prints the selected Worktree without modifying it.
 
 ```bash
 univer screenshot setup
