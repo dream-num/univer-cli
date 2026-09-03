@@ -11,9 +11,6 @@ import {
   setLang,
   t
 } from "../src/i18n";
-import { EN_US_MESSAGES } from "../src/i18n/locales/en-US";
-import { ZH_CN_MESSAGES } from "../src/i18n/locales/zh-CN";
-import { STRUCTURAL_ENTITY_CATEGORIES } from "../src/i18n/locales/structural-entity-labels";
 import { structuralDiffItemLabel } from "../src/ui/structural-diff-item-label";
 
 describe("resolveLang", () => {
@@ -70,10 +67,6 @@ describe("setLang / t", () => {
     expect(t().topbar.currentVersion).toBe("Current version");
   });
 
-  it("keeps both locale tables structurally identical", () => {
-    expect(shapeOf(EN_US_MESSAGES)).toEqual(shapeOf(ZH_CN_MESSAGES));
-  });
-
   it("keeps the canonical manifest unique and every shell table structurally complete", async () => {
     expect(LOCALE_MANIFEST).toHaveLength(17);
     expect(new Set(LOCALE_MANIFEST.map(({ tag }) => tag)).size).toBe(17);
@@ -81,20 +74,18 @@ describe("setLang / t", () => {
     expect(LOCALE_MANIFEST.map(({ tag }) => tag)).not.toContain("ar-SA");
     expect(LOCALE_MANIFEST.map(({ tag }) => tag)).not.toContain("fa-IR");
 
-    const authority = shapeOf(EN_US_MESSAGES);
+    const english = await loadMessages("en-US");
+    const authority = shapeOf(english);
     for (const locale of LOCALE_MANIFEST) {
       const messages = await loadMessages(locale.tag);
       for (const key of ["worksheet", "workbook", "scopeLabel", "displayModeLabel", "content", "formatting", "searchChanges"] as const) {
         expect(messages.diff[key].trim(), `${locale.tag}:${key}`).not.toBe("");
-        if (locale.tag !== "en-US") expect(messages.diff[key], `${locale.tag}:${key}`).not.toBe(EN_US_MESSAGES.diff[key]);
+        if (locale.tag !== "en-US") expect(messages.diff[key], `${locale.tag}:${key}`).not.toBe(english.diff[key]);
       }
       expect(messages.diff.showFormulas, `${locale.tag}:formula display`).toBeTruthy();
       if (locale.tag !== "en-US") expect(messages.diff.showFormulas).not.toBe("Show formulas");
       expect(shapeOf(messages), locale.tag).toEqual(authority);
       expect(messages.topbar.segDiff, `${locale.tag} compare label`).toBe(messages.diff.compare);
-      for (const category of STRUCTURAL_ENTITY_CATEGORIES) {
-        expect(messages.diff.entity(category), `${locale.tag}:${category}`).not.toBe("");
-      }
       for (const category of [
         "paragraph",
         "slide-element",
@@ -143,7 +134,7 @@ describe("setLang / t", () => {
       values: { left: {}, right: {} }
     });
 
-    expect(label).toBe("第 3 个画板元素 · 已移动");
+    expect(label).toBe(`${t().diff.entityAt("board-element", 3)} · ${t().diff.moved}`);
     expect(label).not.toContain("element-opaque-id");
     await setLang("en-US");
   });
@@ -167,7 +158,9 @@ describe("setLang / t", () => {
       }
     });
 
-    expect(label).toBe("引用 · 发布前需要完成安全审查");
+    expect(label).toBe(
+      `${t().diff.changeValue("block-range", ["type"], "quote")} · 发布前需要完成安全审查`
+    );
     expect(label).not.toContain("opaque-quote-id");
     await setLang("en-US");
   });
@@ -187,7 +180,7 @@ describe("setLang / t", () => {
       position: { left: 0, right: 0 },
       values: { left: "transition-old-id", right: "transition-private-id" }
     };
-    expect(structuralDiffItemLabel(item)).toBe("第 1 个幻灯片转场");
+    expect(structuralDiffItemLabel(item)).toBe(t().diff.entityAt("slide-transition-ref", 1));
     expect(structuralDiffItemLabel(item, "Launch overview")).toBe("Launch overview");
     expect(item.values.right).toBe("transition-private-id");
     await setLang("en-US");

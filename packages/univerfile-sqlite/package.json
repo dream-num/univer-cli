@@ -16,10 +16,10 @@
     "typecheck": "tsc -p tsconfig.test.json --noEmit --pretty false"
   },
   "dependencies": {
-    "@univerjs-pro/collaboration-history-service": "1.0.0-insiders.20260831-796c4f4",
-    "@univerjs-pro/collaboration-service": "1.0.0-insiders.20260831-796c4f4",
-    "@univerjs-pro/collaboration-worktree-service": "1.0.0-insiders.20260831-796c4f4",
-    "@univerjs/protocol": "1.0.0-insiders.20260831-796c4f4",
+    "@univerjs-pro/collaboration-history-service": "1.0.0-insiders.20260902-a58c423",
+    "@univerjs-pro/collaboration-service": "1.0.0-insiders.20260902-a58c423",
+    "@univerjs-pro/collaboration-worktree-service": "1.0.0-insiders.20260902-a58c423",
+    "@univerjs/protocol": "1.0.0-insiders.20260902-a58c423",
     "libsql": "^0.5.29"
   }
 }

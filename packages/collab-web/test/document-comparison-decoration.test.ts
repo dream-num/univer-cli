@@ -8,7 +8,12 @@ import {
 } from "../src/core/document-comparison-decoration";
 
 /** Exercise the real SDK output through the renderer, without an application-side diff fallback. */
-function decorateDocumentComparisonSide(current: IDocumentData, peer: IDocumentData, side: ComparisonSide): IDocumentData {
+function decorateDocumentComparisonSide(
+  current: IDocumentData,
+  peer: IDocumentData,
+  side: ComparisonSide,
+  selectedEntityType?: string,
+): IDocumentData {
   const result = new DocsUnitComparisonAdapter().compare({
     unitId: "doc-1", leftData: side === "left" ? current : peer,
     rightData: side === "right" ? current : peer, leftChangesets: [], rightChangesets: [],
@@ -17,6 +22,10 @@ function decorateDocumentComparisonSide(current: IDocumentData, peer: IDocumentD
   const items = structuralDiffItemsFromContext({ items: result.items.map((item) => ({
     ...item, title: item.displayName ?? item.stableId, details: [],
   })) });
+  const selectedItemId =
+    selectedEntityType === undefined
+      ? undefined
+      : items.find((item) => item.entityType === selectedEntityType)?.id;
   return renderDocumentComparisonSide(current, peer, side, {
     items,
     alignment: result.productContext.paragraphAlignment.map((row, index) => {
@@ -28,6 +37,7 @@ function decorateDocumentComparisonSide(current: IDocumentData, peer: IDocumentD
         kind: item?.kind ?? "equal", moved: item?.moved ?? false,
       };
     }),
+    ...(selectedItemId === undefined ? {} : { selectedItemId }),
   });
 }
 
@@ -342,6 +352,31 @@ describe("document comparison decoration", () => {
       text: "September",
       color: "rgba(37, 99, 235, 0.22)",
       strike: false
+    });
+  });
+
+  it("strengthens only the selected semantic difference", () => {
+    const normal = decorateDocumentComparisonSide(
+      document("Ship in August"),
+      document("Ship in September"),
+      "left",
+    );
+    const selected = decorateDocumentComparisonSide(
+      document("Ship in August"),
+      document("Ship in September"),
+      "left",
+      "paragraph",
+    );
+
+    expect(coloredText(normal)).toContainEqual({
+      text: "August",
+      color: "rgba(37, 99, 235, 0.22)",
+      strike: false,
+    });
+    expect(coloredText(selected)).toContainEqual({
+      text: "August",
+      color: "rgba(37, 99, 235, 0.42)",
+      strike: false,
     });
   });
 

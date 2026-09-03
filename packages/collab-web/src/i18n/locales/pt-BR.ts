@@ -1,4 +1,4 @@
-import { messagesFromVocabulary, type MessageVocabulary } from "./from-vocabulary";
+import type { MessageVocabulary } from "./from-vocabulary";
 
 const vocabulary = {
   showFormulas: "Mostrar fórmulas",
@@ -98,4 +98,4 @@ const vocabulary = {
   empty: "Nenhum arquivo aberto"
 } satisfies MessageVocabulary;
 
-export const PT_BR_MESSAGES = messagesFromVocabulary(vocabulary, "pt-BR");
+export default vocabulary;

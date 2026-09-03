@@ -1,4 +1,4 @@
-import { messagesFromVocabulary, type MessageVocabulary } from "./from-vocabulary";
+import type { MessageVocabulary } from "./from-vocabulary";
 
 const vocabulary = {
   showFormulas: "Tampilkan rumus",
@@ -98,4 +98,4 @@ const vocabulary = {
   empty: "Tidak ada file terbuka"
 } satisfies MessageVocabulary;
 
-export const ID_ID_MESSAGES = messagesFromVocabulary(vocabulary, "id-ID");
+export default vocabulary;

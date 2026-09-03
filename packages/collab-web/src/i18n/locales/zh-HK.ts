@@ -1,4 +1,4 @@
-import { messagesFromVocabulary, type MessageVocabulary } from "./from-vocabulary";
+import type { MessageVocabulary } from "./from-vocabulary";
 
 const vocabulary = {
   showFormulas: "顯示公式",
@@ -97,4 +97,4 @@ const vocabulary = {
   empty: "未有開啟的檔案"
 } satisfies MessageVocabulary;
 
-export const ZH_HK_MESSAGES = messagesFromVocabulary(vocabulary, "zh-HK");
+export default vocabulary;

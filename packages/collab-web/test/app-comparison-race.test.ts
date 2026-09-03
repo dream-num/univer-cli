@@ -1,9 +1,12 @@
 // @vitest-environment jsdom
 import type {
   CreateUnitComparisonResponse,
+  MergePreview,
+  UnitSummary,
   UnitComparisonContextResponse,
   UnitComparisonRefRequest,
   UnitComparisonResponse,
+  Worktree,
 } from "@univer/collab-gateway-contract";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/ui/app";
@@ -20,12 +23,17 @@ interface ComparisonControl {
   createUnitComparison: ReturnType<typeof vi.fn>;
   getUnitComparison: ReturnType<typeof vi.fn>;
   getUnitComparisonContext: ReturnType<typeof vi.fn>;
+  previewMerge: ReturnType<typeof vi.fn>;
 }
 
 interface AppInternals {
   control: ComparisonControl;
   view: { kind: "worktree"; worktreeId: string };
   comparisonMode: boolean;
+  selectedUnitId: string | undefined;
+  previews: Map<string, MergePreview>;
+  worktreeUnits: UnitSummary[];
+  worktrees: Map<string, Worktree>;
 }
 
 describe("comparison request races", () => {
@@ -93,6 +101,63 @@ describe("comparison request races", () => {
     if (product?.kind !== "doc") throw new Error("Expected Doc context");
     expect(product.paragraphAlignment.rows).toHaveLength(1003);
     expect(product.paragraphAlignment.page.hasMore).toBe(false);
+  });
+
+  it("offers only Worktrees that changed the selected product type", () => {
+    const { app, internals } = createComparisonApp(apps, "wt-right");
+    const slideUnit = {
+      unitId: "slide-unit",
+      type: UniverInstanceType.UNIVER_SLIDE,
+      name: "Deck",
+      headRev: 2,
+    };
+    const worktrees = ["wt-right", "wt-sheet", "wt-slide", "wt-doc"].map((worktreeId) =>
+      comparisonWorktree(worktreeId, worktreeId),
+    );
+    internals.worktrees = new Map(worktrees.map((worktree) => [worktree.worktreeId, worktree]));
+    internals.previews = new Map([
+      ["wt-right", comparisonPreview("wt-right", UniverInstanceType.UNIVER_SLIDE)],
+      ["wt-sheet", comparisonPreview("wt-sheet", UniverInstanceType.UNIVER_SHEET)],
+      ["wt-slide", comparisonPreview("wt-slide", UniverInstanceType.UNIVER_SLIDE)],
+      ["wt-doc", comparisonPreview("wt-doc", UniverInstanceType.UNIVER_DOC)],
+    ]);
+    internals.worktreeUnits = [
+      slideUnit,
+      { unitId: "doc-unit", type: UniverInstanceType.UNIVER_DOC, name: "Memo", headRev: 1 },
+    ];
+    internals.selectedUnitId = slideUnit.unitId;
+
+    expect(app.comparisonSourceWorktrees().map((worktree) => worktree.worktreeId)).toEqual([
+      "wt-slide",
+    ]);
+
+    internals.selectedUnitId = "doc-unit";
+    expect(app.comparisonSourceWorktrees()).toEqual([]);
+  });
+
+  it("reuses cached Worktree previews when preparing comparison sources", async () => {
+    const { app, control, internals } = createComparisonApp(apps, "wt-right");
+    const current = comparisonWorktree("wt-right", "Current");
+    const cached = comparisonWorktree("wt-cached", "Cached");
+    const missing = comparisonWorktree("wt-missing", "Missing");
+    internals.worktrees = new Map(
+      [current, cached, missing].map((worktree) => [worktree.worktreeId, worktree]),
+    );
+    internals.previews = new Map([
+      ["wt-right", comparisonPreview("wt-right", UniverInstanceType.UNIVER_SHEET)],
+      ["wt-cached", comparisonPreview("wt-cached", UniverInstanceType.UNIVER_SHEET)],
+    ]);
+    control.previewMerge.mockResolvedValue(
+      comparisonPreview("wt-missing", UniverInstanceType.UNIVER_SHEET),
+    );
+    control.createUnitComparison.mockResolvedValue(
+      comparisonSession("cmp-current", "wt-right", { kind: "trunk" }),
+    );
+
+    await app.refreshUnitComparison();
+
+    expect(control.previewMerge).toHaveBeenCalledTimes(1);
+    expect(control.previewMerge).toHaveBeenCalledWith("wt-missing");
   });
 
   it("keeps the newest source session busy when an older create request succeeds", async () => {
@@ -250,12 +315,40 @@ function createComparisonApp(
     createUnitComparison: vi.fn(),
     getUnitComparison: vi.fn(),
     getUnitComparisonContext: vi.fn().mockResolvedValue(unitComparisonContext()),
+    previewMerge: vi.fn(),
   };
   const internals = app as unknown as AppInternals;
   internals.control = control;
   internals.view = { kind: "worktree", worktreeId };
   internals.comparisonMode = true;
   return { app, control, internals };
+}
+
+function comparisonWorktree(worktreeId: string, name: string): Worktree {
+  return {
+    worktreeId,
+    name,
+    status: "draft",
+    agentId: "agent",
+    baseline: {},
+    createdAt: "2026-08-30T00:00:00.000Z",
+  };
+}
+
+function comparisonPreview(worktreeId: string, type: UniverInstanceType): MergePreview {
+  return {
+    worktreeId,
+    mergeable: true,
+    diverged: false,
+    conflicts: [],
+    units: [{
+      unitId: `${worktreeId}-unit`,
+      type,
+      name: "Changed unit",
+      status: "modified",
+      baseStale: false,
+    }],
+  };
 }
 
 function unitComparisonContext(): UnitComparisonContextResponse {
@@ -272,7 +365,7 @@ function unitComparisonContext(): UnitComparisonContextResponse {
       coverage: { supportedEntityTypes: [] },
       page: { offset: 0, limit: 1000, matched: 0, hasMore: false },
       items: [],
-      diagnostics: { readiness: "ready", unsupportedMutationIds: [], notes: [] },
+      diagnostics: { readiness: "ready", unsupportedMutationIds: [], codes: [] },
       productContext: { kind: "sheet", sheets: [] },
     },
   };

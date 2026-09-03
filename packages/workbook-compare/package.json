@@ -17,6 +17,6 @@
     "typecheck": "tsc -p tsconfig.test.json --noEmit --pretty false"
   },
   "dependencies": {
-    "@univerjs/core": "1.0.0-insiders.20260831-796c4f4"
+    "@univerjs/core": "1.0.0-insiders.20260902-a58c423"
   }
 }

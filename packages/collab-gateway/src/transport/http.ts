@@ -33,7 +33,7 @@ import {
 const SHEET_TYPE = 2;
 const UNIT_COMPARISON_ENTITY_TYPES = new Set<string>(Object.values(UnitComparisonEntityType));
 
-function isUnitComparisonEntityType(value: string): boolean {
+function isUnitComparisonEntityType(value: string): value is UnitComparisonEntityType {
   return UNIT_COMPARISON_ENTITY_TYPES.has(value);
 }
 
@@ -78,6 +78,17 @@ function parseComparisonContextQuery(params: URLSearchParams): UnitComparisonCon
     throw new Error("includeValues must be true or false");
   }
   const parentStableId = params.get("parentStableId")?.trim();
+  const scopeEntityType = params.get("scopeEntityType")?.trim();
+  const scopeStableId = params.get("scopeStableId")?.trim();
+  if ((scopeEntityType === undefined) !== (scopeStableId === undefined)) {
+    throw new Error("scopeEntityType and scopeStableId must be supplied together");
+  }
+  if (scopeEntityType !== undefined && !isUnitComparisonEntityType(scopeEntityType)) {
+    throw new Error("scopeEntityType contains an unsupported comparison entity code");
+  }
+  if (scopeStableId === "") {
+    throw new Error("scopeStableId must not be empty");
+  }
   const search = params.get("search")?.trim();
   return {
     ...(offset === undefined ? {} : { offset }),
@@ -89,6 +100,9 @@ function parseComparisonContextQuery(params: URLSearchParams): UnitComparisonCon
       ? {}
       : { entityTypes: entityTypes.filter(isUnitComparisonEntityType) }),
     ...(parentStableId === undefined || parentStableId === "" ? {} : { parentStableId }),
+    ...(scopeEntityType === undefined || scopeStableId === undefined
+      ? {}
+      : { scope: { entityType: scopeEntityType, stableId: scopeStableId } }),
     ...(search === undefined || search === "" ? {} : { search }),
     ...(detail === null ? {} : { detail: detail as "summary" | "changes" | "full" }),
     ...(includeValues === null ? {} : { includeValues: includeValues === "true" }),

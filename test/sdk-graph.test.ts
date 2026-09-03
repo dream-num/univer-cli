@@ -3,16 +3,18 @@ import { validateSdkDependencyGraph } from "../scripts/release/sdk-graph.mjs";
 
 describe("release SDK graph", () => {
   const univer = "1.0.0-insiders.20260831-796c4f4";
+  const cli = "1.0.0-insiders.20260830-cli";
+  const collaborationServer = "1.0.0-insiders.20260829-collaboration";
 
-  it("accepts one exact SDK cohort and separately versioned independent packages", () => {
+  it("accepts independently versioned SDK cohorts and independent packages", () => {
     expect(
       validateSdkDependencyGraph([
         {
           manifestPath: "apps/cli/package.json",
           manifest: {
             dependencies: {
-              "@univer-cli/headless-univer": univer,
-              "@univerjs-pro/collaboration-service": univer,
+              "@univer-cli/headless-univer": cli,
+              "@univerjs-pro/collaboration-service": collaborationServer,
               "@univerjs-pro/engine-formula-rust-binding": "1.0.0-insiders.20260819-8209aa8",
               "@univerjs/core": univer,
             },
@@ -26,7 +28,7 @@ describe("release SDK graph", () => {
     ).toMatchObject({
       dependencyCount: 5,
       sdkVersion: univer,
-      cohorts: { univer },
+      cohorts: { "collaboration-server": collaborationServer, cli, univer },
     });
   });
 
@@ -52,16 +54,33 @@ describe("release SDK graph", () => {
         },
       ]),
     ).toThrow(/cohort mismatch/u);
+    expect(
+      validateSdkDependencyGraph([
+        {
+          manifestPath: "apps/cli/package.json",
+          manifest: {
+            dependencies: {
+              "@univer-cli/headless-univer": cli,
+              "@univerjs/core": univer,
+            },
+          },
+        },
+      ]),
+    ).toMatchObject({ cohorts: { cli, univer } });
     expect(() =>
       validateSdkDependencyGraph([
         {
           manifestPath: "apps/cli/package.json",
           manifest: {
             dependencies: {
-              "@univer-cli/headless-univer": "1.0.0-insiders.other",
-              "@univerjs/core": univer,
+              "@univer-cli/headless-univer": cli,
+              "@univer-cli/config": "1.0.0-insiders.other",
             },
           },
+        },
+        {
+          manifestPath: "packages/runtime/package.json",
+          manifest: { dependencies: { "@univerjs/core": univer } },
         },
       ]),
     ).toThrow(/cohort mismatch/u);

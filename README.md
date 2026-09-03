@@ -85,8 +85,10 @@ Every content type supports isolated draft editing, review, revision, merge, and
 
 Inside a Worktree, the Viewer offers read-only **View** and **Compare** modes for Sheet, Doc, Slide,
 Base, and Board Units. Diff compares the current Worktree with a pinned Trunk state by default; the
-left side can instead be another active Worktree. Both sides are materialized through their pinned
-heads before comparison, and a stale comparison is refreshed explicitly.
+left side can instead be another active Worktree that contains changes for the selected product type.
+Both sides are materialized through their pinned heads before comparison, and a stale comparison is
+refreshed explicitly. Slide and Base change lists follow the selected page or table; selecting a
+change focuses its target in both read-only panes.
 
 Sheet Compare offers independent **Content / Formatting** filters and a **Show formulas** switch
 for both grids. Content uses plain display copies without original cell, rich-text, table-theme or
@@ -169,16 +171,17 @@ pnpm unlink:cli
 
 ### SDK upgrades
 
-The Univer SDK, Univer CLI SDK, and Collaboration Server SDK use one exact version baseline. Upgrade
-the complete SDK dependency graph with:
+The Univer OSS and Pro SDK packages use one exact version baseline. Upgrade that cohort with:
 
 ```bash
 pnpm update:sdk --sdk_version <exact-sdk-version>
 ```
 
-The updater preserves only independently versioned packages such as native bindings and icons.
-Commit every affected manifest together with `pnpm-lock.yaml`; partial manual SDK updates are not
-allowed.
+The Univer CLI SDK and Collaboration Server SDK are separate release cohorts and keep their existing
+versions. To prevent a second Univer runtime graph, the updater also aligns the shared runtime
+overrides used by those independently released server packages. Independently versioned packages
+such as native bindings and icons remain unchanged. Commit every affected manifest together with
+`pnpm-workspace.yaml` and `pnpm-lock.yaml`; partial manual SDK updates are not allowed.
 
 ## License
 

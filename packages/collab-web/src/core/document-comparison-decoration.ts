@@ -20,6 +20,7 @@ import type { UnitComparisonContextChange, UnitComparisonProductContext } from "
 export interface DocumentComparisonInput {
   readonly items: readonly UnitStructuralDiffItem[];
   readonly alignment: Extract<UnitComparisonProductContext, { kind: "doc" }>["paragraphAlignment"]["rows"];
+  readonly selectedItemId?: string;
 }
 
 export type ComparisonSide = "left" | "right";
@@ -37,6 +38,7 @@ interface ToneRange {
   readonly start: number;
   readonly end: number;
   readonly tone: ComparisonTone;
+  readonly emphasized?: boolean;
 }
 
 interface StructuralRange {
@@ -76,10 +78,30 @@ const TONE_STYLE: Record<ComparisonTone, ITextStyle> = {
   update: { bg: { rgb: "rgba(37, 99, 235, 0.22)" } }
 };
 
+const EMPHASIZED_TONE_STYLE: Record<ComparisonTone, ITextStyle> = {
+  delete: {
+    bg: { rgb: "rgba(220, 38, 38, 0.46)" },
+    st: {
+      s: BooleanNumber.TRUE,
+      c: BooleanNumber.FALSE,
+      cl: { rgb: "#b91c1c" },
+      t: TextDecoration.SINGLE
+    }
+  },
+  insert: { bg: { rgb: "rgba(22, 163, 74, 0.46)" } },
+  update: { bg: { rgb: "rgba(37, 99, 235, 0.42)" } }
+};
+
 const PARAGRAPH_TONE_COLOR: Record<ComparisonTone, string> = {
   delete: "rgba(220, 38, 38, 0.12)",
   insert: "rgba(22, 163, 74, 0.12)",
   update: "rgba(37, 99, 235, 0.10)"
+};
+
+const EMPHASIZED_PARAGRAPH_TONE_COLOR: Record<ComparisonTone, string> = {
+  delete: "rgba(220, 38, 38, 0.28)",
+  insert: "rgba(22, 163, 74, 0.28)",
+  update: "rgba(37, 99, 235, 0.25)"
 };
 
 /** Clone one Doc comparison side and paint character-level changes into native text runs. */
@@ -92,7 +114,7 @@ export function decorateDocumentComparisonSide(
   const decorated = Tools.deepClone(current);
   copyMissingRootObjects(decorated, peer, comparison.items, side);
   // Paint native indexes before render-only structural slots change their positions.
-  decorateTables(decorated, comparison.items, side);
+  decorateTables(decorated, comparison.items, side, comparison.selectedItemId);
   const tables: TableSources = { current: decorated.tableSource, peer: peer.tableSource };
   decorateBody(decorated.body, peer.body, side, comparison, tables);
   for (const [segmentId, header] of Object.entries(decorated.headers ?? {})) {
@@ -134,7 +156,7 @@ function decorateBody(
   current.textRuns ??= [];
   clearCheckedListCompletionStrike(current);
   // Container-level blue is a background layer; missing and inline content takes precedence.
-  decorateStructuredRanges(current, items, side);
+  decorateStructuredRanges(current, items, side, comparison.selectedItemId);
   const decoratedById = new Map(paragraphSpans(current).map((span) => [span.id, span]));
   const paragraphItems = new Map(items.filter((item) => item.entityType === "paragraph").map((item) => [item.stableId, item]));
   const styleItems = new Map(items.filter((item) => item.entityType === "text-style").map((item) => [item.stableId, item]));
@@ -144,23 +166,28 @@ function decorateBody(
     const ownId = own?.paragraphId ?? ghostParagraphIds.get(row.id);
     const rendered = ownId === undefined ? undefined : decoratedById.get(ownId);
     if (rendered === undefined) continue;
+    const paragraphItem = paragraphItems.get(row.stableId);
+    const styleItem = styleItems.get(row.stableId);
+    const emphasized =
+      comparison.selectedItemId !== undefined &&
+      (paragraphItem?.id === comparison.selectedItemId ||
+        styleItem?.id === comparison.selectedItemId);
     if (row.left === null || row.right === null) {
       const tone: ComparisonTone = own === null ? "delete" : row.moved ? "update" : "insert";
-      ranges.push({ start: rendered.start, end: rendered.end, tone });
-      applyParagraphTone(rendered.paragraph, tone);
+      ranges.push({ start: rendered.start, end: rendered.end, tone, emphasized });
+      applyParagraphTone(rendered.paragraph, tone, emphasized);
       continue;
     }
-    const item = paragraphItems.get(row.stableId);
-    const textChange = item?.changes.find((change) => change.path.length === 1 && change.path[0] === "text");
+    const textChange = paragraphItem?.changes.find((change) => change.path.length === 1 && change.path[0] === "text");
     if (textChange?.segments !== undefined) {
       const textRanges = buildTextRanges(textChange.segments, rendered.start, rendered.start);
-      ranges.push(...textRanges[side]);
+      ranges.push(...textRanges[side].map((range) => ({ ...range, emphasized })));
     } else if (textChange !== undefined) {
       // A whole-string API replacement is still authoritative; do not run another text diff here.
-      ranges.push({ start: rendered.start, end: rendered.end, tone: "update" });
-    } else if (item !== undefined || styleItems.has(row.stableId)) {
-      ranges.push({ start: rendered.start, end: rendered.end, tone: "update" });
-      applyParagraphTone(rendered.paragraph, "update");
+      ranges.push({ start: rendered.start, end: rendered.end, tone: "update", emphasized });
+    } else if (paragraphItem !== undefined || styleItem !== undefined) {
+      ranges.push({ start: rendered.start, end: rendered.end, tone: "update", emphasized });
+      applyParagraphTone(rendered.paragraph, "update", emphasized);
     }
   }
   for (const range of mergeAdjacentRanges(ranges)) applyTone(current, range);
@@ -700,7 +727,12 @@ function buildTextRanges(
 }
 
 function applyTone(body: IDocumentBody, range: ToneRange): void {
-  applyTextStyle(body, range.start, range.end, TONE_STYLE[range.tone]);
+  applyTextStyle(
+    body,
+    range.start,
+    range.end,
+    range.emphasized ? EMPHASIZED_TONE_STYLE[range.tone] : TONE_STYLE[range.tone]
+  );
 }
 
 function applyTextStyle(body: IDocumentBody, start: number, end: number, style: ITextStyle): void {
@@ -723,17 +755,28 @@ function applyTextStyle(body: IDocumentBody, start: number, end: number, style: 
   body.textRuns = styled.textRuns ?? [];
 }
 
-function applyParagraphTone(paragraph: IParagraph, tone: ComparisonTone): void {
+function applyParagraphTone(
+  paragraph: IParagraph,
+  tone: ComparisonTone,
+  emphasized = false
+): void {
   paragraph.paragraphStyle = {
     ...paragraph.paragraphStyle,
-    shading: { backgroundColor: { rgb: PARAGRAPH_TONE_COLOR[tone] } }
+    shading: {
+      backgroundColor: {
+        rgb: emphasized
+          ? EMPHASIZED_PARAGRAPH_TONE_COLOR[tone]
+          : PARAGRAPH_TONE_COLOR[tone]
+      }
+    }
   };
 }
 
 function decorateStructuredRanges(
   current: IDocumentBody,
   items: readonly UnitStructuralDiffItem[],
-  side: ComparisonSide
+  side: ComparisonSide,
+  selectedItemId: string | undefined
 ): void {
   for (const [category, idKey, collection, shade] of [
     ["block-range", "blockId", current.blockRanges, true],
@@ -746,12 +789,13 @@ function decorateStructuredRanges(
       if (range === undefined) continue;
       const tone: ComparisonTone = item.kind === "update" ? "update" :
         (item.kind === "insert") === (side === "right") ? "insert" : "delete";
+      const emphasized = item.id === selectedItemId;
       for (const paragraph of paragraphSpans(current)) {
         const start = Math.max(paragraph.start, range.startIndex);
         const end = Math.min(paragraph.end, range.endIndex + 1);
-        if (end > start) applyTone(current, { start, end, tone });
+        if (end > start) applyTone(current, { start, end, tone, emphasized });
         if (shade && paragraph.start < range.endIndex + 1 && paragraph.end + 1 > range.startIndex) {
-          applyParagraphTone(paragraph.paragraph, tone);
+          applyParagraphTone(paragraph.paragraph, tone, emphasized);
         }
       }
     }
@@ -800,7 +844,8 @@ function copyMissingRootObjects(
 function decorateTables(
   decorated: IDocumentData,
   items: readonly UnitStructuralDiffItem[],
-  side: ComparisonSide
+  side: ComparisonSide,
+  selectedItemId: string | undefined
 ): void {
   const renderedTables = asRecord((decorated as IDocumentData & Record<string, unknown>).tableSource) ?? {};
   for (const item of items.filter((candidate) => candidate.entityType === "table")) {
@@ -824,7 +869,12 @@ function decorateTables(
         if (cell === undefined) continue;
         const tone: ComparisonTone = item.kind === "update" ? "update" :
           (item.kind === "insert") === (side === "right") ? "insert" : "delete";
-        cell.backgroundColor = { rgb: PARAGRAPH_TONE_COLOR[tone] };
+        cell.backgroundColor = {
+          rgb:
+            item.id === selectedItemId
+              ? EMPHASIZED_PARAGRAPH_TONE_COLOR[tone]
+              : PARAGRAPH_TONE_COLOR[tone]
+        };
       }
     }
   }
@@ -843,7 +893,12 @@ function mergeAdjacentRanges(ranges: readonly ToneRange[]): ToneRange[] {
   const merged: ToneRange[] = [];
   for (const range of sorted) {
     const previous = merged[merged.length - 1];
-    if (previous !== undefined && previous.tone === range.tone && previous.end >= range.start) {
+    if (
+      previous !== undefined &&
+      previous.tone === range.tone &&
+      previous.emphasized === range.emphasized &&
+      previous.end >= range.start
+    ) {
       merged[merged.length - 1] = { ...previous, end: Math.max(previous.end, range.end) };
     } else {
       merged.push(range);

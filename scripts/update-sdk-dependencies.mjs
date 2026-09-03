@@ -11,6 +11,7 @@ import {
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const LOCKFILE_PATH = join(REPO_ROOT, "pnpm-lock.yaml");
+const WORKSPACE_PATH = join(REPO_ROOT, "pnpm-workspace.yaml");
 const EXACT_SEMVER_PATTERN =
   /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/u;
 
@@ -43,7 +44,7 @@ export function alignManifestSdkDependencies(manifest, version, workspaceNames =
       }
       if (!SDK_PREFIXES.some((prefix) => name.startsWith(prefix))) continue;
       assertExactDependency(manifest.name, field, name, specifier);
-      if (sdkCohort(name) === undefined) continue;
+      if (sdkCohort(name) !== "univer") continue;
       if (specifier !== version) {
         manifest[field][name] = version;
         changed += 1;
@@ -51,6 +52,24 @@ export function alignManifestSdkDependencies(manifest, version, workspaceNames =
     }
   }
   return changed;
+}
+
+export function alignWorkspaceSdkOverrides(source, version) {
+  if (!EXACT_SEMVER_PATTERN.test(version)) {
+    throw new Error(`SDK version must be exact SemVer: ${String(version)}`);
+  }
+  let changed = 0;
+  const updatedSource = source.replace(
+    /^(\s{2}"([^"]+)":\s*")([^"]+)(".*)$/gmu,
+    (line, prefix, name, specifier, suffix) => {
+      if (sdkCohort(name) !== "univer") return line;
+      assertExactDependency("pnpm-workspace.yaml", "overrides", name, specifier);
+      if (specifier === version) return line;
+      changed += 1;
+      return `${prefix}${version}${suffix}`;
+    },
+  );
+  return { changed, source: updatedSource };
 }
 
 export function resolveWorkspaceSdkBaseline(packages) {
@@ -126,18 +145,23 @@ export async function main(argv) {
   const packages = await discoverWorkspacePackages();
   const workspaceNames = new Set(packages.map(({ manifest }) => manifest.name));
   const originalLockfile = await readFile(LOCKFILE_PATH, "utf8");
+  const originalWorkspace = await readFile(WORKSPACE_PATH, "utf8");
   let changed = 0;
   try {
     for (const pkg of packages) {
       changed += alignManifestSdkDependencies(pkg.manifest, version, workspaceNames);
       await writeFile(pkg.packagePath, `${JSON.stringify(pkg.manifest, null, 2)}\n`, "utf8");
     }
+    const workspace = alignWorkspaceSdkOverrides(originalWorkspace, version);
+    changed += workspace.changed;
+    await writeFile(WORKSPACE_PATH, workspace.source, "utf8");
     run("pnpm", ["install", "--lockfile-only"]);
     const updated = await discoverWorkspacePackages();
     validateWorkspaceSdkDependencies(updated, version);
   } catch (error) {
     await Promise.all(packages.map((pkg) => writeFile(pkg.packagePath, pkg.source, "utf8")));
     await writeFile(LOCKFILE_PATH, originalLockfile, "utf8");
+    await writeFile(WORKSPACE_PATH, originalWorkspace, "utf8");
     throw error;
   }
   process.stdout.write(

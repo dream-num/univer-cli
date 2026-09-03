@@ -7,6 +7,7 @@ import { UniverSheetsTablePlugin } from "@univerjs/sheets-table";
 // The resource key is part of the snapshot format, but is not exported by Sheets.
 const RANGE_THEME_RESOURCE = "SHEET_RANGE_THEME_MODEL_PLUGIN";
 const PLAIN_TABLE_THEME = "table-comparison-content-plain";
+const COMPARISON_FREEZE = { startColumn: -1, startRow: -1, xSplit: 0, ySplit: 0 };
 
 /**
  * Create the plain, content-only Sheet comparison display copy.
@@ -78,4 +79,28 @@ export function createContentComparisonSnapshot(source: IWorkbookData | null): I
     }
   }
   return snapshot;
+}
+
+/**
+ * Create a read-only canvas snapshot for one side of Sheet Compare.
+ *
+ * Freeze remains part of the semantic diff, but applying different freeze states to the two
+ * canvases gives them different viewport origins and makes symmetric scrolling impossible.
+ */
+export function createWorkbookComparisonDisplaySnapshot(
+  source: IWorkbookData | null,
+  mode: "value" | "style"
+): IWorkbookData | null {
+  const snapshot = mode === "value" ? createContentComparisonSnapshot(source) : source;
+  if (snapshot === null) return null;
+
+  return {
+    ...snapshot,
+    sheets: Object.fromEntries(
+      Object.entries(snapshot.sheets).map(([sheetId, sheet]) => [
+        sheetId,
+        { ...sheet, freeze: { ...COMPARISON_FREEZE } }
+      ])
+    )
+  };
 }
