@@ -120,7 +120,7 @@ The Skill selects these capabilities automatically. Most users do not need to ca
 | `worktree`                                         | Create, prepare, reopen, merge, or discard isolated changes                       |
 | `inspect`                                          | Read Workbook, Worksheet, Range, Document, Paragraph, Presentation, or Slide data |
 | `execute`                                          | Read or edit content through trusted Univer Facade code                           |
-| `screenshot`, `print`, `lint`                      | Render content, print PDF, and diagnose Slide layout issues                       |
+| `screenshot`, `print-pdf`, `lint`                  | Render content, print PDF, and diagnose Slide layout issues                       |
 | `compile-svg`, `compile-typst`                     | Turn SVG or Typst sources into editable Univer content                            |
 | `export`, `open`                                   | Export Office files or return a local Viewer URL                                  |
 | `api`, `resources`, `skills`                       | Find Facade APIs, visual resources, and operational guidance                      |

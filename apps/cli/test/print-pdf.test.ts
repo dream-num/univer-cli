@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import { runCli } from "../src/cli.js";
 import type { LocalRenderApplication } from "../src/features/render/service.js";
 
-describe("Local print command", () => {
+describe("Local print-pdf command", () => {
   it("maps Local Univerfile addressing to Unit PDF output", async () => {
     const calls: unknown[] = [];
     const result = await invoke(
       [
-        "print",
+        "print-pdf",
         "book.univer",
         "reports/book.pdf",
         "--worktree",
@@ -50,7 +50,7 @@ describe("Local print command", () => {
 
   it("prints the output path in human-readable mode", async () => {
     const result = await invoke(
-      ["print", "book.univer", "book.pdf"],
+      ["print-pdf", "book.univer", "book.pdf"],
       fakeRender({
         async printPdf() {
           return {

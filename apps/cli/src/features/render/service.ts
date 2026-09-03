@@ -13,7 +13,7 @@ import {
   type UnitScreenshotInput,
   type UnitScreenshotResult,
 } from "@univer-cli/unit-screenshot";
-import { createUnitPrintPdf, type UnitPrintPdfInput } from "@univer-cli/unit-print-pdf";
+import { createUnitPdfPrinter, type UnitPdfPrintInput } from "@univer-cli/unit-pdf-printer";
 import type { UniverRenderBrowserSetupCommandDependencies } from "@univer-cli/unit-screenshot-command";
 import {
   createUnitLayoutLint,
@@ -258,7 +258,7 @@ export function createLocalRenderApplication(
       }
       const runtime = await openRuntime();
       try {
-        const result = await createUnitPrintPdf({ runtime }).print(source as UnitPrintPdfInput);
+        const result = await createUnitPdfPrinter({ runtime }).print(source as UnitPdfPrintInput);
         await mkdir(dirname(location), { recursive: true });
         await writeFile(location, result.bytes);
         return {

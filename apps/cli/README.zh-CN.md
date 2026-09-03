@@ -22,7 +22,7 @@ univer inspect <target> <selectors...> <file.univer> --unit <id> (--trunk|--work
 univer lint --file <file.univer> --unit <slide-id> [--worktree <id>] [--pages <pages>]
 univer screenshot <file.univer> [--worktree <id>] [--unit <id>] [--out <dir>]
 univer screenshot setup [--force]
-univer print <file.univer> <output.pdf> [--worktree <id>] [--unit <id>]
+univer print-pdf <file.univer> <output.pdf> [--worktree <id>] [--unit <id>]
 univer compile-svg <file.svg> ...
 univer compile-typst <bundle> ...
 univer resources registries|find|export|cache ...
@@ -121,7 +121,7 @@ Sheet/Base → XLSX/CSV/TSV、Doc → DOCX、Slide → PPTX。CSV/TSV 使用 `--
 `screenshot` 使用 CLI SDK screenshot/render capability，并由 application 提供 Univerfile、Worktree、browser
 cache 与 local asset adapter。Sheet、Base、Doc、Slide 和 Board 均可渲染，默认输出目录为 `./screenshots`。
 
-`print` 使用 CLI SDK `unit-print-pdf` capability 和当前 browser Render Page，将 Sheet、Doc、Slide 或 Board Unit
+`print-pdf` 使用 CLI SDK `unit-pdf-printer` capability 和当前 browser Render Page，将 Sheet、Doc、Slide 或 Board Unit
 写为 PDF；Base Unit 不支持打印。command 默认读取 trunk，`--worktree` 可打印所选 Worktree 且不修改内容。
 
 ```bash
@@ -129,8 +129,8 @@ univer screenshot setup
 univer screenshot ./book.univer --unit <sheet-id> --range A1:H40 --out ./shots
 univer screenshot ./book.univer --worktree <id> --unit <slide-id> \
   --pages 1,3-5 --contact-slide --tile 3x2 --out ./shots
-univer print ./book.univer ./book.pdf --unit <sheet-id>
-univer print ./book.univer ./review.pdf --worktree <id> --unit <doc-id>
+univer print-pdf ./book.univer ./book.pdf --unit <sheet-id>
+univer print-pdf ./book.univer ./review.pdf --worktree <id> --unit <doc-id>
 univer lint --file ./book.univer --worktree <id> --unit <slide-id> --pages 1,3-5
 ```
 

@@ -43,7 +43,7 @@ import {
   type LocalOptimizeApplication,
 } from "./features/optimize/service.js";
 import { createScreenshotCommand } from "./features/render/screenshot-command.js";
-import { createPrintCommand } from "./features/render/print-command.js";
+import { createPrintPdfCommand } from "./features/render/print-pdf-command.js";
 import {
   createLocalRenderApplication,
   createLocalRenderSource,
@@ -243,7 +243,7 @@ export function createProgram(options: UniverLocalProgramOptions = {}): Command 
   );
   addCommands(
     program,
-    [createScreenshotCommand(renderApplication), createPrintCommand(renderApplication)],
+    [createScreenshotCommand(renderApplication), createPrintPdfCommand(renderApplication)],
     HELP_GROUPS.rendering,
     output,
   );

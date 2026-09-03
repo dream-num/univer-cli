@@ -73,7 +73,7 @@ univer open
        -> read-only pinned Unit comparison (Trunk or Worktree <-> current Worktree)
        -> trunk-only Universer exchange tasks + all-scope print plugins
 
-univer screenshot / print / lint / compile-svg
+univer screenshot / print-pdf / lint / compile-svg
   -> CLI SDK browser orchestration
        -> packaged render-runtime-client
             -> CLI SDK univer-render-page

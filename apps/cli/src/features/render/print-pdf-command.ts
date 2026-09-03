@@ -1,22 +1,22 @@
 import { Command } from "commander";
 import type { LocalRenderApplication } from "./service.js";
 
-interface PrintOptions {
+interface PrintPdfOptions {
   readonly json?: boolean;
   readonly unit?: string;
   readonly worktree?: string;
 }
 
 /** Compose Unit PDF printing with Local Univerfile addressing and output. */
-export function createPrintCommand(application: LocalRenderApplication): Command {
-  const command = new Command("print")
+export function createPrintPdfCommand(application: LocalRenderApplication): Command {
+  const command = new Command("print-pdf")
     .description("Print a local Univerfile Unit to PDF")
     .argument("<file.univer>", "local .univer file")
     .argument("<output.pdf>", "output PDF file")
     .option("--worktree <id>", "read a Worktree; defaults to trunk")
     .option("--unit <unit-id>", "Unit to print; optional only when the scope has one Unit")
     .option("--json", "write a structured output summary as JSON")
-    .action(async (path: string, destination: string, options: PrintOptions) => {
+    .action(async (path: string, destination: string, options: PrintPdfOptions) => {
       try {
         const result = await application.printPdf({
           destination,
