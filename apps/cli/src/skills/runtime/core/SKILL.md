@@ -1,6 +1,6 @@
 ---
 name: core
-description: "Drive .univer office files from the terminal with the univer CLI — import xlsx/csv/pptx/docx, explore read-only (inspect), read & write via Univer facade code (execute) on a worktree, export xlsx/csv/pptx/docx, hand off a viewer link. Use when a task involves reading or editing .univer / .xlsx / spreadsheet data, .pptx / slide decks / presentations, or .docx / documents, or needs the correct Univer cell model (stored value v, type t=1/2/3/4, formulas, number formats, ranges)."
+description: "Drive .univer office files from the terminal with the univer CLI — import xlsx/csv/pptx/docx, explore read-only (inspect), read & write via Univer facade code (execute) on a worktree, export xlsx/csv/pptx/docx or print PDF, and hand off a viewer link. Use when a task involves reading or editing .univer / .xlsx / spreadsheet data, .pptx / slide decks / presentations, or .docx / documents, or needs the correct Univer cell model (stored value v, type t=1/2/3/4, formulas, number formats, ranges)."
 ---
 
 # Univer CLI Core
@@ -112,7 +112,7 @@ Use `univer <command> --help` as the syntax authority.
 | Verify   | `inspect`                                | Read-only exploration for Sheet workbook/range, Doc document/paragraph, Slide presentation/page, Base schema, and Board element structure.                                                                              |
 | Verify   | `screenshot`                             | Render PNG evidence. Use it for every slide page and run `screenshot setup` first.                                                                                                                                      |
 | Deliver  | `worktree ready\|reopen\|merge\|discard` | Mark work ready for review or explicitly reopen it for same-task rework; the user owns merge.                                                                                                                           |
-| Deliver  | `export` / `open`                        | Export xlsx, csv, pptx, or docx; `open` only prints a viewer URL for the user — it never launches a browser.                                                                                                            |
+| Deliver  | `export` / `print-pdf` / `open`          | Export Office files or print Sheet, Doc, Slide, or Board PDF; `open` only prints a viewer URL for the user.                                                                                                             |
 | System   | `daemon status\|start\|stop` / `config`  | Start diagnosis with `daemon status`.                                                                                                                                                                                   |
 | Maintain | `optimize`                               | Write a new copy with explicit `--worktrees clean`, `--history reset`, and/or `--images externalize`; history reset implies terminal Worktree cleanup and refuses active Worktrees. Omitted passes preserve their data. |
 
