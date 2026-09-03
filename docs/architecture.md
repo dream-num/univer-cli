@@ -39,7 +39,7 @@ browser client 和 runtime integration。`packages/collab-gateway` 与
 
 ### Univer CLI SDK
 
-Univer CLI SDK 提供标准 capability、Commander preset、daemon control、content execution、content inspection、layout lint、screenshot、SVG/Typst facade、resource library、configuration、API reference，以及 collaboration runtime/pool。这些 package 随 application 安装，`apps/cli` 在 composition root 中显式装配，并按需提供 application-specific adapter。
+Univer CLI SDK 提供标准 capability、Commander preset、daemon control、content execution、content inspection、layout lint、screenshot、Unit PDF print、SVG/Typst facade、resource library、configuration、API reference，以及 collaboration runtime/pool。这些 package 随 application 安装，`apps/cli` 在 composition root 中显式装配，并按需提供 application-specific adapter。
 
 ### Application-owned capability
 
@@ -73,7 +73,7 @@ univer open
        -> read-only pinned Unit comparison (Trunk or Worktree <-> current Worktree)
        -> trunk-only Universer exchange tasks + all-scope print plugins
 
-univer screenshot / lint / compile-svg
+univer screenshot / print-pdf / lint / compile-svg
   -> CLI SDK browser orchestration
        -> packaged render-runtime-client
             -> CLI SDK univer-render-page
@@ -81,7 +81,7 @@ univer screenshot / lint / compile-svg
 ```
 
 daemon 只管理本地服务和 runtime lifecycle。它为 render operation 物化 UnitData、解析同文件依赖并投影本地
-图片资产；PNG 输出、layout analysis 和文本测量由 CLI SDK capability 与 browser runtime 完成。
+图片资产；PNG/PDF 输出、layout analysis 和文本测量由 CLI SDK capability 与 browser runtime 完成。
 
 Gateway 按 `.univer` runtime 隔离 Viewer Ribbon 使用的 `source=1` exchange 上传、异步 import/export task 与临时 artifact；导入在当前 trunk 创建新 Unit，导出物化 trunk head。Worktree 路径不暴露 exchange。嵌入资源继续使用按 Unit/worktree 授权的 `source=3` 文件协议，不能与 exchange artifact 混用。
 

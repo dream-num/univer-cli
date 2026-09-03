@@ -21,6 +21,7 @@ univer inspect <target> <selectors...> <file.univer> --unit <id> (--trunk|--work
 univer lint --file <file.univer> --unit <slide-id> [--worktree <id>] [--pages <pages>]
 univer screenshot <file.univer> [--worktree <id>] [--unit <id>] [--out <dir>]
 univer screenshot setup [--force]
+univer print-pdf <file.univer> <output.pdf> [--worktree <id>] [--unit <id>]
 univer compile-svg <file.svg> ...
 univer compile-typst <bundle> ...
 univer resources registries|find|export|cache ...
@@ -66,7 +67,7 @@ univer daemon stop
 pnpm unlink:cli
 ```
 
-`pnpm build` generates the CLI, application daemon, headless worker used by the CLI SDK runtime pool, and browser render runtime under `apps/cli/dist/render-runtime`. The daemon starts the Gateway, Viewer, and runtime worker on demand. Screenshot and text-measurement browsers exist only for their corresponding operations.
+`pnpm build` generates the CLI, application daemon, headless worker used by the CLI SDK runtime pool, and browser render runtime under `apps/cli/dist/browser`. The daemon starts the Gateway, Viewer, and runtime worker on demand. Screenshot, PDF-print, and text-measurement browsers exist only for their corresponding operations.
 
 ## Core authoring loop
 
@@ -108,11 +109,15 @@ The editable `univer open` Viewer can import and export through its Ribbon. Impo
 
 `screenshot` uses CLI SDK screenshot and render capabilities with application-owned Univerfile, Worktree, browser-cache, and local-asset adapters. Sheet, Base, Doc, Slide, and Board can all be rendered. The default output directory is `./screenshots`.
 
+`print-pdf` exports a Sheet, Doc, Slide, or Board Unit to PDF while preserving its page layout and pagination. Base Units are not printable. The command reads trunk by default; `--worktree` prints the selected Worktree without modifying it.
+
 ```bash
 univer screenshot setup
 univer screenshot ./book.univer --unit <sheet-id> --range A1:H40 --out ./shots
 univer screenshot ./book.univer --worktree <id> --unit <slide-id> \
   --pages 1,3-5 --contact-slide --tile 3x2 --out ./shots
+univer print-pdf ./book.univer ./book.pdf --unit <sheet-id>
+univer print-pdf ./book.univer ./review.pdf --worktree <id> --unit <doc-id>
 univer lint --file ./book.univer --worktree <id> --unit <slide-id> --pages 1,3-5
 ```
 

@@ -2,7 +2,7 @@
   "name": "@univer/render-runtime-client",
   "version": "0.1.0",
   "private": true,
-  "description": "Machine-facing headless Univer page for the daemon-hosted browser render runtime: text measurement, per-type layout capture, and page/range image rendering. Not a human viewer.",
+  "description": "Machine-facing headless Univer page for text measurement, layout capture, image rendering, and Unit PDF printing. Not a human viewer.",
   "type": "module",
   "scripts": {
     "build": "vite build",

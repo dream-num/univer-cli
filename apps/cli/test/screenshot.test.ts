@@ -1,4 +1,5 @@
 import type {
+  UniverPrintPdfRuntime,
   UniverRenderRuntime,
   UniverSlideLayoutRuntime,
   UniverRenderUnit,
@@ -171,7 +172,10 @@ describe("Local render application", () => {
     const root = await mkdtemp(join(tmpdir(), "univer-render-app-"));
     const renderCalls: unknown[] = [];
     let closeCount = 0;
-    const runtime: UniverRenderRuntime & UniverSlideLayoutRuntime & UniverTextMeasureRuntime = {
+    const runtime: UniverPrintPdfRuntime &
+      UniverRenderRuntime &
+      UniverSlideLayoutRuntime &
+      UniverTextMeasureRuntime = {
       async captureSlideLayout(input) {
         const pages = input.pages ?? [1];
         return {
@@ -202,6 +206,9 @@ describe("Local render application", () => {
           lineCount: 1,
         };
       },
+      async printPdf() {
+        return { bytes: new TextEncoder().encode("%PDF-1.7\ntest"), pageCount: 2 };
+      },
       async render(input) {
         renderCalls.push(input);
         return { bytes: Uint8Array.from([1, 2, 3]), height: 20, width: 30 };
@@ -209,7 +216,9 @@ describe("Local render application", () => {
     };
     const source: LocalRenderSource = {
       async load(input) {
-        return input.unitId === "slide-1" ? slideSource() : sheetSource();
+        if (input.unitId === "slide-1") return slideSource();
+        if (input.unitId === "base-1") return baseSource();
+        return sheetSource();
       },
     };
     const paths = {
@@ -245,6 +254,31 @@ describe("Local render application", () => {
       expect(await readFile(result.outputs[0]!.location)).toEqual(Buffer.from([1, 2, 3]));
       expect(renderCalls).toHaveLength(1);
 
+      const printed = await application.printPdf({
+        cwd: root,
+        destination: "reports/book.pdf",
+        path: "book.univer",
+      });
+      expect(printed).toMatchObject({
+        location: join(root, "reports/book.pdf"),
+        pageCount: 2,
+        unitId: "sheet-1",
+        unitKind: "sheet",
+      });
+      expect(await readFile(printed.location, "utf8")).toBe("%PDF-1.7\ntest");
+      await expect(
+        application.printPdf({ cwd: root, destination: "book.txt", path: "book.univer" }),
+      ).rejects.toMatchObject({ code: "UNIT_PRINT_PDF_OUTPUT_INVALID" });
+      await expect(
+        application.printPdf({
+          cwd: root,
+          destination: "base.pdf",
+          path: "book.univer",
+          unitId: "base-1",
+        }),
+      ).rejects.toMatchObject({ code: "UNIT_PRINT_PDF_TYPE_UNSUPPORTED" });
+      expect(closeCount).toBe(2);
+
       const measurer = application.createTextMeasurer();
       expect(
         await measurer.measureLine({
@@ -254,7 +288,7 @@ describe("Local render application", () => {
         }),
       ).toEqual({ width: 42, ascent: 9, descent: 3 });
       await measurer.close();
-      expect(closeCount).toBe(2);
+      expect(closeCount).toBe(3);
 
       const lintSource = await application.loadLayoutLintSource({
         cwd: root,
@@ -269,7 +303,7 @@ describe("Local render application", () => {
         coverage: { pages: [{ page: 1, pageId: "slide-page-1" }] },
         findings: [],
       });
-      expect(closeCount).toBe(3);
+      expect(closeCount).toBe(4);
       await expect(
         application.loadLayoutLintSource({
           cwd: root,
@@ -344,6 +378,15 @@ function fakeRender(overrides: Partial<LocalRenderApplication> = {}): LocalRende
         unitData: { id: "slide-1", name: "Deck", slideOrder: [], slides: {} },
       } as never;
     },
+    async printPdf(input) {
+      return {
+        location: input.destination,
+        ok: true,
+        pageCount: 1,
+        unitId: input.unitId ?? "unit-1",
+        unitKind: "sheet",
+      };
+    },
     ...overrides,
   };
 }
@@ -382,5 +425,12 @@ function slideSource(): UniverRenderUnit {
         "slide-page-1": { id: "slide-page-1", elements: [], pageElements: {} },
       },
     },
+  } as unknown as UniverRenderUnit;
+}
+
+function baseSource(): UniverRenderUnit {
+  return {
+    unitData: { id: "base-1", name: "Base" },
+    unitType: "base",
   } as unknown as UniverRenderUnit;
 }

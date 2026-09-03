@@ -63,13 +63,13 @@ https://discord.gg/nThHPupraR
 
 ## 能力一览
 
-| 内容类型 | 创建与编辑                                                 | 校验与审阅                             | 导入                                 | 导出                  |
-| -------- | ---------------------------------------------------------- | -------------------------------------- | ------------------------------------ | --------------------- |
-| Sheet    | 单元格、公式、样式、表格、图表、透视表、筛选、验证、图片等 | Workbook/Range 结构化检查与截图        | `.xls` `.xlsx` `.xlsm` `.csv` `.tsv` | `.xlsx` `.csv` `.tsv` |
-| Doc      | 段落、富文本、列表、任务、表格、图片、图表、页眉页脚、分页 | Document/Paragraph 回读与逐页截图      | `.doc` `.docx`                       | `.docx`               |
-| Slide    | 页面、文字、形状、图片、表格、图表、SVG 布局、转场         | 结构检查、layout lint、逐页/联系表截图 | `.ppt` `.pptx`                       | `.pptx`               |
-| Base     | 表、字段、记录、视图、公式、筛选、排序、分组               | 结构化数据检查与工作台截图             | `.xls` `.xlsx` `.xlsm` `.csv` `.tsv` | `.xlsx` `.csv` `.tsv` |
-| Board    | 形状、文字、连接线、图片、原生图表、自动布线               | 元素/连接关系分析与全局/区域/元素截图  | —                                    | —                     |
+| 内容类型 | 创建与编辑                                                 | 校验与审阅                                   | 导入                                 | 导出                  |
+| -------- | ---------------------------------------------------------- | -------------------------------------------- | ------------------------------------ | --------------------- |
+| Sheet    | 单元格、公式、样式、表格、图表、透视表、筛选、验证、图片等 | Workbook/Range 结构化检查、截图与 PDF 打印   | `.xls` `.xlsx` `.xlsm` `.csv` `.tsv` | `.xlsx` `.csv` `.tsv` |
+| Doc      | 段落、富文本、列表、任务、表格、图片、图表、页眉页脚、分页 | Document/Paragraph 回读、逐页截图与 PDF 打印 | `.doc` `.docx`                       | `.docx`               |
+| Slide    | 页面、文字、形状、图片、表格、图表、SVG 布局、转场         | 结构检查、layout lint、截图与 PDF 打印       | `.ppt` `.pptx`                       | `.pptx`               |
+| Base     | 表、字段、记录、视图、公式、筛选、排序、分组               | 结构化数据检查与工作台截图                   | `.xls` `.xlsx` `.xlsm` `.csv` `.tsv` | `.xlsx` `.csv` `.tsv` |
+| Board    | 形状、文字、连接线、图片、原生图表、自动布线               | 元素/连接关系分析、截图与 PDF 打印           | —                                    | —                     |
 
 所有内容类型都支持隔离草稿、审阅、继续修改、合并和放弃。Board 暂不支持文件导入与导出。
 
@@ -115,7 +115,7 @@ Skill 会自动选择这些能力，日常使用通常不需要手动调用。
 | `worktree`                                         | 创建、准备、重新打开、合并或放弃隔离修改                                         |
 | `inspect`                                          | 读取 Workbook、Worksheet、Range、Document、Paragraph、Presentation 或 Slide 数据 |
 | `execute`                                          | 通过可信 Univer Facade code 读取或编辑内容                                       |
-| `screenshot`、`lint`                               | 渲染内容并诊断 Slide layout 问题                                                 |
+| `screenshot`、`print-pdf`、`lint`                  | 渲染内容、打印 PDF 并诊断 Slide layout 问题                                      |
 | `compile-svg`、`compile-typst`                     | 将 SVG 或 Typst source 转换为可编辑 Univer 内容                                  |
 | `export`、`open`                                   | 导出 Office 文件或返回本地 Viewer URL                                            |
 | `api`、`resources`、`skills`                       | 查找 Facade API、视觉资源与 operational guidance                                 |
@@ -126,7 +126,7 @@ Skill 会自动选择这些能力，日常使用通常不需要手动调用。
 ## 要求与当前限制
 
 - 支持 Agent Skills 的 Agent，以及 Node.js 24.0 或更高版本和 npm/npx。
-- Screenshot、Slide layout lint 与浏览器文字度量需要 Chrome、Chromium 或 Edge；Agent 可以通过 `univer screenshot setup` 准备浏览器。
+- Screenshot、PDF 打印、Slide layout lint 与浏览器文字度量需要 Chrome、Chromium 或 Edge；Agent 可以通过 `univer screenshot setup` 准备浏览器。
 - `execute` 执行可信 JavaScript，不能作为不受信任代码的 sandbox。
 - `.univer` 文件、Gateway、Viewer、daemon、runtime worker 与 browser cache 保存在本机；显式 HTTP 导入、资源下载与更新检查可能访问网络。
 - Board 支持结构与视觉验证，但暂不支持文件导入或导出。

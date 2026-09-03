@@ -1,6 +1,6 @@
 # @univer/render-runtime-client
 
-供 Univer CLI screenshot、layout lint 与 SVG text measurement 使用的 machine Render Page bundle 入口。
+供 Univer CLI screenshot、Unit PDF print、layout lint 与 SVG text measurement 使用的 machine Render Page bundle 入口。
 标准 Univer composition 与 `window.__univerRenderPage` protocol 由版本匹配的
 `@univer-cli/univer-render-page` 提供，本 package 只负责页面容器和构建产物。
 

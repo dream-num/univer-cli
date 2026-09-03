@@ -13,6 +13,7 @@ import {
   type UnitScreenshotInput,
   type UnitScreenshotResult,
 } from "@univer-cli/unit-screenshot";
+import { createUnitPdfPrinter, type UnitPdfPrintInput } from "@univer-cli/unit-pdf-printer";
 import type { UniverRenderBrowserSetupCommandDependencies } from "@univer-cli/unit-screenshot-command";
 import {
   createUnitLayoutLint,
@@ -25,6 +26,7 @@ import {
   probeUniverRenderBrowser,
   resolveUniverRenderBrowser,
   UNIVER_RENDER_BROWSER_CACHE_ENV_VAR,
+  type UniverPrintPdfRuntime,
   type UniverRenderRuntime,
   type UniverSlideLayoutRuntime,
   type UniverRenderUnit,
@@ -32,7 +34,7 @@ import {
 } from "@univer-cli/univer-render-runtime";
 import type { IDocumentData } from "@univerjs/core";
 import { mkdir, writeFile } from "node:fs/promises";
-import { basename, resolve } from "node:path";
+import { basename, dirname, extname, resolve } from "node:path";
 import { resolveRuntimeLicense, resolveScreenshotLimits } from "../../environment/config.js";
 import { resolveLocalUniverfile } from "../../environment/univerfile-path.js";
 import { CONTENT_RENDER_SOURCE_METHOD, parseContentRenderSourceResult } from "./protocol.js";
@@ -69,6 +71,14 @@ export interface LocalScreenshotResult {
   readonly outputs: readonly LocalScreenshotOutput[];
   readonly unitId: string;
   readonly unitKind: UniverRenderUnit["unitType"];
+}
+
+export interface LocalPrintPdfResult {
+  readonly location: string;
+  readonly ok: true;
+  readonly pageCount: number;
+  readonly unitId: string;
+  readonly unitKind: Exclude<UniverRenderUnit["unitType"], "base">;
 }
 
 export interface ClosableSvgTextMeasurer extends SvgTextMeasurer {
@@ -117,6 +127,13 @@ export interface LocalRenderApplication {
     readonly unitId: string;
     readonly worktreeId?: string;
   }): Promise<UnitLayoutLintSource>;
+  printPdf(input: {
+    readonly cwd?: string;
+    readonly destination: string;
+    readonly path: string;
+    readonly unitId?: string;
+    readonly worktreeId?: string;
+  }): Promise<LocalPrintPdfResult>;
 }
 
 export interface CreateLocalRenderApplicationOptions {
@@ -129,7 +146,12 @@ export interface CreateLocalRenderApplicationOptions {
     readonly browserRuntimeRoot: string;
     readonly env: NodeJS.ProcessEnv;
     readonly license: string;
-  }) => Promise<UniverRenderRuntime & UniverSlideLayoutRuntime & UniverTextMeasureRuntime>;
+  }) => Promise<
+    UniverPrintPdfRuntime &
+      UniverRenderRuntime &
+      UniverSlideLayoutRuntime &
+      UniverTextMeasureRuntime
+  >;
 }
 
 /** Bind local paths/config/output files to the target-neutral render and screenshot SDKs. */
@@ -147,7 +169,10 @@ export function createLocalRenderApplication(
       }));
 
   async function openRuntime(): Promise<
-    UniverRenderRuntime & UniverSlideLayoutRuntime & UniverTextMeasureRuntime
+    UniverPrintPdfRuntime &
+      UniverRenderRuntime &
+      UniverSlideLayoutRuntime &
+      UniverTextMeasureRuntime
   > {
     try {
       return await runtimeFactory({
@@ -207,6 +232,46 @@ export function createLocalRenderApplication(
         await runtime.close();
       }
     },
+    async printPdf(input) {
+      const cwd = input.cwd ?? process.cwd();
+      const location = resolve(cwd, input.destination);
+      if (extname(location).toLowerCase() !== ".pdf") {
+        throw Object.assign(new Error("PDF output path must end in .pdf"), {
+          code: "UNIT_PRINT_PDF_OUTPUT_INVALID",
+        });
+      }
+      if (location === resolveLocalUniverfile(input.path, cwd)) {
+        throw Object.assign(new Error("PDF output path must differ from the source Univerfile"), {
+          code: "UNIT_PRINT_PDF_OUTPUT_INVALID",
+        });
+      }
+      const source = await options.source.load({
+        path: input.path,
+        ...(input.cwd === undefined ? {} : { cwd: input.cwd }),
+        ...(input.unitId === undefined ? {} : { unitId: input.unitId }),
+        ...(input.worktreeId === undefined ? {} : { worktreeId: input.worktreeId }),
+      });
+      if (source.unitType === "base") {
+        throw Object.assign(new Error("Base Units do not support PDF printing"), {
+          code: "UNIT_PRINT_PDF_TYPE_UNSUPPORTED",
+        });
+      }
+      const runtime = await openRuntime();
+      try {
+        const result = await createUnitPdfPrinter({ runtime }).print(source as UnitPdfPrintInput);
+        await mkdir(dirname(location), { recursive: true });
+        await writeFile(location, result.bytes);
+        return {
+          location,
+          ok: true,
+          pageCount: result.pageCount,
+          unitId: result.unitId,
+          unitKind: result.unitType,
+        };
+      } finally {
+        await runtime.close();
+      }
+    },
     layoutLint: {
       async lint(input) {
         const runtime = await openRuntime();
@@ -219,10 +284,18 @@ export function createLocalRenderApplication(
     },
     createTextMeasurer() {
       let runtime:
-        | Promise<UniverRenderRuntime & UniverSlideLayoutRuntime & UniverTextMeasureRuntime>
+        | Promise<
+            UniverPrintPdfRuntime &
+              UniverRenderRuntime &
+              UniverSlideLayoutRuntime &
+              UniverTextMeasureRuntime
+          >
         | undefined;
       const getRuntime = (): Promise<
-        UniverRenderRuntime & UniverSlideLayoutRuntime & UniverTextMeasureRuntime
+        UniverPrintPdfRuntime &
+          UniverRenderRuntime &
+          UniverSlideLayoutRuntime &
+          UniverTextMeasureRuntime
       > => {
         runtime ??= openRuntime();
         return runtime;
