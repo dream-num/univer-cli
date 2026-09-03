@@ -16,6 +16,23 @@ export const INDEPENDENT_PACKAGES = new Set([
   "@univerjs-pro/engine-formula-rust-binding",
   "@univerjs-pro/exchange-node-binding",
 ]);
+export const COLLABORATION_SERVER_PACKAGES = new Set([
+  "@univerjs-pro/collaboration-endpoint",
+  "@univerjs-pro/collaboration-history-endpoint",
+  "@univerjs-pro/collaboration-history-service",
+  "@univerjs-pro/collaboration-server",
+  "@univerjs-pro/collaboration-service",
+  "@univerjs-pro/collaboration-transport-node",
+  "@univerjs-pro/collaboration-worktree-endpoint",
+  "@univerjs-pro/collaboration-worktree-service",
+  "@univerjs-pro/computing-delegation-client",
+  "@univerjs-pro/computing-delegation-server",
+  "@univerjs-pro/exchange-node",
+  "@univerjs-pro/ssc",
+  "@univerjs-pro/ssr",
+  "@univerjs-pro/ssr-client",
+  "@univerjs-pro/ssr-server",
+]);
 export async function validateWorkspaceSdkDependencies(repoRoot) {
   const entries = [];
   for (const parent of ["apps", "packages"]) {
@@ -77,6 +94,8 @@ export function validateSdkDependencyGraph(entries) {
 
 export function sdkCohort(name) {
   if (INDEPENDENT_PACKAGES.has(name)) return undefined;
-  if (SDK_PREFIXES.some((prefix) => name.startsWith(prefix))) return "univer";
+  if (name.startsWith("@univer-cli/")) return "cli";
+  if (COLLABORATION_SERVER_PACKAGES.has(name)) return "collaboration-server";
+  if (name.startsWith("@univerjs/") || name.startsWith("@univerjs-pro/")) return "univer";
   return undefined;
 }

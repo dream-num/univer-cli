@@ -1,4 +1,4 @@
-import { messagesFromVocabulary, type MessageVocabulary } from "./from-vocabulary";
+import type { MessageVocabulary } from "./from-vocabulary";
 
 const vocabulary = {
   showFormulas: "수식 표시",
@@ -97,4 +97,4 @@ const vocabulary = {
   empty: "열린 파일 없음"
 } satisfies MessageVocabulary;
 
-export const KO_KR_MESSAGES = messagesFromVocabulary(vocabulary, "ko-KR");
+export default vocabulary;

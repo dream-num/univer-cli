@@ -126,12 +126,13 @@ describe("WorktreeControlClient pinned comparisons", () => {
       kinds: ["update"],
       entityTypes: ["cell", "formula"],
       parentStableId: "sheet-1",
+      scope: { entityType: "worksheet", stableId: "sheet-1" },
       search: "revenue",
       detail: "changes",
     });
 
     expect(calls[0]!.url).toBe(
-      `${ORIGIN}/uf/${ENC}/worktrees/wt-right/comparisons/cmp-1/units/unit%2F1/diff?offset=20&limit=10&kind=update&entityType=cell%2Cformula&parentStableId=sheet-1&search=revenue&detail=changes`,
+      `${ORIGIN}/uf/${ENC}/worktrees/wt-right/comparisons/cmp-1/units/unit%2F1/diff?offset=20&limit=10&kind=update&entityType=cell%2Cformula&parentStableId=sheet-1&scopeEntityType=worksheet&scopeStableId=sheet-1&search=revenue&detail=changes`,
     );
     expect(calls[0]!.init?.method).toBeUndefined();
   });

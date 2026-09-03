@@ -1,9 +1,12 @@
 import type { Messages } from "./en-US";
-import { comparisonTerm, localizedComparisonEnum, localizedComparisonPath } from "./comparison-labels.js";
+import type { Lang } from "../index.js";
 import {
-  localizedStructuralEntity,
-  type VocabularyLocale
-} from "./structural-entity-labels";
+  comparisonTerm,
+  localizedComparisonEntity,
+  localizedComparisonEnum,
+  localizedComparisonPath,
+  type UnitComparisonTranslate
+} from "./comparison-labels.js";
 
 export interface MessageVocabulary {
   title: string;
@@ -101,20 +104,37 @@ export interface MessageVocabulary {
   empty: string;
 }
 
+// Worktree language belongs to this application, not to the SDK comparison vocabulary.
+const WORKTREE_MAIN_BRANCH: Readonly<Record<Lang, string>> = {
+  "ca-ES": "Branca principal",
+  "de-DE": "Hauptbranch",
+  "en-US": "Main branch",
+  "es-ES": "Rama principal",
+  "fr-FR": "Branche principale",
+  "id-ID": "Cabang utama",
+  "it-IT": "Ramo principale",
+  "ja-JP": "メインブランチ",
+  "ko-KR": "메인 브랜치",
+  "pl-PL": "Gałąź główna",
+  "pt-BR": "Branch principal",
+  "ru-RU": "Основная ветка",
+  "sk-SK": "Hlavná vetva",
+  "vi-VN": "Nhánh chính",
+  "zh-CN": "主分支",
+  "zh-HK": "主分支",
+  "zh-TW": "主分支"
+};
+
 /** Build a structurally complete shell table from locale-owned vocabulary, without English fallback. */
-export function messagesFromVocabulary(v: MessageVocabulary, locale: VocabularyLocale): Messages {
+export function messagesFromVocabulary(
+  v: MessageVocabulary,
+  locale: Lang,
+  translateComparison: UnitComparisonTranslate
+): Messages {
   const failure = (action: string, error: string): string => `${action} ${v.failed}: ${error}`;
   const ago = (n: number, unit: string): string => `${n} ${unit}`;
   const structuralEntity = (category: string): string =>
-    localizedStructuralEntity(locale, category, {
-      content: v.content,
-      styles: v.styles,
-      chart: v.sheetCategories.chart,
-      table: v.sheetCategories.table,
-      cell: v.sheetCategories.cell,
-      formula: v.sheetCategories.formula,
-      shape: v.sheetCategories.shape
-    });
+    localizedComparisonEntity(translateComparison, category);
   return {
     app: { title: v.title },
     boot: {
@@ -187,8 +207,8 @@ export function messagesFromVocabulary(v: MessageVocabulary, locale: VocabularyL
       editAnyway: `${v.continue} ${v.editing}`,
       segView: v.viewOnly,
       segDiff: v.compare,
-      comparisonSource: `${comparisonTerm(locale, "left")} · ${comparisonTerm(locale, "source")}`,
-      trunk: comparisonTerm(locale, "mainBranch"),
+      comparisonSource: `${comparisonTerm(translateComparison, "left")} · ${comparisonTerm(translateComparison, "source")}`,
+      trunk: WORKTREE_MAIN_BRANCH[locale],
       refreshComparison: `${v.modification} · ${v.updated}`
     },
     diff: {
@@ -198,54 +218,33 @@ export function messagesFromVocabulary(v: MessageVocabulary, locale: VocabularyL
       kind: { insert: v.sheetCategories.inserted, delete: v.sheetCategories.deleted, update: v.sheetCategories.changed },
       entity: structuralEntity,
       entityAt: (category, index) => `${structuralEntity(category)} ${index}`,
-      changePath: (path) => localizedComparisonPath(locale, path, (part) => ({
-        start: v.sheetCategories.start, count: v.sheetCategories.count, row: v.row,
-        name: v.sheetCategories.name,
-        "style.n": v.sheetCategories.numberFormat,
-        formulaName: `${v.sheetCategories.formula} · ${v.sheetCategories.name}`,
-        value: v.sheetCategories.value,
-        rowCount: `${v.row} · ${v.sheetCategories.count}`,
-        columnCount: `${v.sheetCategories.column} · ${v.sheetCategories.count}`,
-        columns: v.sheetCategories.column,
-        h: comparisonTerm(locale, "rowHeight"), w: comparisonTerm(locale, "columnWidth"),
-        hd: comparisonTerm(locale, "hidden"), ia: comparisonTerm(locale, "automaticHeight"),
-        bg: v.sheetCategories.background, rgb: v.sheetCategories.textColor,
-        cl: v.sheetCategories.textColor, fs: v.sheetCategories.fontSize,
-        bl: v.sheetCategories.bold, it: v.sheetCategories.italic,
-        geometry: v.sheetCategories.position, transform: v.sheetCategories.position,
-        left: v.sheetCategories.position, top: v.sheetCategories.position, angle: v.sheetCategories.position,
-        range: v.sheetCategories.position, ranges: v.sheetCategories.position, rangeInfo: v.sheetCategories.position,
-        startRow: `${v.row} · ${v.sheetCategories.start}`, endRow: `${v.row} · ${v.sheetCategories.position}`,
-        startColumn: `${v.sheetCategories.column} · ${v.sheetCategories.start}`, endColumn: `${v.sheetCategories.column} · ${v.sheetCategories.position}`,
-        sparklines: v.sheetCategories.sparkline, fieldsConfig: v.sheetCategories.pivot,
-        text: v.content,
-        formula: v.sheetCategories.formula,
-        position: v.sheetCategories.position,
-        style: v.styles,
-        background: v.sheetCategories.background,
-        bold: v.sheetCategories.bold,
-        italic: v.sheetCategories.italic
-      })[part]),
-      changeValue: (entityType, path, value) => localizedComparisonEnum(locale, entityType, path, value),
-      renderFailed: comparisonTerm(locale, "loadFailed"),
-      comparisonFailed: comparisonTerm(locale, "comparisonFailed"),
-      incompletePage: comparisonTerm(locale, "incompletePage"),
+      changePath: (path) => localizedComparisonPath(translateComparison, path),
+      changeValue: (entityType, path, value) => localizedComparisonEnum(translateComparison, entityType, path, value),
+      renderFailed: comparisonTerm(translateComparison, "loadFailed"),
+      comparisonFailed: comparisonTerm(translateComparison, "comparisonFailed"),
+      incompletePage: comparisonTerm(translateComparison, "incompletePage"),
       wholeItem: v.content,
       present: v.content,
-      itemCount: (count) => `${count} ${comparisonTerm(locale, "item")}`,
-      propertyCount: (count) => `${count} ${comparisonTerm(locale, "property")}`,
+      itemCount: (count) => `${count} ${comparisonTerm(translateComparison, "item")}`,
+      propertyCount: (count) => `${count} ${comparisonTerm(translateComparison, "property")}`,
       moved: v.sheetCategories.moved,
-      rightCurrentVersion: `${comparisonTerm(locale, "right")} · ${v.currentVersion}`,
-      revision: (revision) => `${comparisonTerm(locale, "revision")} ${revision}`,
-      readOnly: comparisonTerm(locale, "readOnly"),
-      side: { left: comparisonTerm(locale, "left"), right: comparisonTerm(locale, "right") },
+      rightCurrentVersion: `${comparisonTerm(translateComparison, "right")} · ${v.currentVersion}`,
+      revision: (revision) => `${comparisonTerm(translateComparison, "revision")} ${revision}`,
+      readOnly: comparisonTerm(translateComparison, "readOnly"),
+      side: {
+        left: comparisonTerm(translateComparison, "left"),
+        right: comparisonTerm(translateComparison, "right")
+      },
       changeCount: (count) => `${count} ${v.modification}`,
       changedSlides: `${v.modification} · ${v.file}`,
       changedBaseTables: `${v.modification} · ${v.sheetCategories.table}`,
       noRawTableChanges: `${v.no} ${v.sheetCategories.table} ${v.modification}`,
       rawTableData: `${v.sheetCategories.table} · ${v.content}`,
-      baseAlignmentHint: comparisonTerm(locale, "stableAlignment"),
-      checkboxState: { checked: comparisonTerm(locale, "checked"), unchecked: comparisonTerm(locale, "unchecked") },
+      baseAlignmentHint: comparisonTerm(translateComparison, "stableAlignment"),
+      checkboxState: {
+        checked: comparisonTerm(translateComparison, "checked"),
+        unchecked: comparisonTerm(translateComparison, "unchecked")
+      },
       comparingMaterializedSnapshots: `${v.preview} · ${v.compare}`,
       snapshot: `${v.preview} · ${v.compare}`,
       noStructuralChanges: `${v.no} ${v.modification}`,

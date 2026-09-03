@@ -1,4 +1,4 @@
-import { messagesFromVocabulary, type MessageVocabulary } from "./from-vocabulary";
+import type { MessageVocabulary } from "./from-vocabulary";
 
 const vocabulary = {
   showFormulas: "数式を表示",
@@ -98,4 +98,4 @@ const vocabulary = {
   empty: "ファイルが開かれていません"
 } satisfies MessageVocabulary;
 
-export const JA_JP_MESSAGES = messagesFromVocabulary(vocabulary, "ja-JP");
+export default vocabulary;

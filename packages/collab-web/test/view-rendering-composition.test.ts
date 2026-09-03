@@ -235,4 +235,12 @@ describe("authoritative Browser View rendering composition", () => {
     expect(styles).toContain("--color-background: #0a0a0a;");
   });
 
+  it("finishes evaluating the browser entry before awaiting lazy locale chunks", async () => {
+    const source = await read("collab-web/src/main.tsx");
+
+    expect(source).toContain("async function bootstrap(): Promise<void>");
+    expect(source).toContain("  await setLang(resolveLang());");
+    expect(source).toContain("void bootstrap();");
+    expect(source).not.toMatch(/^await setLang\(/gmu);
+  });
 });

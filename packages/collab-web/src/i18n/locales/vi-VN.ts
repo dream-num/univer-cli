@@ -1,4 +1,4 @@
-import { messagesFromVocabulary, type MessageVocabulary } from "./from-vocabulary";
+import type { MessageVocabulary } from "./from-vocabulary";
 
 const vocabulary = {
   showFormulas: "Hiển thị công thức",
@@ -98,4 +98,4 @@ const vocabulary = {
   empty: "Chưa mở tệp"
 } satisfies MessageVocabulary;
 
-export const VI_VN_MESSAGES = messagesFromVocabulary(vocabulary, "vi-VN");
+export default vocabulary;

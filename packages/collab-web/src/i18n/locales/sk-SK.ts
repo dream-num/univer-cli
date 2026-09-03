@@ -1,4 +1,4 @@
-import { messagesFromVocabulary, type MessageVocabulary } from "./from-vocabulary";
+import type { MessageVocabulary } from "./from-vocabulary";
 
 const vocabulary = {
   showFormulas: "Zobraziť vzorce",
@@ -98,4 +98,4 @@ const vocabulary = {
   empty: "Nie je otvorený žiadny súbor"
 } satisfies MessageVocabulary;
 
-export const SK_SK_MESSAGES = messagesFromVocabulary(vocabulary, "sk-SK");
+export default vocabulary;

@@ -1,126 +1,18 @@
-import { UnitComparisonEntityType } from "@univerjs-pro/edit-history";
-import { comparisonTerm, localizedComparisonEnum, localizedComparisonPath } from "./comparison-labels.js";
-
-const UNIT_COMPARISON_ENTITY_TYPES = new Set<string>(Object.values(UnitComparisonEntityType));
-
-function isUnitComparisonEntityType(value: string): value is UnitComparisonEntityType {
-  return UNIT_COMPARISON_ENTITY_TYPES.has(value);
-}
-
-const STRUCTURAL_ENTITY_LABELS: Readonly<Record<UnitComparisonEntityType, string>> = {
-  unit: "Unit",
-  workbook: "Workbook",
-  worksheet: "Worksheet",
-  cell: "Cell",
-  "row-column": "Rows and columns",
-  move: "Move",
-  "condition-format": "Conditional format",
-  "data-validation": "Data validation",
-  sparkline: "Sparkline",
-  shape: "Shape",
-  chart: "Chart",
-  pivot: "Pivot table",
-  paragraph: "Paragraph",
-  "text-style": "Text style",
-  section: "Section",
-  "block-range": "Block range",
-  "custom-range": "Custom range",
-  "table-range": "Table range",
-  "custom-block": "Custom block",
-  "column-group": "Column group",
-  table: "Table",
-  drawing: "Drawing",
-  header: "Header",
-  footer: "Footer",
-  "document-style": "Document style",
-  "document-setting": "Document setting",
-  "custom-decoration": "Custom decoration",
-  "doc-hyperlink": "Hyperlink",
-  "doc-callout": "Callout",
-  "doc-quote": "Quote",
-  "doc-chart": "Chart",
-  "doc-chart-data": "Chart data",
-  "doc-code": "Code block",
-  "doc-latex": "LaTeX formula",
-  "doc-shape-resource": "Shape",
-  "doc-table-resource": "Table data",
-  slide: "Slide",
-  "slide-element": "Slide element",
-  "slide-transition": "Transition",
-  "slide-transition-ref": "Slide transition",
-  "slide-master": "Master slide",
-  "slide-layout": "Slide layout",
-  "slide-theme": "Slide theme",
-  "slide-chart": "Chart",
-  "slide-chart-data": "Chart data",
-  "slide-table": "Table data",
-  base: "Base",
-  field: "Field",
-  record: "Record",
-  view: "View",
-  "board-page": "Board page",
-  "board-element": "Board element",
-  "board-theme": "Board theme",
-  "board-chart": "Chart",
-  "board-chart-data": "Chart data",
-  "board-table": "Table data"
-};
-
-const COMPARISON_PATH_LABELS: Readonly<Record<string, string>> = {
-  text: "Text",
-  value: "Value",
-  formula: "Formula",
-  formulaName: "Formula name",
-  name: "Name",
-  type: "Type",
-  language: "Language",
-  config: "Settings",
-  columns: "Columns",
-  rowCount: "Row count", columnCount: "Column count",
-  h: "Row height", w: "Column width", hd: "Hidden", ia: "Automatic height",
-  bg: "Background", rgb: "Color", cl: "Text color", fs: "Font size", bl: "Bold", it: "Italic",
-  range: "Range", ranges: "Ranges", rangeInfo: "Range", rule: "Rule", operator: "Operator",
-  startRow: "Start row", endRow: "End row", startColumn: "Start column", endColumn: "End column",
-  transform: "Transform", left: "Horizontal position", top: "Vertical position", angle: "Rotation",
-  cfId: "Rule identity", uid: "Identity", id: "Identity", palette: "Palette", content: "Content", titles: "Titles", title: "Title",
-  sparklines: "Sparklines", fieldsConfig: "Pivot fields", collection: "Data source", filters: "Filters", options: "Options",
-  gap: "Column spacing",
-  position: "Position",
-  start: "Start",
-  count: "Count",
-  geometry: "Position and size",
-  "geometry.x": "Horizontal position",
-  "geometry.y": "Vertical position",
-  style: "Formatting",
-  "style.bg": "Background",
-  "style.bl": "Bold",
-  "style.cl": "Text color",
-  "style.fs": "Font size",
-  "style.it": "Italic",
-  "style.n": "Number format",
-  "style.backgroundColor.rgb": "Background color",
-  "style.background": "Background color",
-  backgroundColor: "Background color",
-  color: "Color",
-  width: "Width",
-  height: "Height",
-  tableRows: "Rows",
-  tableCells: "Cells"
-};
-
-function comparisonPathLabel(path: readonly string[]): string {
-  return localizedComparisonPath("en-US", path, (key) => COMPARISON_PATH_LABELS[key]);
-}
-
-function comparisonEntityLabel(category: string): string {
-  const entityType = category.split(":")[0] ?? "";
-  return isUnitComparisonEntityType(entityType)
-    ? STRUCTURAL_ENTITY_LABELS[entityType]
-    : "Content";
-}
+import {
+  comparisonTerm,
+  localizedComparisonEntity,
+  localizedComparisonEnum,
+  localizedComparisonPath,
+  type UnitComparisonTranslate
+} from "./comparison-labels.js";
 
 /** English shell copy; this table is the structural authority for every other language. */
-export const EN_US_MESSAGES = {
+function buildEnUsMessages(translateComparison: UnitComparisonTranslate) {
+  const comparisonPathLabel = (path: readonly string[]): string =>
+    localizedComparisonPath(translateComparison, path);
+  const comparisonEntityLabel = (category: string): string =>
+    localizedComparisonEntity(translateComparison, category);
+  return {
   app: {
     title: "Collaboration Viewer"
   },
@@ -217,10 +109,10 @@ export const EN_US_MESSAGES = {
     entityAt: (category: string, index: number): string =>
       `${comparisonEntityLabel(category)} ${index}`,
     changePath: comparisonPathLabel,
-    changeValue: (entityType: string, path: readonly string[], value: unknown): string | undefined => localizedComparisonEnum("en-US", entityType, path, value),
-    renderFailed: comparisonTerm("en-US", "loadFailed"),
-    comparisonFailed: comparisonTerm("en-US", "comparisonFailed"),
-    incompletePage: comparisonTerm("en-US", "incompletePage"),
+    changeValue: (entityType: string, path: readonly string[], value: unknown): string | undefined => localizedComparisonEnum(translateComparison, entityType, path, value),
+    renderFailed: comparisonTerm(translateComparison, "loadFailed"),
+    comparisonFailed: comparisonTerm(translateComparison, "comparisonFailed"),
+    incompletePage: comparisonTerm(translateComparison, "incompletePage"),
     wholeItem: "Entire item",
     present: "Present",
     itemCount: (count: number): string => `${count} item${count === 1 ? "" : "s"}`,
@@ -371,6 +263,11 @@ export const EN_US_MESSAGES = {
     deleted: (n: number): string => `${n} deleted`,
     noChanges: "No changes yet"
   }
-};
+  };
+}
 
-export type Messages = typeof EN_US_MESSAGES;
+export type Messages = ReturnType<typeof buildEnUsMessages>;
+
+export function createEnUsMessages(translateComparison: UnitComparisonTranslate): Messages {
+  return buildEnUsMessages(translateComparison);
+}

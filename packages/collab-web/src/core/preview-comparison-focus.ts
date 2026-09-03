@@ -21,8 +21,18 @@ export function structuralDiffFocusTarget(
   item: UnitStructuralDiffItem,
   side: "left" | "right"
 ): PreviewFocusTarget {
+  const category =
+    item.scope?.entityType === "slide" &&
+    (item.entityType === "slide-chart" || item.entityType === "slide-table")
+      ? `slide-element:${item.scope.stableId}`
+      : item.scope?.entityType === "board-page" &&
+          (item.entityType === "board-chart" || item.entityType === "board-table")
+        ? `board-element:${item.scope.stableId}`
+        : item.entityType === "text-style"
+          ? "paragraph"
+          : item.category;
   return {
-    category: item.entityType === "text-style" ? "paragraph" : item.category,
+    category,
     stableId: item.nativeStableIds?.[side] ?? item.stableId
   };
 }

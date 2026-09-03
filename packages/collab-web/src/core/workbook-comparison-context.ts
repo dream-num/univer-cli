@@ -6,7 +6,7 @@ import type {
   UnitComparisonContextLocation,
 } from "@univer/collab-gateway-contract";
 import { buildWorkbookCompareModel, WorkbookCompareTitleCode } from "@univer/workbook-compare";
-import { createContentComparisonSnapshot } from "./workbook-comparison-display.js";
+import { createWorkbookComparisonDisplaySnapshot } from "./workbook-comparison-display.js";
 import type {
   WorkbookCompareCategory,
   WorkbookCompareCellChange,
@@ -33,6 +33,23 @@ const CATEGORIES: WorkbookCompareCategory[] = [
   "chart",
   "pivot",
 ];
+
+const RESOURCE_CATEGORIES = new Set<WorkbookCompareCategory>([
+  "condition-format",
+  "data-validation",
+  "sparkline",
+  "table",
+  "shape",
+  "chart",
+  "pivot",
+]);
+
+/** Resource changes navigate to their affected range, but do not imply that every cell changed. */
+export function isWorkbookCompareResourceCategory(
+  category: WorkbookCompareCategory,
+): boolean {
+  return RESOURCE_CATEGORIES.has(category);
+}
 
 /** Keep semantic content (including value type) separate from cell style in the tree and canvas. */
 export function isWorkbookCompareDetailVisible(
@@ -122,9 +139,10 @@ export function workbookComparisonFromContext(input: {
   });
   return {
     ...model,
-    displayedSnapshots: input.mode === "value"
-      ? { base: createContentComparisonSnapshot(input.left), current: createContentComparisonSnapshot(input.right) }
-      : { base: input.left, current: input.right },
+    displayedSnapshots: {
+      base: createWorkbookComparisonDisplaySnapshot(input.left, input.mode),
+      current: createWorkbookComparisonDisplaySnapshot(input.right, input.mode)
+    },
     unsupportedMutationIds: input.context.diagnostics.unsupportedMutationIds,
   };
 }
@@ -149,9 +167,9 @@ function projectItem(
     base: locationRange(source.locations.left, source, "left", sheetId, sheet),
     current: locationRange(source.locations.right, source, "right", sheetId, sheet),
   };
-  const target = record(source.locations.right?.target ?? source.locations.left?.target);
-  const axis = target.axis;
-  const index = typeof target.start === "number" ? target.start + 1 : 1;
+  const target = source.locations.right?.target ?? source.locations.left?.target;
+  const axis = target?.kind === "sheet-axis" ? target.axis : undefined;
+  const index = target?.kind === "sheet-axis" ? target.start + 1 : 1;
   let titleCode: WorkbookCompareTitleCode | undefined;
   if (category === "row-column") {
     titleCode = source.moved
@@ -220,7 +238,7 @@ function locationRange(
   sheet: Partial<IWorksheetData> | undefined,
 ): WorkbookCompareRangeTarget | null {
   if (location === null || sheetId === undefined) return null;
-  const target = record(location.target);
+  const target = location.target;
   if (item.entityType === "cell") {
     const address = /^([A-Z]+)(\d+)$/u.exec(location.stableId);
     if (address === null) return null;
@@ -231,8 +249,7 @@ function locationRange(
   }
   if (
     item.entityType === "row-column" &&
-    typeof target.start === "number" &&
-    typeof target.end === "number"
+    target?.kind === "sheet-axis"
   ) {
     return target.axis === "row"
       ? {
@@ -251,8 +268,10 @@ function locationRange(
         };
   }
   const value = record(item.values?.[side]);
+  const targetRange =
+    target?.kind === "sheet-range" ? (target.range ?? target.ranges?.[0]) : undefined;
   const range = record(
-    target.range ?? (Array.isArray(target.ranges) ? target.ranges[0] : undefined) ?? value.range ?? (Array.isArray(value.ranges) ? value.ranges[0] : undefined),
+    targetRange ?? value.range ?? (Array.isArray(value.ranges) ? value.ranges[0] : undefined),
   );
   if (
     ["startRow", "endRow", "startColumn", "endColumn"].every(
@@ -275,6 +294,7 @@ function projectPresentation(
     items.flatMap((item) => {
       const range = item.selection?.[role];
       if (range == null) return [];
+      if (isWorkbookCompareResourceCategory(item.category)) return [];
       if (item.category === "cell") {
         const visible = item.detailLines.some((line) => isWorkbookCompareDetailVisible(line.semanticPath, mode));
         if (!visible) return [];
@@ -282,7 +302,7 @@ function projectPresentation(
       return [
         {
           range: range as IRange,
-          kind: item.kind === "update" ? ("update" as const) : ("insert" as const),
+          kind: item.kind,
         },
       ];
     });

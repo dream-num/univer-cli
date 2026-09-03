@@ -16,6 +16,9 @@ if (options.help) {
 for (const required of ["file", "right-worktree", "unit"]) {
   if (!options[required]) fail(`Missing --${required}. Run with --help for an example.`);
 }
+if (Boolean(options["scope-type"]) !== Boolean(options["scope-id"])) {
+  fail("--scope-type and --scope-id must be supplied together.");
+}
 
 const origin = options.origin ?? "http://127.0.0.1:8000";
 const fileKey = Buffer.from(options.file).toString("base64url");
@@ -49,6 +52,8 @@ do {
   appendCsv(query, "kind", options.kind);
   appendCsv(query, "entityType", options["entity-type"]);
   appendOptional(query, "parentStableId", options.parent);
+  appendOptional(query, "scopeEntityType", options["scope-type"]);
+  appendOptional(query, "scopeStableId", options["scope-id"]);
   appendOptional(query, "search", options.search);
   const page = await requestJson(
     `${origin}/uf/${fileKey}/worktrees/${encodeURIComponent(rightWorktreeId)}/comparisons/${encodeURIComponent(comparison.comparisonId)}/units/${encodeURIComponent(unitId)}/diff?${query}`,
@@ -166,6 +171,7 @@ function printHelp() {
     [--kind insert,delete,update] \\
     [--entity-type paragraph,table] \\
     [--parent stable-parent-id] \\
+    [--scope-type slide --scope-id stable-page-id] \\
     [--search text] \\
     [--page-size 100] \\
     [--origin http://127.0.0.1:8000]

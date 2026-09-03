@@ -1,4 +1,4 @@
-import { messagesFromVocabulary, type MessageVocabulary } from "./from-vocabulary";
+import type { MessageVocabulary } from "./from-vocabulary";
 
 const vocabulary = {
   showFormulas: "Показать формулы",
@@ -98,4 +98,4 @@ const vocabulary = {
   empty: "Файл не открыт"
 } satisfies MessageVocabulary;
 
-export const RU_RU_MESSAGES = messagesFromVocabulary(vocabulary, "ru-RU");
+export default vocabulary;

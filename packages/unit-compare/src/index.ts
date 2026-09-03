@@ -10,6 +10,11 @@ export interface UnitStructuralDiffItem {
   readonly entityType: string;
   /** Stable parent object ID, for example the Slide page or Base table containing this item. */
   readonly parentStableId?: string;
+  /** SDK-owned product view containing this item. */
+  readonly scope?: {
+    readonly entityType: string;
+    readonly stableId: string;
+  };
   /** Machine-readable path from the Unit root to the changed object. */
   readonly path: readonly string[];
   readonly label: string;
@@ -33,10 +38,37 @@ export interface UnitStructuralDiffItem {
   };
 }
 
-export interface UnitDiffPageOption {
-  readonly id: string;
-  readonly label: string;
-  readonly status: UnitStructuralDiffKind;
+/** Return the stable Slide page containing a structural diff item. */
+export function slidePageIdOfDiffItem(item: UnitStructuralDiffItem): string | null {
+  if (item.scope?.entityType === "slide") return item.scope.stableId;
+  if (item.entityType === "slide") return item.stableId;
+  if (item.entityType === "slide-element") {
+    return item.parentStableId ?? legacyParentStableId(item.category, "slide-element");
+  }
+  return null;
+}
+
+/** Return only changes rendered by the selected Slide page. */
+export function filterSlidePageDiffItems(
+  items: readonly UnitStructuralDiffItem[],
+  pageId: string,
+): UnitStructuralDiffItem[] {
+  return items.filter((item) => slidePageIdOfDiffItem(item) === pageId);
+}
+
+/** Return the stable Base table containing a structural diff item. */
+export function baseTableIdOfDiffItem(item: UnitStructuralDiffItem): string | null {
+  if (item.scope?.entityType === "table") return item.scope.stableId;
+  if (item.entityType === "table") return item.stableId;
+  return item.parentStableId ?? legacyParentStableId(item.category, item.entityType);
+}
+
+/** Return only changes rendered by the selected Base table. */
+export function filterBaseTableDiffItems(
+  items: readonly UnitStructuralDiffItem[],
+  tableId: string,
+): UnitStructuralDiffItem[] {
+  return items.filter((item) => baseTableIdOfDiffItem(item) === tableId);
 }
 
 export type DocumentComparisonRowKind = "delete" | "equal" | "insert" | "update";
@@ -68,81 +100,7 @@ export interface DocumentComparisonRow {
   readonly right: DocumentComparisonParagraph | null;
 }
 
-/** Build page tabs from SDK-reported changes; never compare snapshot content here. */
-
-export function buildChangedSlidePages(input: {
-  readonly left: unknown;
-  readonly right: unknown;
-  readonly items: readonly UnitStructuralDiffItem[];
-}): UnitDiffPageOption[] {
-  const leftRecord = asRecord(input.left);
-  const rightRecord = asRecord(input.right);
-  const leftPages = asRecord(leftRecord?.slides) ?? {};
-  const rightPages = asRecord(rightRecord?.slides) ?? {};
-  const leftOrder = orderedRecordIds(leftPages, leftRecord?.slideOrder);
-  const rightOrder = orderedRecordIds(rightPages, rightRecord?.slideOrder);
-  const orderedPageIds = alignStableOrder(leftOrder, rightOrder);
-  const changedPageIds = new Set(
-    input.items.flatMap((item) => {
-      if (item.category === "slide") return [item.stableId];
-      return item.category.startsWith("slide-element:")
-        ? [item.category.slice("slide-element:".length)]
-        : [];
-    }),
-  );
-  return orderedPageIds.flatMap((pageId, index) => {
-    if (!changedPageIds.has(pageId)) return [];
-    const leftPage = asRecord(leftPages[pageId]);
-    const rightPage = asRecord(rightPages[pageId]);
-    const status =
-      leftPage === undefined ? "insert" : rightPage === undefined ? "delete" : "update";
-    return [
-      {
-        id: pageId,
-        label: pageDisplayName(rightPage) ?? pageDisplayName(leftPage) ?? `Slide ${index + 1}`,
-        status,
-      },
-    ];
-  });
-}
-
-function orderedRecordIds(record: Record<string, unknown>, orderValue: unknown): string[] {
-  const orderedIds = Array.isArray(orderValue)
-    ? orderValue.filter((id): id is string => typeof id === "string" && id in record)
-    : [];
-  return [...orderedIds, ...Object.keys(record).filter((id) => !orderedIds.includes(id))];
-}
-
-function alignStableOrder(left: readonly string[], right: readonly string[]): string[] {
-  const result = [...right];
-  for (let leftIndex = 0; leftIndex < left.length; leftIndex += 1) {
-    const id = left[leftIndex];
-    if (id === undefined) continue;
-    if (result.includes(id)) continue;
-    const nextAnchor = left.slice(leftIndex + 1).find((candidate) => result.includes(candidate));
-    if (nextAnchor !== undefined) {
-      result.splice(result.indexOf(nextAnchor), 0, id);
-      continue;
-    }
-    const previousAnchor = [...left.slice(0, leftIndex)]
-      .reverse()
-      .find((candidate) => result.includes(candidate));
-    if (previousAnchor === undefined) result.push(id);
-    else result.splice(result.indexOf(previousAnchor) + 1, 0, id);
-  }
-  return result;
-}
-
-function pageDisplayName(value: Record<string, unknown> | undefined): string | null {
-  if (value === undefined) return null;
-  const candidate = [value.name, value.title, value.pageName].find(
-    (entry): entry is string => typeof entry === "string" && entry.length > 0,
-  );
-  return candidate ?? null;
-}
-
-function asRecord(value: unknown): Record<string, unknown> | undefined {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : undefined;
+function legacyParentStableId(category: string, entityType: string): string | null {
+  const prefix = `${entityType}:`;
+  return category.startsWith(prefix) ? category.slice(prefix.length) : null;
 }

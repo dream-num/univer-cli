@@ -84,8 +84,9 @@ https://discord.gg/nThHPupraR
 7. 用户审阅结果，并明确选择合并、重新打开或放弃。
 
 进入 Worktree 后，Viewer 为 Sheet、Doc、Slide、Base 和 Board Unit 提供只读的 **查看** 与
-**对比** 模式。默认对比当前 Worktree 与固定的 Trunk 状态；左侧也可以改选另一个 active Worktree。
-对比前，两侧都会物化到各自固定的 head；对比过期后由用户显式刷新。
+**对比** 模式。默认对比当前 Worktree 与固定的 Trunk 状态；左侧也可以改选包含当前产品类型变更的其他
+active Worktree。对比前，两侧都会物化到各自固定的 head；对比过期后由用户显式刷新。Slide 与 Base 的
+变更列表跟随当前页面或表，选择变更会让两个只读内容区同时定位到对应目标。
 
 Sheet 对比提供独立的**内容／格式**筛选和作用于两侧网格的**显示公式**开关。
 内容模式使用去掉单元格、富文本、表格主题和条件格式的展示副本，保留差异着色及行列尺寸；格式模式保留原始样式。
@@ -163,15 +164,16 @@ pnpm unlink:cli
 
 ### SDK 升级
 
-Univer SDK、Univer CLI SDK 与 Collaboration Server SDK 使用同一个精确版本基线。
-使用以下命令升级完整 SDK dependency graph：
+Univer OSS 与 Pro SDK package 使用同一个精确版本基线。使用以下命令升级这个 cohort：
 
 ```bash
 pnpm update:sdk --sdk_version <exact-sdk-version>
 ```
 
-升级器只保留 native binding、icon 等独立发布 package 的版本。必须同时提交所有受影响的 manifest
-与 `pnpm-lock.yaml`，不得手工只更新部分 SDK dependency。
+Univer CLI SDK 与 Collaboration Server SDK 是独立发布的 cohort，会保留各自现有版本。为避免安装第二套
+Univer runtime graph，升级器也会同步对齐这些独立发布的 server package 所使用的共享 runtime override。
+native binding、icon 等独立发布 package 的版本保持不变。必须同时提交所有受影响的 manifest、
+`pnpm-workspace.yaml` 与 `pnpm-lock.yaml`，不得手工只更新部分 SDK dependency。
 
 ## 许可证
 

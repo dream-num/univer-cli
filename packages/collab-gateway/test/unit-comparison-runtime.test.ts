@@ -70,6 +70,53 @@ describe("Gateway unit comparison runtime", () => {
       },
     });
   });
+
+  it("forwards SDK-owned Slide scopes for tabs and follow-up agent queries", () => {
+    const prepared = prepareGatewayUnitComparison({
+      comparisonId: "slide-scopes",
+      unit: {
+        unitId: "deck-1",
+        type: UniverInstanceType.UNIVER_SLIDE,
+        name: "Launch deck",
+        presence: "paired",
+      },
+      fidelity: "snapshot",
+      stale: false,
+      leftData: {
+        slideOrder: ["intro", "plan"],
+        slides: {
+          intro: { name: "Introduction", elements: {} },
+          plan: { name: "Plan", elements: { hero: { text: "Draft" } } },
+        },
+      },
+      rightData: {
+        slideOrder: ["intro", "plan"],
+        slides: {
+          intro: { name: "Introduction", elements: {} },
+          plan: { name: "Launch plan", elements: { hero: { text: "Ready" } } },
+        },
+      },
+      leftChangesets: [],
+      rightChangesets: [],
+    });
+
+    const overview = queryGatewayUnitComparison(prepared, { detail: "summary", limit: 1000 });
+    const scope = overview.scopes[0];
+    if (scope === undefined) throw new Error("Expected a changed Slide scope");
+    const scoped = queryGatewayUnitComparison(prepared, { scope, limit: 1000 });
+
+    expect(overview.scopes).toEqual([
+      expect.objectContaining({
+        entityType: "slide",
+        stableId: "plan",
+        displayName: "Launch plan",
+        kind: "update",
+        changeCount: 2,
+      }),
+    ]);
+    expect(scoped.items.length).toBeGreaterThan(0);
+    expect(scoped.items.every((item) => item.scope?.stableId === "plan")).toBe(true);
+  });
 });
 
 function documentWithParagraphs(texts: readonly string[]): unknown {

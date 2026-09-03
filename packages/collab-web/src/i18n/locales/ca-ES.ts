@@ -1,4 +1,4 @@
-import { messagesFromVocabulary, type MessageVocabulary } from "./from-vocabulary";
+import type { MessageVocabulary } from "./from-vocabulary";
 
 const vocabulary = {
   showFormulas: "Mostra les fórmules",
@@ -98,4 +98,4 @@ const vocabulary = {
   empty: "No hi ha cap fitxer obert"
 } satisfies MessageVocabulary;
 
-export const CA_ES_MESSAGES = messagesFromVocabulary(vocabulary, "ca-ES");
+export default vocabulary;
