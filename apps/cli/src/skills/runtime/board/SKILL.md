@@ -67,7 +67,7 @@ inspect it with an available browser tool.
 Resolve additional Board methods and types from the version-matched Facade index:
 
 ```bash
-univer api show FUniver.createBoard FUniver.getBoard FBoard.insertShape FBoard.insertShapes FBoard.arrangeElementsInLayers FBoard.insertConnector FBoard.insertConnectors FBoard.createContainer FBoard.createSwimlane FBoard.insertTable FBoard.insertMindMap FShape BoardCustomShapeType BoardSequenceShapeType BoardTableDiagramPreset FBoard.newChart FBoard.insertChart FBoard.getCharts FBoard.getChart FBoardChart FChart
+univer api show FUniver.createBoard FUniver.getBoard FBoard.insertShape FBoard.insertShapes FBoard.arrangeElementsInLayers FBoard.insertConnector FBoard.insertConnectors FBoard.insertClassRelation FBoard.insertClassRelations FBoard.insertEntityRelation FBoard.insertEntityRelations FBoard.insertSequenceMessage FBoard.insertSequenceMessages FBoard.getConnectorLabels FBoard.setConnectorLabels FBoard.updateConnectorLabel FBoard.createContainer FBoard.createSwimlane FBoard.insertTable FBoard.insertMindMap FShape BoardCustomShapeType BoardSequenceShapeType BoardTableDiagramPreset FBoard.newChart FBoard.insertChart FBoard.getCharts FBoard.getChart FBoardChart FChart
 univer api find board shape element
 ```
 
@@ -98,11 +98,34 @@ Reuse a position only for an intentional shared port. Keep feedback edges on an 
 sites facing that lane, and prefer explicit orthogonal miter waypoints when a curve would cross the
 main flow.
 
-Use `labelText` when automatic placement is sufficient. When a label must sit on a specific route
-segment, pass `label: { id, text, pathRatio, offset }` while inserting the connector. `pathRatio` is
-the normalized distance along the complete rendered path and `offset` is a Board-unit adjustment;
-this keeps intended label placement in the editable model without a follow-up low-level element
-patch.
+Use `labelText` when one automatically placed label is sufficient. Use `labels` for UML roles,
+multiplicities, ER names, protocol annotations, or any connector that needs several independently editable texts.
+Each label needs a stable `id`. Prefer semantic placement over manual offsets:
+
+- `placement.anchor`: `start`, `center`, `end`, or `path`.
+- `placement.side`: `left`, `onPath`, or `right`, relative to connector direction from start to end.
+- `placement.alongOffset`: distance inward from a start/end anchor.
+- `placement.distance`: perpendicular distance from the path.
+- `placement.pathRatio`: normalized distance along the complete rendered path when anchor is `path`.
+- `placement.orientation`: `horizontal`, `followPath`, or `auto`.
+
+Use `pathRatio` and `offset` only for intentional custom placement or legacy snapshots. The floating connector menu can
+select, add, delete, format, and reposition labels by stable ID; dragging one label converts only that label to a
+custom `path` anchor. Read labels with `getConnectorLabels()` and update one with `updateConnectorLabel()`.
+
+For diagram grammar, prefer the semantic batch helpers. They still create regular Board connectors, so the result
+remains editable and interoperable with `getConnectorConnection()`, label APIs, routing normalization, undo/redo,
+resources, and collaboration:
+
+- `insertClassRelations()` maps association, directed association, aggregation, composition, generalization,
+  realization, and dependency to markers/dashes. Relation name, endpoint roles, and multiplicities become separate
+  path-relative labels.
+- `insertEntityRelations()` maps identifying/non-identifying lines and `one`, `zeroOrOne`, `oneOrMany`, or
+  `zeroOrMany` endpoint cardinalities to Crow's Foot markers.
+- `insertSequenceMessage()` and `insertSequenceMessages()` validate native Board lifelines; the batch API also rejects
+  duplicate/non-positive orders, and both persist
+  stable message offsets from `firstOffsetY` and `step`. It maps synchronous, asynchronous, reply, create, destroy,
+  and self messages to normal connectors.
 
 Shape-site positions are most predictable on rectangles and rounded rectangles. For ellipses,
 diamonds, hexagons, and other non-rectangular nodes, start with the side center by omitting

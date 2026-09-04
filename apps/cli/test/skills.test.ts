@@ -110,7 +110,11 @@ describe("application Skill library", () => {
     expect(board.content).toContain("normalize only those connector IDs at most once");
     expect(board.content).toContain("fromElementId: source.getId()");
     expect(board.content).toContain("toElementId: target.getId()");
-    expect(board.content).toContain("label: { id, text, pathRatio, offset }");
+    expect(board.content).toContain("Use `labels` for UML roles");
+    expect(board.content).toContain("insertClassRelations()");
+    expect(board.content).toContain("insertEntityRelations()");
+    expect(board.content).toContain("insertSequenceMessages()");
+    expect(board.content).toContain("placement.anchor");
     expect(board.content).toContain("For ellipses,");
     expect(board.content).toContain("detached in-memory copy with connector animation disabled");
     expect(board.content).toContain("first write a semantic BoardSpec in JSON");
@@ -122,6 +126,14 @@ describe("application Skill library", () => {
       expect.arrayContaining([
         expect.objectContaining({
           content: expect.stringContaining('"semanticRole": "message-bus"'),
+          path: "references/board-spec.md",
+        }),
+        expect.objectContaining({
+          content: expect.stringContaining('"messageType": "reply"'),
+          path: "references/board-spec.md",
+        }),
+        expect.objectContaining({
+          content: expect.stringContaining('"multiplicity": "0..*"'),
           path: "references/board-spec.md",
         }),
       ]),

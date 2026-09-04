@@ -50,6 +50,27 @@ Relations describe meaning with `semantic`, for example `request`, `response`, `
 `dependency`, `association`, `inheritance`, `transition`, or `contains`. `order` is required when sequence matters.
 `activity` and `importance` are semantic hints; they do not prescribe connector paint.
 
+Relation endpoint semantics belong in `ends`, not in the node's `semanticRole`. This preserves roles and cardinality
+without leaking connector coordinates or label placement into the spec:
+
+```json
+{
+  "id": "order-lines",
+  "from": "order",
+  "to": "line",
+  "semantic": "composition",
+  "label": "contains",
+  "ends": {
+    "from": { "role": "whole", "multiplicity": "1" },
+    "to": { "role": "parts", "multiplicity": "0..*" }
+  }
+}
+```
+
+For ERD, use `cardinality` on each end with the normalized values `one`, `zeroOrOne`, `oneOrMany`, or `zeroOrMany`.
+For sequence messages, use `messageType` with `synchronous`, `asynchronous`, `reply`, `create`, `destroy`, or `self`.
+These values map directly to the Facade semantic helpers; they do not choose paint or geometry.
+
 Groups express nesting. `groupType` may be `container`, `system-boundary`, `uml-package`, or `swimlane`. A group can
 appear in another group's `contains` list. A swimlane group also declares semantic lanes:
 
@@ -88,6 +109,18 @@ Choose the closest profile and query its installed APIs before writing the reali
 The profile narrows the API search; it does not force every node into one primitive. A deployment diagram can mix
 containers, components, images, tables, and connectors when that better expresses the intent.
 
+For UML sequence diagrams, realize participants first and align their headers at the same top coordinate. Then call
+`insertSequenceMessages()` once for the ordered messages. Add activation bars with
+`BoardSequenceShapeType.ActivationBar` and bind their sequence activation data to a lifeline. Use the dedicated
+sequence-fragment Board table preset for `alt`, `opt`, `loop`, `par`, `break`, `critical`, and `ref` frames; its
+guard/operand rows are structured content, not connector labels. Never simulate lifelines with generic dashed
+connectors—the semantic helper intentionally rejects them.
+
+For UML classes and ER entities, create the compartment tables first. Use `insertClassRelations()` or
+`insertEntityRelations()` once the generated element IDs are known. Endpoint roles, multiplicities, relation names,
+and ER cardinalities are connector semantics and must remain separate fields in BoardSpec even though realization
+turns visible text into multiple connector labels.
+
 ## Structured and mixed content
 
 A node may include a semantic `content` payload when its information cannot be represented by only a label:
@@ -118,6 +151,17 @@ Supported semantic content kinds are open-ended, but use these established decis
 - `ink`: describe the annotation intent, not points or paths. Generate or edit strokes only during realization. For
   existing user ink, refer to its element ID instead of copying stroke geometry into the spec.
 
+BoardSpec can mention every Board element as semantic content, but it is not mandatory for every element and does
+not make every element relational. A chart's source data, an image's asset reference, a sticky note's text, an
+embed's authorized URL, and ink stroke geometry remain payloads consumed by their dedicated APIs. Put them in
+`content` only when they participate in a larger diagram; otherwise call the direct Facade API without BoardSpec.
+For an embed, retain its host/type and source reference but never copy opaque embed runtime state into the spec.
+
+JSON is the canonical exchange form because agents can emit and validate it deterministically. YAML may be accepted
+as a human-authored input and Markdown may wrap fenced JSON, but normalize either to the same in-memory object before
+checking IDs and relations. Do not maintain parallel JSON/YAML/Markdown schemas. Compact JSON usually costs fewer
+tokens than verbose YAML once quoting ambiguities and repair instructions are included.
+
 ## Structural checks
 
 Before calling Facade APIs, check the spec in memory or with a short script:
@@ -128,6 +172,8 @@ Before calling Facade APIs, check the spec in memory or with a short script:
 4. Group containment has no cycle, and every lane ID is unique inside its swimlane.
 5. Ordered profiles such as `uml-sequence` have unique positive relation orders.
 6. Required structured content exists for UML classes, ERD entities, and charts.
+7. Class/ER relation ends use valid roles, multiplicities, and cardinalities; sequence `messageType` values are
+   supported and every message order fits within the intended participant lifelines.
 
 Return diagnostics and repair the spec before mutation when a check fails. Do not validate coordinates, routing, or
 paint here; Board model analysis and rendered screenshot analysis own those checks after realization. Do not add a
@@ -163,9 +209,30 @@ Sequence messages use semantic order rather than coordinates:
     { "id": "db", "label": "Orders", "semanticRole": "database" }
   ],
   "relations": [
-    { "from": "user", "to": "api", "semantic": "sync-message", "label": "submit()", "order": 1 },
-    { "from": "api", "to": "db", "semantic": "sync-message", "label": "insert", "order": 2 },
-    { "from": "api", "to": "user", "semantic": "response", "label": "accepted", "order": 3 }
+    {
+      "from": "user",
+      "to": "api",
+      "semantic": "message",
+      "messageType": "synchronous",
+      "label": "submit()",
+      "order": 1
+    },
+    {
+      "from": "api",
+      "to": "db",
+      "semantic": "message",
+      "messageType": "synchronous",
+      "label": "insert",
+      "order": 2
+    },
+    {
+      "from": "api",
+      "to": "user",
+      "semantic": "message",
+      "messageType": "reply",
+      "label": "accepted",
+      "order": 3
+    }
   ],
   "groups": []
 }
@@ -197,7 +264,19 @@ A UML class profile carries editable compartments but no table dimensions:
       }
     }
   ],
-  "relations": [{ "from": "order", "to": "line", "semantic": "composition", "label": "1..*" }],
+  "relations": [
+    {
+      "id": "order-lines",
+      "from": "order",
+      "to": "line",
+      "semantic": "composition",
+      "label": "contains",
+      "ends": {
+        "from": { "role": "whole", "multiplicity": "1" },
+        "to": { "role": "parts", "multiplicity": "1..*" }
+      }
+    }
+  ],
   "groups": []
 }
 ```
