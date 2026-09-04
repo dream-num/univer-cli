@@ -1,6 +1,6 @@
 ---
 name: board
-description: "Create, edit, chart, read back, and visually verify Board canvas units with the Lite Interface."
+description: "Plan, create, edit, chart, read back, and visually verify Board canvas units with the Lite Interface."
 ---
 
 # Board units
@@ -20,6 +20,20 @@ shape.getText().setText("Review");
 return { shapeId: shape.getId(), elements: board.describeElements() };'
 univer open canvas.univer --worktree <id>
 ```
+
+## Semantic diagram planning
+
+For a new relationship-heavy Board, first write a semantic BoardSpec in JSON, then realize it with the existing
+Facade APIs. Use this planning step for UML, ERD, flowcharts, architecture/data-flow diagrams, mind maps, and
+swimlanes. Skip it for a small freeform canvas, a sticky-note cluster, isolated media, or direct ink editing.
+
+BoardSpec describes intent and structure, not rendering. Keep coordinates, colors, concrete shape types, connector
+ports/routes, and animation modes out of it. The agent chooses those after inspecting the installed API and the
+current Board. Do not pass BoardSpec to the SDK: it is an authoring artifact, not a Facade input or persisted Board
+model.
+
+Before authoring or realizing a semantic diagram, read `references/board-spec.md`. It defines the compact contract,
+profile-to-API routing, structural checks, mixed-content behavior, and connector-animation decision rule.
 
 ## Completion gate
 
@@ -53,9 +67,16 @@ inspect it with an available browser tool.
 Resolve additional Board methods and types from the version-matched Facade index:
 
 ```bash
-univer api show FUniver.createBoard FUniver.getBoard FBoard.insertShape FBoard.insertShapes FBoard.arrangeElementsInLayers FBoard.insertConnector FBoard.insertConnectors FShape FBoard.newChart FBoard.insertChart FBoard.getCharts FBoard.getChart FBoardChart FChart
+univer api show FUniver.createBoard FUniver.getBoard FBoard.insertShape FBoard.insertShapes FBoard.arrangeElementsInLayers FBoard.insertConnector FBoard.insertConnectors FBoard.createContainer FBoard.createSwimlane FBoard.insertTable FBoard.insertMindMap FShape BoardCustomShapeType BoardSequenceShapeType BoardTableDiagramPreset FBoard.newChart FBoard.insertChart FBoard.getCharts FBoard.getChart FBoardChart FChart
 univer api find board shape element
 ```
+
+Choose native diagram primitives before generic rounded rectangles. Flowchart shapes communicate process semantics;
+`BoardSequenceShapeType` provides editable lifelines and activation bars; Board table presets provide UML class,
+sequence-fragment, and ERD structures; custom Board shapes provide actors, components, interfaces, storage, and state
+symbols. Use `createSwimlane()` for lanes, `createContainer()` for nested scopes and system boundaries, and
+`insertMindMap()` for mind maps, trees, or timelines. Query every selected symbol before generating code because the
+installed CLI and SDK are the source of truth.
 
 ## Connectors and layout verification
 
@@ -88,6 +109,11 @@ diamonds, hexagons, and other non-rectangular nodes, start with the side center 
 `position`. Add an explicit position only after a rendered screenshot proves the marker clears the
 outline. If lint reports marker overlap, first use a smaller marker or more spacing; do not freeze a
 poor auto route into manual waypoints merely to silence the finding.
+
+Marker names are a closed API union. Query `BoardConnectorMarkerType` and use values such as
+`filledTriangle`, `openArrow`, `filledDiamond`, or `crowFoot`; do not abbreviate them to invented
+names such as `diamond`. To render no marker, use `{ type: "none" }` rather than `null`. Keep
+`animation: null` only for disabling connector animation, where the Facade explicitly supports it.
 
 ```js
 const shapes = board.insertShapes([
@@ -144,6 +170,17 @@ is using a vertical dashed connector as a likely fake lifeline. Rebuild that par
 errors. `normalizeConnectorRouting()` does not repair endpoint semantics and must not substitute
 for rebinding them.
 
+For sequence participants, keep the shape transform at the participant's native/default height.
+The dashed lifeline is an extension below that participant; stretching the shape height stretches
+the actor/control/entity symbol itself and pushes `{ kind: "lifeline", shapeId, offsetY }` messages
+down by the same amount. Keep message offsets within the configured lifeline height and order them
+by time.
+
+For containers and swimlanes, `insertShapeAtPoint()` accepts a Board-world point and resolves the
+parent and `laneId` at that point. Inspect the returned descriptor to confirm membership. Direct
+low-level insertion into a known parent uses parent-local coordinates instead; do not mix those two
+coordinate systems.
+
 Specify connector intent, marker type/size/offset, and routing mode; do not hand-calculate arrow
 depth or terminal-leg length. Render geometry accounts for marker paint bounds, stroke width,
 endpoint gap, rounded corners, and dash phase. For orthogonal auto connectors without manual
@@ -189,6 +226,9 @@ univer screenshot canvas.univer --worktree <id> --unit <board-id> \
 Connector animation is off by default. When a diagram has a small number of important flows—roughly twelve or fewer
 animated connectors—and motion makes direction or activity easier to understand, prefer enabling animation instead
 of leaving every relationship visually identical. Keep dense diagrams static: animation is emphasis, not decoration.
+BoardSpec may identify a relation as primary, continuous, triggered, or replayed semantic activity, but it must not
+select an animation mode or speed. Choose animation during realization and animate only the relations whose motion
+adds information.
 
 Use `style.animation.mode` to choose the visual: `dash` moves a dash pattern, `particle` moves one dot, `pulse`
 highlights the full path, `gradient` moves a fading highlight, `particles` renders a repeated dot sequence, and
@@ -278,5 +318,6 @@ confirm the chart is absent. Use
 `board.describeElements()` or `board.save()` for element readback and the viewer link for visual
 confirmation.
 
-Mind maps, tables, ink, and other advanced editing remain outside this Skill's verified authoring
-contract.
+For mind maps, tables, images, sticky notes, external resources, embeds, and ink intent inside a larger semantic
+Board, follow the mixed-content rules in `references/board-spec.md`, query the installed Facade, and apply the same
+readback and screenshot completion gate.

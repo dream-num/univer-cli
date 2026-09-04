@@ -113,6 +113,19 @@ describe("application Skill library", () => {
     expect(board.content).toContain("label: { id, text, pathRatio, offset }");
     expect(board.content).toContain("For ellipses,");
     expect(board.content).toContain("detached in-memory copy with connector animation disabled");
+    expect(board.content).toContain("first write a semantic BoardSpec in JSON");
+    expect(board.content).toContain("BoardSpec may identify a relation as primary");
+    expect(board.content).toContain("FBoard.insertMindMap");
+    expect(board.content).toContain("Marker names are a closed API union");
+    expect(board.content).toContain("insertShapeAtPoint()");
+    expect(board.files).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          content: expect.stringContaining('"semanticRole": "message-bus"'),
+          path: "references/board-spec.md",
+        }),
+      ]),
+    );
     expect(board.content).not.toContain("start: { elementId: source.getId() }");
   });
 
