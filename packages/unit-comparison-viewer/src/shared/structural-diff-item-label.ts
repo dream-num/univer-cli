@@ -2,7 +2,7 @@ import type { UnitStructuralDiffItem } from "./structural-diff.js";
 import {
   defaultUnitComparisonViewerMessages,
   type IUnitComparisonViewerMessages,
-} from "../messages.js";
+} from "../i18n/messages.js";
 
 const STRUCTURED_CONTENT_CATEGORIES = new Set([
   "block-range",

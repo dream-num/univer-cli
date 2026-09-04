@@ -2,7 +2,7 @@ import type { IUnitComparisonChange } from "../comparison-types.js";
 import {
   defaultUnitComparisonViewerMessages,
   type IUnitComparisonViewerMessages,
-} from "../messages.js";
+} from "../i18n/messages.js";
 
 /** Human-readable values shared by the comparison sidebar's change descriptions. */
 export function formatComparisonValue(

@@ -104,6 +104,13 @@ describe("UnitComparisonViewer lifecycle boundary", () => {
     flushSync(() => root.render(renderViewer("cmp-missing", comparison, createUniver)));
     await vi.waitFor(() => expect(createUniver).toHaveBeenCalledTimes(1));
     expect(host.textContent).toContain("Not present");
+
+    flushSync(() =>
+      root.render(
+        renderViewer("cmp-missing", comparison, createUniver, { locale: LocaleType.ZH_CN }),
+      ),
+    );
+    await vi.waitFor(() => expect(host.textContent).toContain("此侧不存在"));
   });
 
   it("recreates Slide panes on page changes and preserves the selected page", async () => {
@@ -168,14 +175,14 @@ function renderViewer(
   key: string,
   comparison: UnitComparisonViewerValue,
   createUniver: UnitComparisonUniverFactory,
-  options: { readonly darkMode?: boolean } = {},
+  options: { readonly darkMode?: boolean; readonly locale?: LocaleType } = {},
 ) {
   return (
     <UnitComparisonViewer
       key={key}
       comparison={comparison}
       createUniver={createUniver}
-      locale={LocaleType.EN_US}
+      locale={options.locale ?? LocaleType.EN_US}
       darkMode={options.darkMode ?? false}
     />
   );

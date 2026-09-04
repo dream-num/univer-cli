@@ -1033,7 +1033,6 @@ function ComparisonContent({ app, snap }: { app: App; snap: AppSnapshot }): Reac
       leftHeaderControl={<ComparisonSourceSelect app={app} snap={snap} />}
       locale={sdkLocaleOf(snap.lang)}
       darkMode={snap.appearance === "dark"}
-      messages={t().diff}
     />
   );
 }

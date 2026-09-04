@@ -33,7 +33,7 @@ import { cn } from "../ui/cn.js";
 import {
   useUnitComparisonViewerMessages,
   type IUnitComparisonViewerMessages,
-} from "../messages.js";
+} from "../i18n/messages.js";
 import { ComparisonPageTabs } from "../shared/scope-tabs.js";
 import { formatComparisonValue } from "../shared/comparison-value.js";
 import { shouldClearDiffSidebarSelection } from "../shared/sidebar-selection.js";

@@ -19,7 +19,7 @@ import {
   UnitComparisonMessagesProvider,
   useUnitComparisonViewerMessages,
   type IUnitComparisonViewerMessages,
-} from "./messages.js";
+} from "./i18n/messages.js";
 
 const WorkbookDiffViewer = lazy(async () => {
   const module = await import("./sheet/sheet-comparison-view");
@@ -38,6 +38,7 @@ export type {
 export function UnitComparisonViewer(props: IUnitComparisonViewerProps): ReactElement {
   return (
     <UnitComparisonMessagesProvider
+      locale={props.locale}
       {...(props.messages === undefined ? {} : { messages: props.messages })}
     >
       <div

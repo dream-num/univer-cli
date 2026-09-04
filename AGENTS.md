@@ -47,3 +47,8 @@ Issues 和 specs 使用不进入 repository history 的 `.scratch/` 本地 Markd
 ### Domain docs
 
 使用 single-context glossary：根目录 `CONTEXT.md`。详见 `docs/agents/domain.md`。
+
+## Shared UI component
+
+目前没有适合放置 application-level shared UI component 的公共位置。`univer-workspace` 和 `dsh`
+plugin 暂时各自复制 `packages/unit-comparison-viewer`；修改时必须同步更新两份副本。

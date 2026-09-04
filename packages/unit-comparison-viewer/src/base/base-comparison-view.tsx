@@ -26,7 +26,7 @@ import {
   type UnitStructuralDiffKind,
 } from "../shared/structural-diff.js";
 import { cn } from "../ui/cn.js";
-import { useUnitComparisonViewerMessages } from "../messages.js";
+import { useUnitComparisonViewerMessages } from "../i18n/messages.js";
 import { ComparisonPageTabs } from "../shared/scope-tabs";
 import { shouldClearDiffSidebarSelection } from "../shared/sidebar-selection";
 import { useEnsureSelectedDiffVisible } from "../shared/use-ensure-selected-diff-visible";
