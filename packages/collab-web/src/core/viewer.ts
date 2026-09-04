@@ -9,19 +9,16 @@ import {
   IUniverInstanceService,
   IUndoRedoService,
   ThemeService,
-  type DocumentDataModel,
   type LocaleType,
   Univer,
   UniverInstanceType
 } from "@univerjs/core";
 import { SetDocZoomRatioOperation } from "@univerjs/docs-ui";
 import type { IBoardData } from "@univerjs-pro/boards";
-import { IBoardUIStateService } from "@univerjs-pro/boards-ui";
 import { SetSlideZoomRatioOperation, type ISlidePageSize } from "@univerjs-pro/slides";
 import type {
   IBaseSnapshot,
   ICellData,
-  IDocumentData,
   IObjectMatrixPrimitiveType,
   IWorkbookData,
   ITableSnapshot
@@ -33,10 +30,7 @@ import {
   transformSnapshotToWorkbookData,
   UniverCollaborationPlugin
 } from "@univerjs-pro/collaboration";
-import {
-  CollaborationController,
-  UniverCollaborationClientPlugin
-} from "@univerjs-pro/collaboration-client";
+import { UniverCollaborationClientPlugin } from "@univerjs-pro/collaboration-client";
 import { UniverCollaborationEmbedPlugin } from "@univerjs-pro/collaboration-embed";
 import { UniverBasesHistoryUIPlugin } from "@univerjs-pro/bases-history-ui";
 import { UniverBoardsHistoryUIPlugin } from "@univerjs-pro/boards-history-ui";
@@ -56,7 +50,6 @@ import {
   FormulaCalculationSessionService,
   SetTriggerFormulaCalculationStartMutation
 } from "@univerjs/engine-formula";
-import { ISlideDrawingStateService } from "@univerjs-pro/slides-ui";
 import { TEST_LICENSE, ViewAssetIoOwner, registerViewRendering } from "@univer/render-preset";
 import {
   buildRuntimeConfig,
@@ -76,21 +69,7 @@ import { LocalReadOnlyAuthzIoService } from "./local-read-only-authz-io.service"
 import { createCollaborationSheetResourceRefDataProvider } from "./collaboration-sheet-resource-ref-data-provider";
 import { installHistoryShapeFormulaCompatibility } from "./history-shape-formula-compatibility";
 import { loadViewerLocale } from "./locales/generated/load";
-import {
-  focusPreviewComparisonTarget,
-  type PreviewFocusTarget
-} from "./preview-comparison-focus";
-import {
-  decorateDocumentComparisonSide,
-  type DocumentComparisonInput,
-  type ComparisonSide
-} from "./document-comparison-decoration";
-import { createNativeComparisonHighlightController } from "./native-comparison-highlights";
-import type { UnitStructuralDiffItem } from "@univer/unit-compare";
-import { EMPTY } from "rxjs";
 import { initializeDocumentViewPosition } from "./document-view-position";
-
-export type { PreviewFocusTarget } from "./preview-comparison-focus";
 
 installHistoryShapeFormulaCompatibility();
 
@@ -118,22 +97,7 @@ export interface ViewerHandle {
   dispose(): void;
 }
 
-export interface PreviewViewerHandle extends ViewerHandle {
-  /** Navigate a materialized read-only Unit to the same stable object on either comparison side. */
-  focusComparisonTarget(target: PreviewFocusTarget): Promise<boolean>;
-  /** Emphasize one semantic diff item while preserving the normal comparison paint. */
-  setComparisonSelection(itemId: string | undefined): Promise<void>;
-  getBoardViewport(): BoardPreviewViewport | null;
-  setBoardViewport(viewport: BoardPreviewViewport): void;
-  subscribeBoardViewport(listener: (viewport: BoardPreviewViewport) => void): () => void;
-}
-
 type ViewerDebugAPI = ReturnType<typeof FUniver.newAPI>;
-
-export interface BoardPreviewViewport {
-  readonly zoomRatio: number;
-  readonly panOffset: { readonly x: number; readonly y: number };
-}
 
 declare global {
   interface Window {
@@ -271,7 +235,7 @@ export async function createViewer(opts: ViewerOptions): Promise<ViewerHandle> {
   try {
     api = FUniver.newAPI(univer);
   } catch (error) {
-    console.error("[comparison-preview] Failed to initialize facade", error);
+    console.error("[viewer] Failed to initialize facade", error);
     throw error;
   }
   const collaboration = api.getCollaboration();
@@ -344,16 +308,6 @@ export interface PreviewViewerOptions {
   sheetBlocks?: unknown[];
   /** Protocol changesets ({ mutations: { id, data }[] }) to replay on top of the snapshot. */
   changesets: unknown[];
-  /** Materialized opposite side plus structural changes used for native in-product diff paint. */
-  comparison?: {
-    readonly side: ComparisonSide;
-    readonly peerData: unknown;
-    readonly items: readonly UnitStructuralDiffItem[];
-    readonly alignment: DocumentComparisonInput["alignment"];
-    readonly selectedItemId?: string;
-  };
-  /** Slide page selected by the comparison shell before the read-only viewer mounts. */
-  initialSlideId?: string;
   /** Which language the Univer UI renders in; see {@link ViewerOptions.locale}. */
   locale: LocaleType;
   /** Initial Univer appearance. Later changes use ViewerHandle.setDarkMode without rebuilding. */
@@ -368,7 +322,7 @@ export interface PreviewViewerOptions {
  * changesets' mutations locally, then lock editing. Disposable and non-collaborative: it never
  * opens comb and never writes back. Switching unit/worktree is done by disposing and recreating.
  */
-export async function createPreviewViewer(opts: PreviewViewerOptions): Promise<PreviewViewerHandle> {
+export async function createPreviewViewer(opts: PreviewViewerOptions): Promise<ViewerHandle> {
   const localePack = await loadViewerLocale(opts.locale);
   const univer = new Univer({
     locale: opts.locale,
@@ -380,8 +334,8 @@ export async function createPreviewViewer(opts: PreviewViewerOptions): Promise<P
     container: opts.container,
     assetIoOwner: ViewAssetIoOwner.Local,
     license: TEST_LICENSE,
-    // Comparison panes are inspection surfaces. The surrounding diff shell owns navigation,
-    // labels and actions, so mounting an editor ribbon in each pane is both redundant and a
+    // Merge previews are inspection surfaces. The surrounding preview shell owns navigation,
+    // labels and actions, so mounting an editor ribbon is both redundant and a
     // misleading affordance even though mutation commands are vetoed below.
     workbenchChrome: "hidden",
     unitType: toUniverInstanceType(opts.unitType)
@@ -391,43 +345,15 @@ export async function createPreviewViewer(opts: PreviewViewerOptions): Promise<P
   let unitId = "";
   let docPageWidth: number | undefined;
   let slidePageSize: ISlidePageSize | undefined;
-  let updateDocumentComparisonSelection:
-    | ((itemId: string | undefined) => Promise<void>)
-    | undefined;
   if (opts.unitType === UNIT_TYPE_DOC) {
-    const source = transformSnapshotToDocumentData(snapshot);
-    const comparison = opts.comparison;
-    const decorate = (selectedItemId: string | undefined): IDocumentData =>
-      comparison === undefined
-        ? source
-        : decorateDocumentComparisonSide(
-            source,
-            comparison.peerData as IDocumentData,
-            comparison.side,
-            {
-              ...comparison,
-              ...(selectedItemId === undefined ? {} : { selectedItemId })
-            }
-          );
-    const data = decorate(comparison?.selectedItemId);
+    const data = transformSnapshotToDocumentData(snapshot);
     unitId = data.id ?? "";
     docPageWidth = data.documentStyle.pageSize?.width;
     univer.createUnit(UniverInstanceType.UNIVER_DOC, data);
-    if (comparison !== undefined) {
-      const documentModel = univer
-        .__getInjector()
-        .get(IUniverInstanceService)
-        .getUnit<DocumentDataModel>(unitId, UniverInstanceType.UNIVER_DOC);
-      updateDocumentComparisonSelection = async (itemId) => {
-        documentModel?.reset(decorate(itemId));
-        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-      };
-    }
   } else if (opts.unitType === UNIT_TYPE_SLIDE) {
     const data = transformSnapshotToSlideData(snapshot);
-    if (opts.initialSlideId !== undefined) data.activeSlideId = opts.initialSlideId;
-    // An editor snapshot may persist a zoom chosen for a full-window workbench. Comparison panes
-    // are much narrower, so let Slides UI calculate its fit-to-pane zoom after mounting.
+    // An editor snapshot may persist a zoom chosen for a full-window workbench. Preview panes can
+    // be narrower, so let Slides UI calculate its fit-to-pane zoom after mounting.
     delete data.zoomRatio;
     slidePageSize = data.defaultPageSize;
     unitId = data.id ?? "";
@@ -470,97 +396,11 @@ export async function createPreviewViewer(opts: PreviewViewerOptions): Promise<P
     await fitDocPreviewToPane(commandService, opts.container, unitId, docPageWidth ?? 816);
   }
 
-  const comparisonHighlights =
-    opts.comparison === undefined
-      ? undefined
-      : createNativeComparisonHighlightController({
-          univer,
-          unitId,
-          unitType: opts.unitType,
-          side: opts.comparison.side,
-          items: opts.comparison.items,
-          ...(opts.comparison.selectedItemId === undefined
-            ? {}
-            : { selectedItemId: opts.comparison.selectedItemId })
-        });
-  // Native objects may materialize over several frames. Start their overlays without holding the
-  // comparison pane behind the retry budget; the controller paints newly available objects as it
-  // discovers them and cancels stale retries when selection or scene state changes.
-  void comparisonHighlights?.refresh();
-
   // Preview has no collaboration/authz controller, so its product-independent mutation gate is
   // the sole read-only enforcement and must cover every Unit type, including Sheet.
   blockLocalEditingCommands(univer.__getInjector().get(ICommandService));
 
-  const slideDrawingStateService =
-    opts.unitType === UNIT_TYPE_SLIDE
-      ? univer.__getInjector().get(ISlideDrawingStateService)
-      : undefined;
-  const boardUIStateService =
-    opts.unitType === UNIT_TYPE_BOARD
-      ? univer.__getInjector().get(IBoardUIStateService)
-      : undefined;
-  const previewInjector = univer.__getInjector();
-  // The collaboration facade is installed globally for the live viewer. Its initializer expects
-  // CollaborationController, but merge-preview instances intentionally omit every network plugin.
-  // Provide an inert event source so the shared Facade can initialize without opening collaboration.
-  if (!previewInjector.has(CollaborationController)) {
-    previewInjector.add([
-      CollaborationController,
-      { useValue: { entityInit$: EMPTY } as unknown as CollaborationController }
-    ]);
-  }
-  const previewAPI = FUniver.newAPI(univer);
-
   return {
-    setComparisonSelection: async (itemId) => {
-      if (updateDocumentComparisonSelection !== undefined) {
-        await updateDocumentComparisonSelection(itemId);
-      }
-      await comparisonHighlights?.setSelectedItem(itemId);
-    },
-    focusComparisonTarget: async (target) => {
-      const focused = await focusPreviewComparisonTarget(
-        previewAPI,
-        opts.unitType,
-        opts.container,
-        target,
-        {
-          selectSlideElement: (slideId, elementId) =>
-            slideDrawingStateService?.selectDrawings(
-              { unitId, subUnitId: slideId },
-              [elementId],
-              elementId
-            )
-        }
-      );
-      if (focused) await comparisonHighlights?.refresh();
-      return focused;
-    },
-    getBoardViewport: () => {
-      if (boardUIStateService === undefined) return null;
-      const state = boardUIStateService.getState();
-      return {
-        zoomRatio: state.zoomRatio,
-        panOffset: { ...state.viewportPanOffset }
-      };
-    },
-    setBoardViewport: (viewport) => {
-      boardUIStateService?.setViewportTransform({
-        zoomRatio: viewport.zoomRatio,
-        panOffset: { ...viewport.panOffset }
-      });
-    },
-    subscribeBoardViewport: (listener) => {
-      if (boardUIStateService === undefined) return () => undefined;
-      const subscription = boardUIStateService.state$.subscribe((state) => {
-        listener({
-          zoomRatio: state.zoomRatio,
-          panOffset: { ...state.viewportPanOffset }
-        });
-      });
-      return () => subscription.unsubscribe();
-    },
     setDarkMode: (isDarkMode) =>
       univer.__getInjector().get(ThemeService).setDarkMode(isDarkMode),
     setLocale: async (locale) => {
@@ -570,7 +410,6 @@ export async function createPreviewViewer(opts: PreviewViewerOptions): Promise<P
       localeService.setLocale(locale);
     },
     dispose: () => {
-      comparisonHighlights?.dispose();
       univer.dispose();
     }
   };
@@ -680,7 +519,7 @@ function decodeSnapshotFromWire(snapshot: unknown): unknown {
   return out;
 }
 
-/** Decode one fully materialized Sheet comparison side into the legacy compare core's input. */
+/** Decode one fully materialized Sheet comparison side into the comparison component's input. */
 export async function decodeComparisonWorkbookData(
   snapshot: unknown,
   sheetBlocks: readonly unknown[] = [],

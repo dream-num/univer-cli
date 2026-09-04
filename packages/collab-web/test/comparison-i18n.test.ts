@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { CellValueType, HorizontalAlign, WrapStrategy } from "@univerjs/core";
 import { LOCALE_MANIFEST, loadMessages, setLang, t } from "../src/i18n/index.js";
-import { formatComparisonValue } from "../src/ui/comparison-value.js";
+import { formatComparisonValue } from "../src/comparison/shared/comparison-value.js";
 
 afterEach(async () => { await setLang("en-US"); });
 

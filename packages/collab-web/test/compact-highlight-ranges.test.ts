@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compactHighlightRanges } from "../src/ui/compact-highlight-ranges.js";
+import { compactHighlightRanges } from "../src/comparison/shared/compact-highlight-ranges.js";
 
 describe("compactHighlightRanges", () => {
   it("merges a cell grid into one exact rectangle", () => {

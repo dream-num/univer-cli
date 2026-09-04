@@ -18,7 +18,7 @@ import {
   UNIT_TYPE_SLIDE,
   type UnitType
 } from "@univer/collab-gateway-contract";
-import type { ComparisonSide, ComparisonTone } from "./document-comparison-decoration";
+import type { ComparisonSide, ComparisonTone } from "./document-decoration";
 import type { UnitStructuralDiffItem } from "@univer/unit-compare";
 
 interface HighlightBounds {

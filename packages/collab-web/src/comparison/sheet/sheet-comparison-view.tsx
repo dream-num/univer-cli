@@ -6,7 +6,7 @@ import {
   isWorkbookCompareDetailVisible,
   isWorkbookCompareResourceCategory,
   workbookComparisonFromContext,
-} from "../core/workbook-comparison-context.js";
+} from "./workbook-comparison-context.js";
 import {
   buildWorkbookCompareSidebarTree,
   collectWorkbookCompareSidebarItemIds,
@@ -29,21 +29,22 @@ import {
   type WorkbookCompareSidebarTreeLabels,
   type WorkbookCompareSidebarTreeNode
 } from "@univer/workbook-compare";
-import { cn } from "../lib/utils.js";
-import { t } from "../i18n/index.js";
-import { ComparisonPageTabs } from "./comparison-page-tabs.js";
-import { formatComparisonValue } from "./comparison-value.js";
-import { shouldClearDiffSidebarSelection } from "./diff-sidebar-selection.js";
-import { structuralDiffItemsFromContext } from "../core/structural-diff-from-context.js";
-import { WorkbookDiffFxStrip } from "./workbook-diff-fx-strip.js";
-import { useEnsureSelectedDiffVisible } from "./use-ensure-selected-diff-visible.js";
+import { cn } from "../../lib/utils.js";
+import { t } from "../../i18n/index.js";
+import { ComparisonPageTabs } from "../shared/scope-tabs.js";
+import { formatComparisonValue } from "../shared/comparison-value.js";
+import { shouldClearDiffSidebarSelection } from "../shared/sidebar-selection.js";
+import { structuralDiffItemsFromContext } from "../comparison-presentation.js";
+import { WorkbookDiffFxStrip } from "./workbook-fx-strip.js";
+import { useEnsureSelectedDiffVisible } from "../shared/use-ensure-selected-diff-visible.js";
 import {
   ReadonlyUniverWorkbookView,
   type ReadonlyWorkbookControlledScroll,
   type ReadonlyWorkbookControlledSelection,
   type ReadonlyWorkbookScrollPayload,
   type ReadonlyWorkbookSelectionPayload
-} from "./readonly-univer-workbook-view.js";
+} from "./readonly-workbook-pane.js";
+import type { UnitComparisonUniverFactory } from "../comparison-types.js";
 
 type DisplayMode = Extract<WorkbookCompareMode, "style" | "value">;
 type SidebarTab = "workbook" | "worksheet";
@@ -77,7 +78,6 @@ const EMPTY_PANE_FX_STATES: WorkbookComparePaneFxStates = {
 
 export function WorkbookDiffViewer(input: {
   readonly compare: {
-    readonly comparisonKey: string;
     readonly leftLabel: string;
     readonly leftWorkbookData: IWorkbookData | null;
     readonly rightLabel: string;
@@ -85,7 +85,10 @@ export function WorkbookDiffViewer(input: {
     readonly context: UnitComparisonContext;
     readonly degradedReason?: string;
   };
-  readonly leftSourceControl: ReactNode;
+  readonly createUniver: UnitComparisonUniverFactory;
+  readonly darkMode: boolean;
+  readonly leftSourceControl?: ReactNode;
+  readonly locale: Parameters<UnitComparisonUniverFactory>[0]["locale"];
   readonly unitLabel: string;
 }): ReactElement {
   const messages = t().diff;
@@ -113,7 +116,12 @@ export function WorkbookDiffViewer(input: {
             context: input.compare.context,
             right: targetWorkbookData
           }),
-    [displayMode, input.compare, targetWorkbookData]
+    [
+      displayMode,
+      input.compare.context,
+      input.compare.leftWorkbookData,
+      targetWorkbookData
+    ]
   );
   if (diffModel === null) {
     return (
@@ -137,11 +145,9 @@ export function WorkbookDiffViewer(input: {
   const floatingItems = useMemo(
     () =>
       structuralDiffItemsFromContext(input.compare.context).filter(
-        (item) =>
-          (item.entityType === "shape" || item.entityType === "chart") &&
-          item.parentStableId === selectedSheetId
+        (item) => item.entityType === "shape" || item.entityType === "chart"
       ),
-    [input.compare.context, selectedSheetId]
+    [input.compare.context]
   );
   const scopedItems = useMemo(
     () =>
@@ -197,17 +203,6 @@ export function WorkbookDiffViewer(input: {
       projectFxPanes(fxByPane, input.compare.context, selectedSheetId),
     [fxByPane, input.compare.context, selectedSheetId]
   );
-
-  useEffect(() => {
-    setDisplayMode("value");
-    setSidebarTab("worksheet");
-    setSearchQuery("");
-    setActiveSheetId(diffModel.preferredSheetId);
-    setSelectedItemId(null);
-    setSelectionSync(null);
-    setScrollSync(null);
-    setFxByPane(EMPTY_PANE_FX_STATES);
-  }, [input.compare.comparisonKey]);
 
   useEffect(() => {
     if (selectedItem?.sheetId !== undefined && selectedItem.sheetId !== null) {
@@ -387,10 +382,13 @@ export function WorkbookDiffViewer(input: {
         </aside>
         <DiffPane
           activeSheetId={selectedSheetId}
+          createUniver={input.createUniver}
           controlledScroll={scrollSync?.sourceRole === "base" ? null : scrollSync}
           controlledSelection={selectionSync?.sourceRole === "base" ? null : selectionSync}
+          darkMode={input.darkMode}
           floatingItems={floatingItems}
           label={input.compare.leftLabel}
+          locale={input.locale}
           sourceControl={input.leftSourceControl}
           gapConfig={
             selectedSheetId === null
@@ -416,10 +414,13 @@ export function WorkbookDiffViewer(input: {
         />
         <DiffPane
           activeSheetId={selectedSheetId}
+          createUniver={input.createUniver}
           controlledScroll={scrollSync?.sourceRole === "current" ? null : scrollSync}
           controlledSelection={selectionSync?.sourceRole === "current" ? null : selectionSync}
+          darkMode={input.darkMode}
           floatingItems={floatingItems}
           label={input.compare.rightLabel}
+          locale={input.locale}
           sourceControl={undefined}
           gapConfig={
             selectedSheetId === null
@@ -452,13 +453,16 @@ export function WorkbookDiffViewer(input: {
 function DiffPane(input: {
   readonly highlights: readonly WorkbookCompareRangeHighlight[];
   readonly activeSheetId: string | null;
+  readonly createUniver: UnitComparisonUniverFactory;
   readonly controlledScroll: ReadonlyWorkbookControlledScroll | null;
   readonly controlledSelection: ReadonlyWorkbookControlledSelection | null;
+  readonly darkMode: boolean;
   readonly floatingItems: ReturnType<typeof structuralDiffItemsFromContext>;
   readonly fx: WorkbookComparePaneFxState;
   readonly fxDiff: WorkbookCompareFxDiffPane;
   readonly gapConfig: WorkbookCompareSheetGapConfig | null;
   readonly label: string;
+  readonly locale: Parameters<UnitComparisonUniverFactory>[0]["locale"];
   readonly pane: "base" | "target";
   readonly selectedRange: WorkbookCompareItem["range"] | null;
   readonly selectedItem: WorkbookCompareItem | null;
@@ -507,6 +511,8 @@ function DiffPane(input: {
         ) : (
           <ReadonlyUniverWorkbookView
             activeSheetId={input.activeSheetId}
+            createUniver={input.createUniver}
+            darkMode={input.darkMode}
             comparison={{
               items: input.floatingItems,
               side: input.pane === "base" ? "left" : "right",
@@ -518,6 +524,7 @@ function DiffPane(input: {
             controlledSelection={input.controlledSelection}
             gapConfig={input.gapConfig}
             highlights={input.highlights}
+            locale={input.locale}
             onScrollChange={input.onPaneScrollChange}
             onSelectionChange={input.onPaneSelectionChange}
             selectedKind={
@@ -527,7 +534,6 @@ function DiffPane(input: {
                 : input.selectedItem.kind
             }
             selectedRange={input.selectedRange ?? null}
-            showFooter={false}
             showFormulaText={input.showFormulaText}
             snapshot={input.snapshot}
           />

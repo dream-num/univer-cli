@@ -9,7 +9,7 @@ vi.mock("../src/core/events", () => ({
   openEventChannel: () => ({ close: () => undefined }),
 }));
 
-vi.mock("../src/ui/workbook-diff-viewer", () => ({
+vi.mock("../src/comparison/sheet/sheet-comparison-view", () => ({
   WorkbookDiffViewer: () => "Comparison preview",
 }));
 

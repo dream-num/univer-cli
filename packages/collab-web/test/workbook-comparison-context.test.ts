@@ -4,7 +4,7 @@ import { SheetsUnitComparisonAdapter } from "@univerjs-pro/sheets-history";
 import type { UnitComparisonContext } from "@univer/collab-gateway-contract";
 import { buildWorkbookCompareSidebarTree, createWorkbookComparePaneFxStates, mapScrollTargetAcrossPanes, mapSelectionTargetAcrossPanes } from "@univer/workbook-compare";
 import { describe, expect, it } from "vitest";
-import { workbookComparisonFromContext } from "../src/core/workbook-comparison-context.js";
+import { workbookComparisonFromContext } from "../src/comparison/sheet/workbook-comparison-context.js";
 
 function workbook(inserted: boolean): IWorkbookData {
   return {

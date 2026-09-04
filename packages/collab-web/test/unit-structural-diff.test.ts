@@ -5,7 +5,7 @@ import {
   getBaseDiffCell,
   formatBaseCellValue,
   baseDiffFieldLabel,
-} from "../src/core/base-table-diff";
+} from "../src/comparison/base/base-table-diff";
 import type { UnitStructuralDiffItem } from "@univer/unit-compare";
 
 function baseChange(entityType: string, stableId: string, kind: "insert" | "delete" | "update", tableId = "t1"): UnitStructuralDiffItem {

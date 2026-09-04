@@ -8,7 +8,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   focusPreviewComparisonTarget,
   structuralDiffFocusTarget
-} from "../src/core/preview-comparison-focus";
+} from "../src/comparison/native/comparison-focus";
 
 describe("preview comparison stable-ID focus", () => {
   it("maps semantic Doc rows to each side's native paragraph identity", () => {

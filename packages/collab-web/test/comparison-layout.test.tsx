@@ -7,11 +7,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setLang } from "../src/i18n";
 import type { App, AppSnapshot } from "../src/ui/app";
 import { AppView } from "../src/ui/app-view";
-import { formatComparisonValue } from "../src/ui/comparison-value";
-import { useEnsureSelectedDiffVisible } from "../src/ui/use-ensure-selected-diff-visible";
+import { formatComparisonValue } from "../src/comparison/shared/comparison-value";
+import { useEnsureSelectedDiffVisible } from "../src/comparison/shared/use-ensure-selected-diff-visible";
 
 const workbookViews = vi.hoisted(() => ({ props: [] as Array<{ showFormulaText?: boolean; snapshot: unknown }> }));
-vi.mock("../src/ui/readonly-univer-workbook-view", () => ({
+vi.mock("../src/comparison/sheet/readonly-workbook-pane", () => ({
   ReadonlyUniverWorkbookView: (props: { showFormulaText?: boolean; snapshot: unknown }) => {
     workbookViews.props.push(props);
     return <div data-testid="readonly-sheet" data-formulas={String(props.showFormulaText)} />;

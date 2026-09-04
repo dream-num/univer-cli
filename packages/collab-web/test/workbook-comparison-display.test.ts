@@ -1,7 +1,7 @@
 import type { IWorkbookData } from "@univerjs/core";
 import { BooleanNumber, CellValueType, LocaleType } from "@univerjs/core";
 import { describe, expect, it } from "vitest";
-import { createContentComparisonSnapshot } from "../src/core/workbook-comparison-display.js";
+import { createContentComparisonSnapshot } from "../src/comparison/sheet/workbook-comparison-display.js";
 
 function styledWorkbook(): IWorkbookData {
   return {

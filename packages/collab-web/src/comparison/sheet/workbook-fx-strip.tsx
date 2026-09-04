@@ -3,7 +3,7 @@ import type {
   WorkbookCompareFxDiffPane,
   WorkbookCompareFxDiffSegment,
 } from "@univer/workbook-compare";
-import { cn } from "../lib/utils.js";
+import { cn } from "../../lib/utils.js";
 
 export function WorkbookDiffFxStrip(input: {
   readonly activeCellLabel: string;

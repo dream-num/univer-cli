@@ -1,5 +1,5 @@
 import type { UnitComparisonContextChange } from "@univer/collab-gateway-contract";
-import { t } from "../i18n";
+import { t } from "../../i18n";
 
 /** Human-readable values shared by the comparison sidebar's change descriptions. */
 export function formatComparisonValue(

@@ -6,12 +6,9 @@ import {
   getIntersectRange,
   ICommandService,
   type IDisposable,
-  type ILanguagePack,
   type IRange,
   type IWorkbookData,
   IUniverInstanceService,
-  LocaleType,
-  LogLevel,
   type Workbook,
   Univer,
   UniverInstanceType
@@ -24,23 +21,19 @@ import {
   SetScrollOperation,
   SheetSkeletonManagerService
 } from "@univerjs/sheets-ui";
-import {
-  registerViewRendering,
-  TEST_LICENSE,
-  ViewAssetIoOwner
-} from "@univer/render-preset";
-import { currentLang, sdkLocaleOf, t } from "../i18n/index.js";
-import { loadViewerLocale } from "../core/locales/generated/load.js";
-import { registerFormulaTextDisplay } from "../core/formula-text-display.js";
+import { t } from "../../i18n/index.js";
+import { registerFormulaTextDisplay } from "./formula-text-display.js";
 import {
   createNativeComparisonHighlightController,
   type NativeComparisonHighlightController
-} from "../core/native-comparison-highlights.js";
-import { compactHighlightRanges } from "./compact-highlight-ranges.js";
-import { blockLocalEditingCommands } from "../core/viewer-readonly.js";
+} from "../native/native-highlights.js";
+import { compactHighlightRanges } from "../shared/compact-highlight-ranges.js";
+import type {
+  IUnitComparisonUniverInstance,
+  UnitComparisonUniverFactory
+} from "../comparison-types.js";
 
 import "@univerjs/engine-formula/facade";
-import "@univer/render-preset/facades";
 import "@univerjs/sheets/facade";
 import "@univerjs/sheets-filter/facade";
 import "@univerjs/sheets-formula/facade";
@@ -51,7 +44,8 @@ import "@univerjs/ui/facade";
 
 export function ReadonlyUniverWorkbookView(input: {
   readonly activeSheetId?: string | null;
-  readonly createUniver?: (container: HTMLElement, options: { readonly footer: boolean }) => Univer;
+  readonly createUniver: UnitComparisonUniverFactory;
+  readonly darkMode: boolean;
   readonly comparison?: {
     readonly items: readonly UnitStructuralDiffItem[];
     readonly selectedItemId?: string;
@@ -65,7 +59,7 @@ export function ReadonlyUniverWorkbookView(input: {
   readonly onSelectionChange?: (payload: ReadonlyWorkbookSelectionPayload) => void;
   readonly selectedKind?: WorkbookCompareRangeHighlight["kind"] | null;
   readonly selectedRange?: IRange | null;
-  readonly showFooter?: boolean;
+  readonly locale: Parameters<UnitComparisonUniverFactory>[0]["locale"];
   readonly showFormulaText?: boolean;
   readonly snapshot: unknown;
 }): ReactElement {
@@ -73,10 +67,14 @@ export function ReadonlyUniverWorkbookView(input: {
   const activeWorkbookRef = useRef<FWorkbook | null>(null);
   const univerRef = useRef<Univer | null>(null);
   const formulaDisplayRef = useRef<IDisposable | null>(null);
+  const rangeHighlightsRef = useRef<IDisposable[]>([]);
   const selectedHighlightRef = useRef<IDisposable | null>(null);
   const comparisonHighlightRef = useRef<NativeComparisonHighlightController | null>(null);
   const selectedKindRef = useRef(input.selectedKind ?? null);
   const selectedRangeRef = useRef(input.selectedRange ?? null);
+  const activeSheetIdRef = useRef(input.activeSheetId ?? null);
+  const gapConfigRef = useRef(input.gapConfig ?? null);
+  const highlightsRef = useRef(input.highlights ?? []);
   const showFormulaTextRef = useRef(input.showFormulaText ?? false);
   const currentWorkbookIdRef = useRef<string | null>(null);
   const lastAppliedScrollKeyRef = useRef<string | null>(null);
@@ -84,9 +82,11 @@ export function ReadonlyUniverWorkbookView(input: {
   const lastAppliedSelectionKeyRef = useRef<string | null>(null);
   const lastEmittedSelectionKeyRef = useRef<string | null>(null);
   const [renderError, setRenderError] = useState<string | null>(null);
-  const locale = sdkLocaleOf(currentLang());
   selectedKindRef.current = input.selectedKind ?? null;
   selectedRangeRef.current = input.selectedRange ?? null;
+  activeSheetIdRef.current = input.activeSheetId ?? null;
+  gapConfigRef.current = input.gapConfig ?? null;
+  highlightsRef.current = input.highlights ?? [];
 
   useEffect(() => {
     const container = containerRef.current;
@@ -100,7 +100,7 @@ export function ReadonlyUniverWorkbookView(input: {
     container.replaceChildren(viewerHost);
     setRenderError(null);
 
-    let univer: Univer | null = null;
+    let runtime: IUnitComparisonUniverInstance | null = null;
     let animationFrameId: number | null = null;
     const cleanup: Array<() => void> = [];
     let disposed = false;
@@ -114,11 +114,19 @@ export function ReadonlyUniverWorkbookView(input: {
 
     const initialize = async (): Promise<void> => {
     try {
-      const localePack = await loadViewerLocale(locale);
-      if (disposed) return;
-      univer = input.createUniver === undefined
-        ? createReadonlyDesktopUniver(viewerHost, { footer: input.showFooter ?? true, locale, localePack })
-        : input.createUniver(viewerHost, { footer: input.showFooter ?? true });
+      const created = await input.createUniver({
+        container: viewerHost,
+        unitType: UNIT_TYPE_SHEET,
+        locale: input.locale,
+        darkMode: input.darkMode
+      });
+      if (disposed) {
+        created.dispose();
+        viewerHost.remove();
+        return;
+      }
+      runtime = created;
+      const { univer } = created;
       univer.createUnit(UniverInstanceType.UNIVER_SHEET, input.snapshot as IWorkbookData);
 
       const injector = univer.__getInjector();
@@ -128,9 +136,9 @@ export function ReadonlyUniverWorkbookView(input: {
       const activeWorkbook =
         workbookModel == null ? null : injector.createInstance(FWorkbook, workbookModel);
       const targetSheet =
-        input.activeSheetId === undefined || input.activeSheetId === null
+        activeSheetIdRef.current === null
           ? null
-          : (activeWorkbook?.getSheetBySheetId(input.activeSheetId) ?? null);
+          : (activeWorkbook?.getSheetBySheetId(activeSheetIdRef.current) ?? null);
 
       (targetSheet ?? activeWorkbook?.getActiveSheet())?.activate();
 
@@ -163,11 +171,9 @@ export function ReadonlyUniverWorkbookView(input: {
         }
         applySelectedRange(
           activeWorkbook,
-          input.activeSheetId ?? null,
-          input.selectedRange ?? null
+          activeSheetIdRef.current,
+          selectedRangeRef.current
         );
-
-        blockLocalEditingCommands(injector.get(ICommandService));
 
         const renderManagerService = univer.__getInjector().get(IRenderManagerService);
         const workbookId = activeWorkbook.getId();
@@ -187,7 +193,7 @@ export function ReadonlyUniverWorkbookView(input: {
         const attachRenderServices = (): boolean => {
           gapConfigApplied ||= applySheetGapConfig({
             activeSheetId,
-            gapConfig: input.gapConfig ?? null,
+            gapConfig: gapConfigRef.current,
             renderManagerService,
             workbookId
           });
@@ -243,20 +249,11 @@ export function ReadonlyUniverWorkbookView(input: {
           cleanup.push(...applySelectionRangeInteractionGuards(selectionRenderService));
           const highlightSheet = targetSheet ?? activeWorkbook.getActiveSheet();
           if (highlightSheet !== null) {
-            const bounds = { startRow: 0, startColumn: 0, endRow: highlightSheet.getMaxRows() - 1, endColumn: highlightSheet.getMaxColumns() - 1 };
-            for (const kind of ["delete", "insert", "update"] as const) {
-              // Diff ranges can span the larger side; render only their intersection with this sheet.
-              const ranges = compactHighlightRanges(
-                (input.highlights ?? [])
-                  .filter((item) => item.kind === kind)
-                  .map((item) => getIntersectRange(item.range, bounds))
-                  .filter((range): range is IRange => range != null)
-              )
-                .map((range) => highlightSheet.getRange(range.startRow, range.startColumn, range.endRow - range.startRow + 1, range.endColumn - range.startColumn + 1));
-              if (ranges.length === 0) continue;
-              const highlight = highlightSheet.highlightRanges(ranges, { fill: kind === "delete" ? "rgba(239,68,68,0.18)" : kind === "insert" ? "rgba(34,197,94,0.18)" : "rgba(59,130,246,0.18)", strokeWidth: 0, widgetSize: 0 });
-              cleanup.push(() => highlight.dispose());
-            }
+            replaceRangeHighlights(
+              rangeHighlightsRef,
+              highlightSheet,
+              highlightsRef.current
+            );
             selectedHighlightRef.current?.dispose();
             selectedHighlightRef.current = createSelectedRangeHighlight(
               highlightSheet,
@@ -281,6 +278,11 @@ export function ReadonlyUniverWorkbookView(input: {
         waitForRenderServices(90);
       }
     } catch (error) {
+      if (disposed) {
+        runtime?.dispose();
+        runtime = null;
+        return;
+      }
       const message = error instanceof Error ? error.message : String(error);
       console.error("Failed to initialize read-only workbook comparison pane", error);
       setRenderError(`${t().diff.renderFailed}: ${message}`);
@@ -288,9 +290,10 @@ export function ReadonlyUniverWorkbookView(input: {
       formulaDisplayRef.current = null;
       selectedHighlightRef.current?.dispose();
       selectedHighlightRef.current = null;
-      comparisonHighlightRef.current?.dispose();
-      comparisonHighlightRef.current = null;
-      univer?.dispose();
+      replaceRangeHighlights(rangeHighlightsRef, null, []);
+      for (const dispose of cleanup.splice(0)) dispose();
+      runtime?.dispose();
+      runtime = null;
       viewerHost.remove();
       return;
     }
@@ -304,6 +307,7 @@ export function ReadonlyUniverWorkbookView(input: {
       formulaDisplayRef.current = null;
       selectedHighlightRef.current?.dispose();
       selectedHighlightRef.current = null;
+      replaceRangeHighlights(rangeHighlightsRef, null, []);
       activeWorkbookRef.current = null;
       univerRef.current = null;
       currentWorkbookIdRef.current = null;
@@ -317,11 +321,12 @@ export function ReadonlyUniverWorkbookView(input: {
       // Univer owns a nested React root. Dispose after the comparison shell's commit finishes;
       // the per-instance host prevents a delayed old viewer from touching its replacement.
       setTimeout(() => {
-        univer?.dispose();
+        runtime?.dispose();
+        runtime = null;
         viewerHost.remove();
       }, 0);
     };
-  }, [input.activeSheetId, input.comparison?.items, input.comparison?.side, input.gapConfig, input.highlights, input.showFooter, input.snapshot, locale]);
+  }, [input.comparison?.items, input.comparison?.side, input.createUniver, input.darkMode, input.locale, input.snapshot]);
 
   useEffect(() => {
     comparisonHighlightRef.current
@@ -345,6 +350,47 @@ export function ReadonlyUniverWorkbookView(input: {
       setRenderError(error instanceof Error ? error.message : String(error));
     }
   }, [input.showFormulaText]);
+
+  useEffect(() => {
+    const activeWorkbook = activeWorkbookRef.current;
+    const univer = univerRef.current;
+    if (activeWorkbook === null || univer === null) return;
+    const targetSheet =
+      input.activeSheetId == null
+        ? activeWorkbook.getActiveSheet()
+        : activeWorkbook.getSheetBySheetId(input.activeSheetId);
+    if (targetSheet === null) return;
+    targetSheet.activate();
+    void comparisonHighlightRef.current?.refresh().catch((error: unknown) => {
+      console.error("Failed to refresh workbook object comparison highlight", error);
+      setRenderError(error instanceof Error ? error.message : String(error));
+    });
+    replaceRangeHighlights(rangeHighlightsRef, targetSheet, input.highlights ?? []);
+
+    const renderManagerService = univer.__getInjector().get(IRenderManagerService);
+    let animationFrameId: number | null = null;
+    let disposed = false;
+    const applyGap = (remainingFrames: number): void => {
+      if (disposed) return;
+      if (
+        applySheetGapConfig({
+          activeSheetId: targetSheet.getSheetId(),
+          gapConfig: input.gapConfig ?? null,
+          renderManagerService,
+          workbookId: activeWorkbook.getId()
+        }) ||
+        remainingFrames <= 0
+      ) {
+        return;
+      }
+      animationFrameId = requestAnimationFrame(() => applyGap(remainingFrames - 1));
+    };
+    applyGap(30);
+    return () => {
+      disposed = true;
+      if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
+    };
+  }, [input.activeSheetId, input.gapConfig, input.highlights]);
 
   useEffect(() => {
     applySelectedRange(
@@ -433,6 +479,50 @@ export interface ReadonlyWorkbookControlledSelection extends IRange {
   readonly key: string;
   readonly sheetId: string;
   readonly sourceRole: "base" | "current";
+}
+
+function replaceRangeHighlights(
+  target: MutableRefObject<IDisposable[]>,
+  sheet: FWorksheet | null,
+  highlights: readonly WorkbookCompareRangeHighlight[]
+): void {
+  for (const highlight of target.current) highlight.dispose();
+  target.current = [];
+  if (sheet === null) return;
+  const bounds = {
+    startRow: 0,
+    startColumn: 0,
+    endRow: sheet.getMaxRows() - 1,
+    endColumn: sheet.getMaxColumns() - 1
+  };
+  for (const kind of ["delete", "insert", "update"] as const) {
+    const ranges = compactHighlightRanges(
+      highlights
+        .filter((item) => item.kind === kind)
+        .map((item) => getIntersectRange(item.range, bounds))
+        .filter((range): range is IRange => range != null)
+    ).map((range) =>
+      sheet.getRange(
+        range.startRow,
+        range.startColumn,
+        range.endRow - range.startRow + 1,
+        range.endColumn - range.startColumn + 1
+      )
+    );
+    if (ranges.length === 0) continue;
+    target.current.push(
+      sheet.highlightRanges(ranges, {
+        fill:
+          kind === "delete"
+            ? "rgba(239,68,68,0.18)"
+            : kind === "insert"
+              ? "rgba(34,197,94,0.18)"
+              : "rgba(59,130,246,0.18)",
+        strokeWidth: 0,
+        widgetSize: 0
+      })
+    );
+  }
 }
 
 export interface ReadonlyWorkbookControlledScroll {
@@ -793,28 +883,4 @@ function readSelectionRenderService(
   } catch {
     return null;
   }
-}
-
-function createReadonlyDesktopUniver(
-  container: HTMLElement,
-  input: { readonly footer: boolean; readonly locale: LocaleType; readonly localePack: ILanguagePack }
-): Univer {
-  const univer = new Univer({
-    locale: input.locale,
-    locales: { [input.locale]: input.localePack },
-    logLevel: LogLevel.WARN
-  });
-
-  container.id ||= `readonly-workbook-${Math.random().toString(36).slice(2)}`;
-  registerViewRendering(univer, {
-    container: container.id,
-    assetIoOwner: ViewAssetIoOwner.Local,
-    license: TEST_LICENSE,
-    workbenchChrome: input.footer ? "visible" : "hidden",
-    // Native table anchors include hover-to-insert row/column buttons, not comments.
-    sheetTableUI: { hideAnchor: true },
-    unitType: UniverInstanceType.UNIVER_SHEET
-  });
-
-  return univer;
 }

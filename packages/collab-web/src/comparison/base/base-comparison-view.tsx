@@ -8,7 +8,7 @@ import {
   type ReactNode,
   type UIEvent
 } from "react";
-import { Badge } from "../components/ui/badge";
+import { Badge } from "../../components/ui/badge";
 import {
   buildBaseDiffGridLayout,
   baseDiffFieldLabel,
@@ -18,19 +18,19 @@ import {
   type BaseDiffField,
   type BaseDiffRecord,
   type BaseTableDiff
-} from "../core/base-table-diff";
+} from "./base-table-diff";
 import {
   baseTableIdOfDiffItem,
   filterBaseTableDiffItems,
   type UnitStructuralDiffItem,
   type UnitStructuralDiffKind
 } from "@univer/unit-compare";
-import { cn } from "../lib/utils";
-import { t } from "../i18n";
-import { ComparisonPageTabs } from "./comparison-page-tabs";
-import { shouldClearDiffSidebarSelection } from "./diff-sidebar-selection";
-import { useEnsureSelectedDiffVisible } from "./use-ensure-selected-diff-visible";
-import { structuralDiffItemLabel } from "./structural-diff-item-label";
+import { cn } from "../../lib/utils";
+import { t } from "../../i18n";
+import { ComparisonPageTabs } from "../shared/scope-tabs";
+import { shouldClearDiffSidebarSelection } from "../shared/sidebar-selection";
+import { useEnsureSelectedDiffVisible } from "../shared/use-ensure-selected-diff-visible";
+import { structuralDiffItemLabel } from "../shared/structural-diff-item-label";
 
 export function BaseTableDiffViewer(input: {
   readonly fidelity: "history" | "snapshot";

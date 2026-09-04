@@ -8,7 +8,7 @@ import { UniverSheetsFormulaPlugin } from "@univerjs/sheets-formula";
 import { UniverSheetsNumfmtPlugin } from "@univerjs/sheets-numfmt";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { initializeDocumentViewPosition } from "../src/core/document-view-position";
-import { registerFormulaTextDisplay } from "../src/core/formula-text-display";
+import { registerFormulaTextDisplay } from "../src/comparison/sheet/formula-text-display";
 
 const instances: Univer[] = [];
 afterEach(() => { for (const univer of instances.splice(0)) univer.dispose(); });

@@ -10,7 +10,7 @@ import type {
 } from "@univer/collab-gateway-contract";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/ui/app";
-import { attachLinkedWheelNavigation } from "../src/ui/app-view";
+import { attachLinkedWheelNavigation } from "../src/comparison/native/native-comparison-view";
 import { UniverInstanceType } from "@univerjs/core";
 
 vi.mock("../src/core/viewer", () => ({

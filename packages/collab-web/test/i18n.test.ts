@@ -11,7 +11,7 @@ import {
   setLang,
   t
 } from "../src/i18n";
-import { structuralDiffItemLabel } from "../src/ui/structural-diff-item-label";
+import { structuralDiffItemLabel } from "../src/comparison/shared/structural-diff-item-label";
 
 describe("resolveLang", () => {
   afterEach(() => {

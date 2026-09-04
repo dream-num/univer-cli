@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { shouldClearDiffSidebarSelection } from "../src/ui/diff-sidebar-selection";
+import { shouldClearDiffSidebarSelection } from "../src/comparison/shared/sidebar-selection";
 
 describe("diff sidebar selection", () => {
   it("clears from empty chrome but preserves interactive controls and their children", () => {

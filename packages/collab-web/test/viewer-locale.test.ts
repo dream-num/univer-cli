@@ -67,7 +67,7 @@ describe("viewer locale wiring", () => {
       "sheetResourceRefDataProvider.dispose();"
     );
     expect(source).toMatch(
-      /dispose: \(\) => \{\s+comparisonHighlights\?\.dispose\(\);\s+univer\.dispose\(\);\s+\}/u
+      /dispose: \(\) => \{\s+univer\.dispose\(\);\s+\}/u
     );
   });
 });

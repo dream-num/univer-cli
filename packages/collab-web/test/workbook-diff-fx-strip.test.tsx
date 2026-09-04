@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { WorkbookDiffFxStrip } from "../src/ui/workbook-diff-fx-strip.js";
+import { WorkbookDiffFxStrip } from "../src/comparison/sheet/workbook-fx-strip.js";
 
 describe("workbook diff formula strip", () => {
   it("renders deleted and inserted formula tokens with pane-local semantics", () => {

@@ -1,5 +1,5 @@
 import type { UnitStructuralDiffItem } from "@univer/unit-compare";
-import { t } from "../i18n";
+import { t } from "../../i18n";
 
 const STRUCTURED_CONTENT_CATEGORIES = new Set([
   "block-range",

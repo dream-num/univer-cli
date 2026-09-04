@@ -1,11 +1,11 @@
 import { BooleanNumber, CustomRangeType, DataStreamTreeTokenType, DocumentBlockRangeType, ObjectRelativeFromH, ObjectRelativeFromV, PresetListType, TableAlignmentType, TableRowHeightRule, TableSizeType, TableTextWrapType, TextX, TextXActionType, UniverInstanceType, validateDocumentStructure, type IDocumentData, type ITextRun } from "@univerjs/core";
 import { describe, expect, it } from "vitest";
 import { DocsUnitComparisonAdapter } from "@univerjs-pro/docs-history";
-import { structuralDiffItemsFromContext } from "../src/core/structural-diff-from-context";
+import { structuralDiffItemsFromContext } from "../src/comparison/comparison-presentation";
 import {
   decorateDocumentComparisonSide as renderDocumentComparisonSide,
   type ComparisonSide,
-} from "../src/core/document-comparison-decoration";
+} from "../src/comparison/native/document-decoration";
 
 /** Exercise the real SDK output through the renderer, without an application-side diff fallback. */
 function decorateDocumentComparisonSide(
