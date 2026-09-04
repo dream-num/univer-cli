@@ -420,7 +420,7 @@ describe("built univer executable", () => {
               source.getText().setText("Plan");
               target.getText().setText("Ship");
               if (!board.arrangeElementsInLayers([[source.getId()], [target.getId()]], { direction: "horizontal", start: { x: 80, y: 80 } })) throw new Error("Cannot arrange Board shapes");
-              const connectors = board.insertConnectors([{ fromElementId: source.getId(), toElementId: target.getId(), style: { endMarker: { type: "filledTriangle", size: "md" } } }]);
+              const connectors = board.insertConnectors([{ fromElementId: source.getId(), toElementId: target.getId(), style: { endMarker: { type: "filledTriangle", size: "md" }, animation: { mode: "arrows" } } }]);
               if (!connectors || connectors.length !== 1) throw new Error("Cannot insert Board connector");
               const analysis = board.analyzeModelLayout(48);
               if (!analysis) throw new Error("Cannot analyze Board layout");

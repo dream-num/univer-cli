@@ -217,7 +217,9 @@ export function createLocalRenderApplication(
           runtime,
           ...(Object.keys(limits).length === 0 ? {} : { limits }),
         });
-        const result = await screenshot.capture(captureInput(source, input.target));
+        const result = await screenshot.capture(
+          captureInput(stabilizeScreenshotSource(source), input.target),
+        );
         const outputs = await writeScreenshotImages(
           result,
           resolve(input.cwd ?? process.cwd(), input.destination ?? DEFAULT_SCREENSHOT_DIRECTORY),
@@ -341,6 +343,34 @@ export function createLocalRenderApplication(
       };
     },
   };
+}
+
+function stabilizeScreenshotSource(source: UniverRenderUnit): UniverRenderUnit {
+  if (source.unitType !== "board") return source;
+
+  let changed = false;
+  const pages = Object.fromEntries(
+    Object.entries(source.unitData.pages).map(([pageId, page]) => {
+      let pageChanged = false;
+      const elements = Object.fromEntries(
+        Object.entries(page.elements).map(([elementId, element]) => {
+          if (
+            !("connectorData" in element) ||
+            element.connectorData.style?.animation === undefined
+          ) {
+            return [elementId, element];
+          }
+          const { animation: _animation, ...style } = element.connectorData.style;
+          changed = true;
+          pageChanged = true;
+          return [elementId, { ...element, connectorData: { ...element.connectorData, style } }];
+        }),
+      );
+      return [pageId, pageChanged ? { ...page, elements } : page];
+    }),
+  );
+
+  return changed ? { ...source, unitData: { ...source.unitData, pages } } : source;
 }
 
 function captureInput(

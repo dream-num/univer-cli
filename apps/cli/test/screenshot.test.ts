@@ -211,13 +211,34 @@ describe("Local render application", () => {
       },
       async render(input) {
         renderCalls.push(input);
+        if (input.operation.kind === "board-content") {
+          return {
+            bytes: Uint8Array.from([1, 2, 3]),
+            height: 20,
+            width: 30,
+            board: {
+              pageId: "board-page-1",
+              scale: input.operation.scale,
+              contentBounds: { left: 0, top: 0, width: 100, height: 40 },
+              layoutAnalysis: {
+                contentBounds: { left: 0, top: 0, width: 100, height: 40 },
+                issues: [],
+                routes: [],
+                source: "rendered",
+                summary: { errorCount: 0, unresolvedConnectorCount: 0, warningCount: 0 },
+              },
+            },
+          };
+        }
         return { bytes: Uint8Array.from([1, 2, 3]), height: 20, width: 30 };
       },
     };
+    const board = boardSource();
     const source: LocalRenderSource = {
       async load(input) {
         if (input.unitId === "slide-1") return slideSource();
         if (input.unitId === "base-1") return baseSource();
+        if (input.unitId === "board-1") return board;
         return sheetSource();
       },
     };
@@ -254,6 +275,24 @@ describe("Local render application", () => {
       expect(await readFile(result.outputs[0]!.location)).toEqual(Buffer.from([1, 2, 3]));
       expect(renderCalls).toHaveLength(1);
 
+      await application.capture({
+        cwd: root,
+        destination: "board-shots",
+        path: "book.univer",
+        unitId: "board-1",
+      });
+      const renderedBoard = renderCalls[1] as ReturnType<typeof boardSource> & {
+        readonly operation: { readonly kind: string };
+      };
+      expect(renderedBoard.operation.kind).toBe("board-content");
+      expect(
+        renderedBoard.unitData.pages["board-page-1"]?.elements["connector-1"]?.connectorData.style,
+      ).toEqual({ stroke: "#2563eb" });
+      expect(
+        board.unitData.pages["board-page-1"]?.elements["connector-1"]?.connectorData.style
+          ?.animation,
+      ).toEqual({ mode: "arrows" });
+
       const printed = await application.printPdf({
         cwd: root,
         destination: "reports/book.pdf",
@@ -277,7 +316,7 @@ describe("Local render application", () => {
           unitId: "base-1",
         }),
       ).rejects.toMatchObject({ code: "UNIT_PRINT_PDF_TYPE_UNSUPPORTED" });
-      expect(closeCount).toBe(2);
+      expect(closeCount).toBe(3);
 
       const measurer = application.createTextMeasurer();
       expect(
@@ -288,7 +327,7 @@ describe("Local render application", () => {
         }),
       ).toEqual({ width: 42, ascent: 9, descent: 3 });
       await measurer.close();
-      expect(closeCount).toBe(3);
+      expect(closeCount).toBe(4);
 
       const lintSource = await application.loadLayoutLintSource({
         cwd: root,
@@ -303,7 +342,7 @@ describe("Local render application", () => {
         coverage: { pages: [{ page: 1, pageId: "slide-page-1" }] },
         findings: [],
       });
-      expect(closeCount).toBe(4);
+      expect(closeCount).toBe(5);
       await expect(
         application.loadLayoutLintSource({
           cwd: root,
@@ -433,4 +472,62 @@ function baseSource(): UniverRenderUnit {
     unitData: { id: "base-1", name: "Base" },
     unitType: "base",
   } as unknown as UniverRenderUnit;
+}
+
+type AnimatedBoardSource = UniverRenderUnit & {
+  readonly unitType: "board";
+  readonly unitData: {
+    readonly pages: Record<
+      string,
+      {
+        readonly elements: Record<
+          string,
+          {
+            readonly connectorData: {
+              readonly style?: {
+                readonly animation?: { readonly mode: string };
+                readonly stroke?: string;
+              };
+            };
+          }
+        >;
+      }
+    >;
+  };
+};
+
+function boardSource(): AnimatedBoardSource {
+  return {
+    unitType: "board",
+    unitData: {
+      id: "board-1",
+      name: "Board",
+      appVersion: "1.0.0",
+      defaultPageSize: { width: 960, height: 540 },
+      pageOrder: ["board-page-1"],
+      pages: {
+        "board-page-1": {
+          id: "board-page-1",
+          pageType: "board",
+          name: "Board",
+          elementOrder: ["connector-1"],
+          elements: {
+            "connector-1": {
+              id: "connector-1",
+              type: "connector",
+              zIndex: 0,
+              transform: { left: 0, top: 0, width: 100, height: 0 },
+              connectorData: {
+                start: { kind: "free", x: 0, y: 0 },
+                end: { kind: "free", x: 100, y: 0 },
+                routing: "straight",
+                routingMode: "manual",
+                style: { stroke: "#2563eb", animation: { mode: "arrows" } },
+              },
+            },
+          },
+        },
+      },
+    },
+  } as unknown as AnimatedBoardSource;
 }

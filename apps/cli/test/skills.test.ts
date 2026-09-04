@@ -110,6 +110,9 @@ describe("application Skill library", () => {
     expect(board.content).toContain("normalize only those connector IDs at most once");
     expect(board.content).toContain("fromElementId: source.getId()");
     expect(board.content).toContain("toElementId: target.getId()");
+    expect(board.content).toContain("label: { id, text, pathRatio, offset }");
+    expect(board.content).toContain("For ellipses,");
+    expect(board.content).toContain("detached in-memory copy with connector animation disabled");
     expect(board.content).not.toContain("start: { elementId: source.getId() }");
   });
 
