@@ -60,6 +60,8 @@ export function NativeComparisonView(input: {
   const rightHandleRef = useRef<ComparisonPaneHandle | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | undefined>(undefined);
   const [activePageId, setActivePageId] = useState<string | null>(null);
+  const selectedItemIdRef = useRef<string | undefined>(selectedItemId);
+  const selectedPageIdRef = useRef<string | null>(activePageId);
   const [nativePanesReady, setNativePanesReady] = useState(unitType !== UNIT_TYPE_BOARD);
   const [renderError, setRenderError] = useState<string | null>(null);
   const items = useMemo(() => structuralDiffItemsFromContext(result), [result]);
@@ -88,11 +90,13 @@ export function NativeComparisonView(input: {
     [items, selectedPageId, unitType],
   );
   const selectedItem = scopedItems.find((item) => item.id === selectedItemId);
-  const initialSlideId = pageTabs[0]?.id;
+  const firstSlideId = pageTabs[0]?.id;
   const paragraphAlignment =
     result.productContext.kind === "doc"
       ? result.productContext.paragraphAlignment.rows
       : EMPTY_PARAGRAPH_ALIGNMENT;
+  selectedItemIdRef.current = selectedItemId;
+  selectedPageIdRef.current = selectedPageId;
 
   useEffect(() => {
     if (
@@ -112,6 +116,8 @@ export function NativeComparisonView(input: {
     let disposeLinkedBoardViewport = (): void => undefined;
     let disposed = false;
     let failed = false;
+    const mountSelectedItemId = selectedItemIdRef.current;
+    const mountSlideId = selectedPageIdRef.current ?? firstSlideId;
     setNativePanesReady(unitType !== UNIT_TYPE_BOARD);
     setRenderError(null);
 
@@ -130,12 +136,13 @@ export function NativeComparisonView(input: {
         unitData,
         ...(peerUnitData === null ? {} : { peerUnitData }),
         side,
-        items,
+        items: scopedItems,
         paragraphAlignment,
+        ...(mountSelectedItemId === undefined ? {} : { selectedItemId: mountSelectedItemId }),
         ...(unitType === UNIT_TYPE_SLIDE &&
-        initialSlideId !== undefined &&
-        slidePagePresent(unitData, initialSlideId)
-          ? { initialSlideId }
+        mountSlideId !== undefined &&
+        slidePagePresent(unitData, mountSlideId)
+          ? { initialSlideId: mountSlideId }
           : {}),
         locale: input.locale,
         darkMode: input.darkMode,
@@ -148,23 +155,28 @@ export function NativeComparisonView(input: {
       handles.add(handle);
     };
 
-    void Promise.all([
-      mount(
-        leftRef.current,
-        comparison.left.unitData,
-        comparison.right.unitData,
-        leftHandleRef,
-        "left",
-      ),
-      mount(
-        rightRef.current,
-        comparison.right.unitData,
-        comparison.left.unitData,
-        rightHandleRef,
-        "right",
-      ),
-    ])
+    void nextTask()
       .then(async () => {
+        if (disposed) return;
+        await Promise.all([
+          mount(
+            leftRef.current,
+            comparison.left.unitData,
+            comparison.right.unitData,
+            leftHandleRef,
+            "left",
+          ),
+          mount(
+            rightRef.current,
+            comparison.right.unitData,
+            comparison.left.unitData,
+            rightHandleRef,
+            "right",
+          ),
+        ]);
+      })
+      .then(async () => {
+        if (disposed) return;
         if (unitType === UNIT_TYPE_BOARD) {
           await waitForNativeCanvases(
             [
@@ -181,17 +193,22 @@ export function NativeComparisonView(input: {
           leftHandleRef.current,
           rightHandleRef.current,
         );
+        const currentSelectedItemId = selectedItemIdRef.current;
+        const currentSlideId = selectedPageIdRef.current ?? firstSlideId;
+        await Promise.all([
+          leftHandleRef.current?.setComparisonSelection(currentSelectedItemId),
+          rightHandleRef.current?.setComparisonSelection(currentSelectedItemId),
+        ]);
         const initialItem =
-          unitType === UNIT_TYPE_BOARD
+          scopedItems.find((item) => item.id === currentSelectedItemId) ??
+          (unitType === UNIT_TYPE_BOARD
             ? undefined
-            : initialSlideId === undefined
-              ? items[0]
-              : (filterSlidePageDiffItems(items, initialSlideId).find(
+            : currentSlideId === undefined
+              ? scopedItems[0]
+              : (scopedItems.find(
                   (item) => item.entityType === "slide-element",
                 ) ??
-                filterSlidePageDiffItems(items, initialSlideId).find(
-                  (item) => item.entityType === "slide",
-                ));
+                scopedItems.find((item) => item.entityType === "slide")));
         if (initialItem !== undefined) {
           await Promise.all([
             leftHandleRef.current?.focusComparisonTarget(
@@ -232,12 +249,12 @@ export function NativeComparisonView(input: {
   }, [
     comparison.left.unitData,
     comparison.right.unitData,
-    initialSlideId,
+    firstSlideId,
     input.createUniver,
     input.darkMode,
     input.locale,
-    items,
     paragraphAlignment,
+    scopedItems,
     unitType,
   ]);
 
@@ -646,4 +663,8 @@ function slidePagePresent(unitData: unknown, pageId: string | null): boolean {
 
 function nextFrame(): Promise<void> {
   return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+}
+
+function nextTask(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
 }

@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 import {
   UNIT_TYPE_DOC,
+  UNIT_TYPE_SLIDE,
   type UnitComparisonContext,
 } from "@univer/collab-gateway-contract";
 import { LocaleType, type IDocumentData, type Univer } from "@univerjs/core";
+import type { ISlideData } from "@univerjs-pro/slides";
 import { flushSync } from "react-dom";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -106,12 +108,74 @@ describe("UnitComparisonViewer lifecycle boundary", () => {
     await vi.waitFor(() => expect(createUniver).toHaveBeenCalledTimes(1));
     expect(host.textContent).toContain("Not present");
   });
+
+  it("recreates Slide panes on page changes and preserves the selected page", async () => {
+    const lifecycle: string[] = [];
+    const createUniver = vi.fn(async () => {
+      lifecycle.push("create");
+      return {
+        univer: {} as Univer,
+        dispose: vi.fn(() => lifecycle.push("dispose")),
+      };
+    });
+    const comparison = slideComparison("cmp-slide");
+
+    flushSync(() => root.render(renderViewer("cmp-slide", comparison, createUniver)));
+    await vi.waitFor(() => expect(createUniver).toHaveBeenCalledTimes(2));
+
+    const secondSlide = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
+      (button) => button.textContent === "Slide 2",
+    );
+    expect(secondSlide).toBeDefined();
+    flushSync(() => secondSlide?.click());
+    await vi.waitFor(() => expect(createUniver).toHaveBeenCalledTimes(4));
+    expect(lifecycle.slice(2, 6)).toEqual(["dispose", "dispose", "create", "create"]);
+
+    const pageRecreated = paneState.createCalls.slice(-2);
+    expect(pageRecreated.map((options) => options.initialSlideId)).toEqual([
+      undefined,
+      "slide-2",
+    ]);
+    expect(pageRecreated.map((options) => options.selectedItemId)).toEqual([
+      "element-2",
+      "element-2",
+    ]);
+    expect(
+      pageRecreated.every((options) =>
+        (options.items as Array<{ scope?: { stableId?: string } }>).every(
+          (item) => item.scope?.stableId === "slide-2",
+        ),
+      ),
+    ).toBe(true);
+
+    flushSync(() =>
+      root.render(renderViewer("cmp-slide", comparison, createUniver, { darkMode: true })),
+    );
+    await vi.waitFor(() => expect(createUniver).toHaveBeenCalledTimes(6));
+
+    const recreated = paneState.createCalls.slice(-2);
+    expect(recreated.map((options) => options.initialSlideId)).toEqual([
+      undefined,
+      "slide-2",
+    ]);
+    expect(recreated.map((options) => options.selectedItemId)).toEqual(["element-2", "element-2"]);
+    await vi.waitFor(() =>
+      expect(
+        paneState.handles.slice(-2).every((handle) =>
+          handle.focusComparisonTarget.mock.calls.some(
+            ([target]) => (target as { stableId?: string }).stableId === "element-2",
+          ),
+        ),
+      ).toBe(true),
+    );
+  });
 });
 
 function renderViewer(
   key: string,
   comparison: UnitComparisonViewerValue,
   createUniver: UnitComparisonUniverFactory,
+  options: { readonly darkMode?: boolean } = {},
 ) {
   return (
     <UnitComparisonViewer
@@ -119,9 +183,73 @@ function renderViewer(
       comparison={comparison}
       createUniver={createUniver}
       locale={LocaleType.EN_US}
-      darkMode={false}
+      darkMode={options.darkMode ?? false}
     />
   );
+}
+
+function slideComparison(comparisonId: string): UnitComparisonViewerValue {
+  const leftUnitData = {
+    id: "slide-unit",
+    activeSlideId: "slide-1",
+    slides: { "slide-1": {} },
+  } as unknown as ISlideData;
+  const rightUnitData = {
+    id: "slide-unit",
+    activeSlideId: "slide-1",
+    slides: { "slide-1": {}, "slide-2": {} },
+  } as unknown as ISlideData;
+  const unit = {
+    unitId: "slide-unit",
+    type: UNIT_TYPE_SLIDE,
+    name: "Slides",
+    presence: "paired" as const,
+  };
+  const item = (
+    slideId: string,
+    elementId: string,
+    title: string,
+    kind: "insert" | "update",
+  ) => ({
+    id: elementId,
+    stableId: elementId,
+    parentStableId: slideId,
+    scope: { entityType: "slide" as const, stableId: slideId },
+    kind,
+    entityType: "slide-element",
+    path: ["slides", slideId, "elements", elementId],
+    title,
+    moved: false,
+    changes: [],
+    details: [],
+    locations: { left: null, right: null },
+  });
+  const result = {
+    schemaVersion: 1,
+    comparisonId,
+    unit,
+    fidelity: "history",
+    stale: false,
+    detail: "full",
+    summary: { total: 2, insert: 1, delete: 0, update: 1, moved: 0, byEntityType: {} },
+    coverage: { supportedEntityTypes: ["slide-element"] },
+    scopes: [
+      { entityType: "slide", stableId: "slide-1", displayName: "Slide 1", kind: "update" },
+      { entityType: "slide", stableId: "slide-2", displayName: "Slide 2", kind: "insert" },
+    ],
+    page: { offset: 0, limit: 100, matched: 2, hasMore: false },
+    items: [
+      item("slide-1", "element-1", "Element 1", "update"),
+      item("slide-2", "element-2", "Element 2", "insert"),
+    ],
+    diagnostics: { readiness: "ready", unsupportedMutationIds: [], codes: [] },
+    productContext: { kind: "slide" },
+  } as UnitComparisonContext;
+  return {
+    result,
+    left: { label: "Before", unitData: leftUnitData },
+    right: { label: "After", revision: 2, unitData: rightUnitData },
+  };
 }
 
 function docComparison(comparisonId: string, missingLeft = false): UnitComparisonViewerValue {
