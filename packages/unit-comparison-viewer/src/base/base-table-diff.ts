@@ -1,4 +1,4 @@
-import type { UnitStructuralDiffItem, UnitStructuralDiffKind } from "../model/unit-compare.js";
+import type { UnitStructuralDiffItem, UnitStructuralDiffKind } from "../shared/structural-diff.js";
 import { formatBaseDateValue, formatBaseNumberValue } from "@univerjs-pro/bases";
 import { BaseFieldType } from "@univerjs/core";
 

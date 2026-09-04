@@ -26,7 +26,7 @@ import {
 import { ISlideDrawingStateService } from "@univerjs-pro/slides-ui";
 import { ICommandService, type LocaleType } from "@univerjs/core";
 import { SetDocZoomRatioOperation } from "@univerjs/docs-ui";
-import type { UnitStructuralDiffItem } from "../model/unit-compare.js";
+import type { UnitStructuralDiffItem } from "../shared/structural-diff.js";
 import type { UnitComparisonUniverFactory } from "../comparison-types";
 import {
   decorateDocumentComparisonSide,

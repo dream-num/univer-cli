@@ -6,7 +6,7 @@ import {
   formatBaseCellValue,
   baseDiffFieldLabel,
 } from "../src/base/base-table-diff";
-import type { UnitStructuralDiffItem } from "../src/model/unit-compare.js";
+import type { UnitStructuralDiffItem } from "../src/shared/structural-diff.js";
 
 function baseChange(
   entityType: string,

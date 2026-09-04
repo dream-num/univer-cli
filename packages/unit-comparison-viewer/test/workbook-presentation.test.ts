@@ -5,7 +5,7 @@ import {
   buildWorkbookCompareModel,
   mapSelectionTargetAcrossPanes,
   mapScrollTargetAcrossPanes,
-} from "../src/model/workbook-compare/index.js";
+} from "../src/sheet/workbook-comparison-model.js";
 
 describe("Sheet presentation boundary", () => {
   it("does not infer a semantic change from snapshots absent SDK items", () => {

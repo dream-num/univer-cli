@@ -8,7 +8,7 @@ import type {
 import {
   buildWorkbookCompareModel,
   WorkbookCompareTitleCode,
-} from "../model/workbook-compare/index.js";
+} from "./workbook-comparison-model.js";
 import { createWorkbookComparisonDisplaySnapshot } from "./workbook-comparison-display.js";
 import type {
   WorkbookCompareCategory,
@@ -20,7 +20,7 @@ import type {
   WorkbookCompareSheetData,
   WorkbookCompareSheetGapConfig,
   WorkbookCompareSheetPresentation,
-} from "../model/workbook-compare/index.js";
+} from "./workbook-comparison-model.js";
 
 const CATEGORIES: WorkbookCompareCategory[] = [
   "workbook",

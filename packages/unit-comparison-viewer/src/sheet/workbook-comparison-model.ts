@@ -5,8 +5,8 @@ export type {
   WorkbookCompareFxDiffPane,
   WorkbookCompareFxDiffSegment,
   WorkbookComparePaneFxState,
-} from "./fx-diff.js";
-import type { WorkbookComparePaneFxState } from "./fx-diff.js";
+} from "./workbook-fx-diff.js";
+import type { WorkbookComparePaneFxState } from "./workbook-fx-diff.js";
 
 export type WorkbookCompareDiffKind = "delete" | "insert" | "update";
 export type WorkbookCompareMode = "structure" | "style" | "value";

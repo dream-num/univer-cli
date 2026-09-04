@@ -2,7 +2,7 @@ import type { ReactElement } from "react";
 import type {
   WorkbookCompareFxDiffPane,
   WorkbookCompareFxDiffSegment,
-} from "../model/workbook-compare/index.js";
+} from "./workbook-comparison-model.js";
 import { cn } from "../ui/cn.js";
 
 export function WorkbookDiffFxStrip(input: {

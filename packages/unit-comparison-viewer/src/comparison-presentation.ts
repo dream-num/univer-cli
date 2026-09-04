@@ -1,4 +1,4 @@
-import type { UnitStructuralDiffItem } from "./model/unit-compare.js";
+import type { UnitStructuralDiffItem } from "./shared/structural-diff.js";
 import type { IUnitComparisonItem, IUnitComparisonResult } from "./comparison-types.js";
 
 /** Adapt the Pro History wire result to the private canvas presentation model. */

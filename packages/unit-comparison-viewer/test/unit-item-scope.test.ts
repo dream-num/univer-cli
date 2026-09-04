@@ -5,7 +5,7 @@ import {
   filterSlidePageDiffItems,
   slidePageIdOfDiffItem,
   type UnitStructuralDiffItem,
-} from "../src/model/unit-compare.js";
+} from "../src/shared/structural-diff.js";
 
 describe("Unit structural diff scopes", () => {
   it("scopes Slide page and element changes by stable page identity", () => {

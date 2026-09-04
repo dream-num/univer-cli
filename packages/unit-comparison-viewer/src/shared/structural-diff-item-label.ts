@@ -1,4 +1,4 @@
-import type { UnitStructuralDiffItem } from "../model/unit-compare.js";
+import type { UnitStructuralDiffItem } from "./structural-diff.js";
 import {
   defaultUnitComparisonViewerMessages,
   type IUnitComparisonViewerMessages,

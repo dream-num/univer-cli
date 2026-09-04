@@ -24,7 +24,7 @@ import type {
   DocumentComparisonParagraph,
   DocumentComparisonRow,
   UnitStructuralDiffItem,
-} from "../model/unit-compare.js";
+} from "../shared/structural-diff.js";
 import type { IUnitComparisonChange, UnitComparisonProductContext } from "../comparison-types.js";
 
 export interface DocumentComparisonInput {

@@ -1,3 +1,4 @@
+/** Formula-bar state derived for one side of the Sheet comparison. */
 export interface WorkbookComparePaneFxState {
   readonly activeCellLabel: string;
   readonly displayValue: string;

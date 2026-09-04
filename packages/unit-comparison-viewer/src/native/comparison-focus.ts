@@ -5,7 +5,7 @@ import {
   UNIT_TYPE_SLIDE,
   type UnitType,
 } from "../unit-types.js";
-import type { UnitStructuralDiffItem } from "../model/unit-compare.js";
+import type { UnitStructuralDiffItem } from "../shared/structural-diff.js";
 
 export interface PreviewFocusTarget {
   readonly category: string;

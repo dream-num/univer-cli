@@ -2,8 +2,8 @@ import { useEffect, useRef, useState, type MutableRefObject, type ReactElement }
 import type {
   WorkbookCompareRangeHighlight,
   WorkbookCompareSheetGapConfig,
-} from "../model/workbook-compare/index.js";
-import type { UnitStructuralDiffItem } from "../model/unit-compare.js";
+} from "./workbook-comparison-model.js";
+import type { UnitStructuralDiffItem } from "../shared/structural-diff.js";
 import { UNIT_TYPE_SHEET } from "../unit-types.js";
 import {
   getIntersectRange,

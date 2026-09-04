@@ -24,7 +24,7 @@ import {
   filterBaseTableDiffItems,
   type UnitStructuralDiffItem,
   type UnitStructuralDiffKind,
-} from "../model/unit-compare.js";
+} from "../shared/structural-diff.js";
 import { cn } from "../ui/cn.js";
 import { useUnitComparisonViewerMessages } from "../messages.js";
 import { ComparisonPageTabs } from "../shared/scope-tabs";

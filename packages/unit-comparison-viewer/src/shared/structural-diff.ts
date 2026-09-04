@@ -1,5 +1,6 @@
 import type { IUnitComparisonChange } from "../comparison-types.js";
 
+/** Internal structural-diff projection shared by the product-specific viewers. */
 export type UnitStructuralDiffKind = "delete" | "insert" | "update";
 
 export interface UnitStructuralDiffItem {

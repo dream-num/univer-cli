@@ -19,7 +19,7 @@ import {
   type UnitType,
 } from "../unit-types.js";
 import type { ComparisonSide, ComparisonTone } from "./document-decoration";
-import type { UnitStructuralDiffItem } from "../model/unit-compare.js";
+import type { UnitStructuralDiffItem } from "../shared/structural-diff.js";
 
 interface HighlightBounds {
   readonly left: number;

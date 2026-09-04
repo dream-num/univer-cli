@@ -3,7 +3,7 @@ import {
   filterSlidePageDiffItems,
   slidePageIdOfDiffItem,
   type UnitStructuralDiffItem,
-} from "../model/unit-compare.js";
+} from "../shared/structural-diff.js";
 import {
   useCallback,
   useEffect,

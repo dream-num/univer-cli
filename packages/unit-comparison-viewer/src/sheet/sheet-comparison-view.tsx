@@ -28,7 +28,7 @@ import {
   type WorkbookCompareRangeHighlight,
   type WorkbookCompareSidebarTreeLabels,
   type WorkbookCompareSidebarTreeNode,
-} from "../model/workbook-compare/index.js";
+} from "./workbook-comparison-model.js";
 import { cn } from "../ui/cn.js";
 import {
   useUnitComparisonViewerMessages,

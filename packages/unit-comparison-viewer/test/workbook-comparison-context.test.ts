@@ -7,7 +7,7 @@ import {
   createWorkbookComparePaneFxStates,
   mapScrollTargetAcrossPanes,
   mapSelectionTargetAcrossPanes,
-} from "../src/model/workbook-compare/index.js";
+} from "../src/sheet/workbook-comparison-model.js";
 import { describe, expect, it } from "vitest";
 import { workbookComparisonFromContext } from "../src/sheet/workbook-comparison-context.js";
 
