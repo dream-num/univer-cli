@@ -289,6 +289,9 @@ describe("Local render application", () => {
         renderedBoard.unitData.pages["board-page-1"]?.elements["connector-1"]?.connectorData.style,
       ).toEqual({ stroke: "#2563eb" });
       expect(
+        renderedBoard.unitData.slides["board-page-1"]?.elements["connector-1"]?.connectorData.style,
+      ).toEqual({ stroke: "#2563eb" });
+      expect(
         board.unitData.pages["board-page-1"]?.elements["connector-1"]?.connectorData.style
           ?.animation,
       ).toEqual({ mode: "arrows" });
@@ -474,29 +477,50 @@ function baseSource(): UniverRenderUnit {
   } as unknown as UniverRenderUnit;
 }
 
+type AnimatedBoardPage = {
+  readonly elements: Record<
+    string,
+    {
+      readonly connectorData: {
+        readonly style?: {
+          readonly animation?: { readonly mode: string };
+          readonly stroke?: string;
+        };
+      };
+    }
+  >;
+};
+
 type AnimatedBoardSource = UniverRenderUnit & {
   readonly unitType: "board";
   readonly unitData: {
-    readonly pages: Record<
-      string,
-      {
-        readonly elements: Record<
-          string,
-          {
-            readonly connectorData: {
-              readonly style?: {
-                readonly animation?: { readonly mode: string };
-                readonly stroke?: string;
-              };
-            };
-          }
-        >;
-      }
-    >;
+    readonly pages: Record<string, AnimatedBoardPage>;
+    readonly slides: Record<string, AnimatedBoardPage>;
   };
 };
 
 function boardSource(): AnimatedBoardSource {
+  const page = {
+    id: "board-page-1",
+    pageType: "page",
+    name: "Board",
+    elementOrder: ["connector-1"],
+    elements: {
+      "connector-1": {
+        id: "connector-1",
+        type: "connector",
+        zIndex: 0,
+        transform: { left: 0, top: 0, width: 100, height: 0 },
+        connectorData: {
+          start: { kind: "free", x: 0, y: 0 },
+          end: { kind: "free", x: 100, y: 0 },
+          routing: "straight",
+          routingMode: "manual",
+          style: { stroke: "#2563eb", animation: { mode: "arrows" } },
+        },
+      },
+    },
+  };
   return {
     unitType: "board",
     unitData: {
@@ -505,29 +529,9 @@ function boardSource(): AnimatedBoardSource {
       appVersion: "1.0.0",
       defaultPageSize: { width: 960, height: 540 },
       pageOrder: ["board-page-1"],
-      pages: {
-        "board-page-1": {
-          id: "board-page-1",
-          pageType: "board",
-          name: "Board",
-          elementOrder: ["connector-1"],
-          elements: {
-            "connector-1": {
-              id: "connector-1",
-              type: "connector",
-              zIndex: 0,
-              transform: { left: 0, top: 0, width: 100, height: 0 },
-              connectorData: {
-                start: { kind: "free", x: 0, y: 0 },
-                end: { kind: "free", x: 100, y: 0 },
-                routing: "straight",
-                routingMode: "manual",
-                style: { stroke: "#2563eb", animation: { mode: "arrows" } },
-              },
-            },
-          },
-        },
-      },
+      pages: { "board-page-1": page },
+      slideOrder: ["board-page-1"],
+      slides: { "board-page-1": page },
     },
   } as unknown as AnimatedBoardSource;
 }
