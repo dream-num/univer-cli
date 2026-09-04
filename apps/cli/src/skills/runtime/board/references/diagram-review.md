@@ -33,6 +33,23 @@ case when those capabilities are in scope. An unavailable sticky/embed API is a 
 to silently substitute a generic shape and call it a native test. An embed descriptor alone does not prove the
 child resource loaded, rendered, or is interactive.
 
+## Multi-label class and ER relationship cases
+
+A multi-label coverage claim needs more than several single-label connectors. Include a class association or
+composition with five independent labels: relation name, two endpoint roles, and two multiplicities. Include
+horizontal, vertical, and reversed-direction relationships, and a full overview plus a readable terminal detail.
+Do not add roles or multiplicities to inheritance/dependency merely to increase the label count.
+
+For ERD, cover the four cardinalities and identifying/non-identifying lines. Endpoint roles, textual cardinalities,
+and an FK/constraint annotation can exercise multiple independent labels alongside the native cardinality markers.
+`insertEntityRelations()` supplies markers and a relation label; add the other texts with the installed multi-label
+API, not separate text shapes or one space-padded string. Read back label IDs and count, edit one label, and verify
+siblings are unchanged through undo/redo. Report API-command checks separately from actual mouse/menu interactions.
+
+Check readable text even when rendered layout analysis is clean: a long role or FK annotation can wrap or split a
+word inside its label box without a route diagnostic. Widen the affected label and review its clearance from the
+path and neighboring labels; vertical labels need more lateral clearance than horizontal endpoint labels.
+
 ## Review diagnostics in semantic context
 
 Retain the raw diagnostics even when visual review shows a likely false positive. Native mind-map/tree branches can
