@@ -114,9 +114,18 @@ Choose the closest profile and query its installed APIs before writing the reali
 The profile narrows the API search; it does not force every node into one primitive. A deployment diagram can mix
 containers, components, images, tables, and connectors when that better expresses the intent.
 
-For UML sequence diagrams, realize participants first and align their headers at the same top coordinate. Then call
-`insertSequenceMessages()` once for the ordered messages. Add activation bars with
-`BoardSequenceShapeType.ActivationBar` and bind their sequence activation data to a lifeline. Use the dedicated
+For UML sequence diagrams, realize participants first and align the bottoms of their headers so lifeline offsets
+share a time origin. Create activation bars with `BoardSequenceShapeType.ActivationBar` and bind their sequence
+activation data to a lifeline, then create the ordered messages. An endpoint within an execution span must bind to
+the activation bar's facing edge, not the lifeline center. Query the installed `insertSequenceMessages()` contract:
+versions supporting activation selection use the unique covering bar; overlapping executions require explicit
+`fromActivationId` / `toActivationId`. Earlier versions need `insertConnector()` or `setConnectorConnection()` with
+`{ elementId: activationId, side: "left" | "right", position }`. Compute `position` from message world Y and the
+activation's world bounds; it runs top-to-bottom on either vertical side. Outside execution spans use
+`{ kind: "lifeline", shapeId: participantId, offsetY }`. Never replace this binding with a free point or pixel offset.
+The generated binding is fixed: later adding/removing an execution or changing its semantic span requires reviewing
+affected messages; resizing a bar preserves normalized attachment positions, not absolute message times.
+Use the dedicated
 sequence-fragment Board table preset for `alt`, `opt`, `loop`, `par`, `break`, `critical`, and `ref` frames; its
 guard/operand rows are structured content, not connector labels. Never simulate lifelines with generic dashed
 connectors—the semantic helper intentionally rejects them.
@@ -126,6 +135,8 @@ layout. An optional `fragments` list can contain `{ id, operator, operands: [{ g
 relation IDs and explicit nested fragment IDs if nesting is needed. An optional `activations` list can contain
 `{ participantId, startsAtMessageId, endsAtMessageId }`. Validate those references and message ordering. These
 authoring fields express control flow and duration without storing frame bounds or activation geometry.
+When executions overlap, give each activation a semantic `id` and reference it with `ends.from.activationId` or
+`ends.to.activationId` on the message. Translate those semantic IDs to generated bar IDs during realization.
 
 For UML classes and ER entities, create the compartment tables first. Use `insertClassRelations()` or
 `insertEntityRelations()` once the generated element IDs are known. Endpoint roles, multiplicities, relation names,

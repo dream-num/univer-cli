@@ -135,6 +135,8 @@ resources, and collaboration:
   duplicate/non-positive orders, and both persist
   stable message offsets from `firstOffsetY` and `step`. It maps synchronous, asynchronous, reply, create, destroy,
   and self messages to normal connectors.
+  For activation bars, follow the version-aware binding rules in `references/board-spec.md`: an active execution
+  endpoint belongs on the bar edge, not the lifeline center. Create bars before messages and read back the bindings.
 
 Shape-site positions are most predictable on rectangles and rounded rectangles. For ellipses,
 diamonds, hexagons, and other non-rectangular nodes, start with the side center by omitting

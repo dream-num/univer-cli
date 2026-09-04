@@ -40,6 +40,13 @@ share a trunk intentionally. A sequence message may cross an intermediate lifeli
 being incorrectly routed. Verify native ownership and exact implicated elements before recording such an exception;
 never suppress all overlaps for a profile. Crossing text, an unrelated node, or a wrong activation is still a defect.
 
+For each sequence message, inspect both terminals at readable scale: incoming arrows stop on the facing activation
+edge and outgoing lines start there, including replies traveling right-to-left. A terminal reaching the center of
+its own activation is a defect, not an intermediate-lifeline exception. Read back the bound activation ID and side;
+test an inactive interval separately. For nested executions, preserve explicit execution identity instead of
+choosing the topmost bar by appearance. Verify bar movement/resizing keeps attachments; do not claim this from a
+static screenshot alone.
+
 Do not normalize layout-owned native branches to make a generic connector report green. Use the owning structured
 layout API if adjustment is needed. Apply routing normalization only to ordinary implicated connectors, once, as
 described in the main skill. Report `clean`, `visually reviewed with diagnostic exceptions`, or `blocked` separately;
