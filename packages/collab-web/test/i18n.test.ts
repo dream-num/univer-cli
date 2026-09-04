@@ -11,7 +11,7 @@ import {
   setLang,
   t
 } from "../src/i18n";
-import { structuralDiffItemLabel } from "../src/comparison/shared/structural-diff-item-label";
+import { structuralDiffItemLabel } from "../../unit-comparison-viewer/src/shared/structural-diff-item-label";
 
 describe("resolveLang", () => {
   afterEach(() => {
@@ -132,7 +132,7 @@ describe("setLang / t", () => {
       changes: [],
       position: { left: 1, right: 2 },
       values: { left: {}, right: {} }
-    });
+    }, undefined, t().diff);
 
     expect(label).toBe(`${t().diff.entityAt("board-element", 3)} · ${t().diff.moved}`);
     expect(label).not.toContain("element-opaque-id");
@@ -156,7 +156,7 @@ describe("setLang / t", () => {
         left: { type: "callout" },
         right: { type: "quote" }
       }
-    });
+    }, undefined, t().diff);
 
     expect(label).toBe(
       `${t().diff.changeValue("block-range", ["type"], "quote")} · 发布前需要完成安全审查`
@@ -180,8 +180,8 @@ describe("setLang / t", () => {
       position: { left: 0, right: 0 },
       values: { left: "transition-old-id", right: "transition-private-id" }
     };
-    expect(structuralDiffItemLabel(item)).toBe(t().diff.entityAt("slide-transition-ref", 1));
-    expect(structuralDiffItemLabel(item, "Launch overview")).toBe("Launch overview");
+    expect(structuralDiffItemLabel(item, undefined, t().diff)).toBe(t().diff.entityAt("slide-transition-ref", 1));
+    expect(structuralDiffItemLabel(item, "Launch overview", t().diff)).toBe("Launch overview");
     expect(item.values.right).toBe("transition-private-id");
     await setLang("en-US");
   });

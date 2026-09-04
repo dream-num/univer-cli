@@ -4,14 +4,14 @@ import type { ReactElement } from "react";
 import { flushSync } from "react-dom";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { setLang } from "../src/i18n";
+import { setLang, t } from "../src/i18n";
 import type { App, AppSnapshot } from "../src/ui/app";
 import { AppView } from "../src/ui/app-view";
-import { formatComparisonValue } from "../src/comparison/shared/comparison-value";
-import { useEnsureSelectedDiffVisible } from "../src/comparison/shared/use-ensure-selected-diff-visible";
+import { formatComparisonValue } from "../../unit-comparison-viewer/src/shared/comparison-value";
+import { useEnsureSelectedDiffVisible } from "../../unit-comparison-viewer/src/shared/use-ensure-selected-diff-visible";
 
 const workbookViews = vi.hoisted(() => ({ props: [] as Array<{ showFormulaText?: boolean; snapshot: unknown }> }));
-vi.mock("../src/comparison/sheet/readonly-workbook-pane", () => ({
+vi.mock("../../unit-comparison-viewer/src/sheet/readonly-workbook-pane", () => ({
   ReadonlyUniverWorkbookView: (props: { showFormulaText?: boolean; snapshot: unknown }) => {
     workbookViews.props.push(props);
     return <div data-testid="readonly-sheet" data-formulas={String(props.showFormulaText)} />;
@@ -80,15 +80,15 @@ describe("comparison layout without step navigation", () => {
   });
 
   it("preserves localized readable sidebar values after removing the navigator", async () => {
-    expect(formatComparisonValue({ id: "opaque-id", language: "typescript" })).toBe("2 properties");
-    expect(formatComparisonValue('[1,2]', "object")).toBe("2 items");
+    expect(formatComparisonValue({ id: "opaque-id", language: "typescript" }, "unknown", undefined, t().diff)).toBe("2 properties");
+    expect(formatComparisonValue('[1,2]', "object", undefined, t().diff)).toBe("2 items");
     expect(formatComparisonValue('[1,2]', "text")).toBe('[1,2]');
-    expect(formatComparisonValue({ rgb: "#ff0000" })).toBe("#ff0000");
-    expect(formatComparisonValue(undefined)).toBe("∅");
-    expect(formatComparisonValue(false, "boolean")).toBe("Unchecked");
+    expect(formatComparisonValue({ rgb: "#ff0000" }, "unknown", undefined, t().diff)).toBe("#ff0000");
+    expect(formatComparisonValue(undefined, "unknown", undefined, t().diff)).toBe("∅");
+    expect(formatComparisonValue(false, "boolean", undefined, t().diff)).toBe("Unchecked");
     await setLang("zh-CN");
-    expect(formatComparisonValue(false, "boolean")).toBe("未勾选");
-    expect(formatComparisonValue([1, 2])).toBe("2 项");
+    expect(formatComparisonValue(false, "boolean", undefined, t().diff)).toBe("未勾选");
+    expect(formatComparisonValue([1, 2], "unknown", undefined, t().diff)).toBe("2 项");
   });
 
   it("scrolls a newly selected diff into view only when it is outside the sidebar viewport", async () => {

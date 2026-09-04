@@ -51,7 +51,7 @@ import { cn } from "../lib/utils";
 import {
   UnitComparisonViewer,
   type UnitComparisonViewerValue
-} from "../comparison/unit-comparison-viewer";
+} from "@univer/unit-comparison-viewer";
 import { createCollabWebComparisonUniver } from "../core/create-collab-web-comparison-univer";
 import type { App, AppSnapshot } from "./app";
 import { relativeTime, summaryText } from "./format";
@@ -1033,6 +1033,7 @@ function ComparisonContent({ app, snap }: { app: App; snap: AppSnapshot }): Reac
       leftHeaderControl={<ComparisonSourceSelect app={app} snap={snap} />}
       locale={sdkLocaleOf(snap.lang)}
       darkMode={snap.appearance === "dark"}
+      messages={t().diff}
     />
   );
 }

@@ -12,7 +12,7 @@ import { EMPTY } from "rxjs";
 import type {
   IUnitComparisonUniverInstance,
   UnitComparisonUniverFactory,
-} from "../comparison/comparison-types";
+} from "@univer/unit-comparison-viewer";
 import { loadViewerLocale } from "./locales/generated/load";
 import { blockLocalEditingCommands } from "./viewer-readonly";
 

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { CellValueType, HorizontalAlign, WrapStrategy } from "@univerjs/core";
 import { LOCALE_MANIFEST, loadMessages, setLang, t } from "../src/i18n/index.js";
-import { formatComparisonValue } from "../src/comparison/shared/comparison-value.js";
+import { formatComparisonValue } from "../../unit-comparison-viewer/src/shared/comparison-value.js";
 
 afterEach(async () => { await setLang("en-US"); });
 
@@ -61,20 +61,20 @@ describe("five-product comparison localization", () => {
 
   it("renders translated values in Sheet sidebar descriptions without changing content", async () => {
     await setLang("zh-CN");
-    expect(formatComparisonValue("2", "unknown", { entityType: "cell", path: ["valueType"] })).toBe("数字");
-    expect(formatComparisonValue("between", "text", { entityType: "condition-format", path: ["rule", "operator"] })).toBe("介于");
+    expect(formatComparisonValue("2", "unknown", { entityType: "cell", path: ["valueType"] }, t().diff)).toBe("数字");
+    expect(formatComparisonValue("between", "text", { entityType: "condition-format", path: ["rule", "operator"] }, t().diff)).toBe("介于");
     expect(t().diff.changePath(["columns", "0", "dataType"])).toBe("列 · 项目 1 · 数据类型");
     expect(t().diff.changePath([])).toBe("项目");
     expect(t().diff.changePath(["futurePluginProperty"])).toBe("其他属性");
     expect(t().diff.changeValue("table", ["columns", "0", "displayName"], "sheets-table.columnPrefix 7")).toBe("第 7 列");
     for (const value of ["between", "rect", "true", "2", "=SUM(A1:A4)", '{"type":"number"}']) {
-      expect(formatComparisonValue(value, "text", { entityType: "cell", path: ["value"] })).toBe(value);
-      expect(formatComparisonValue(value, "text", { entityType: "record", path: ["type"] })).toBe(value);
-      expect(formatComparisonValue(value, "text", { entityType: "paragraph", path: ["text"] })).toBe(value);
-      expect(formatComparisonValue(value, "text", { entityType: "field", path: ["name"] })).toBe(value);
+      expect(formatComparisonValue(value, "text", { entityType: "cell", path: ["value"] }, t().diff)).toBe(value);
+      expect(formatComparisonValue(value, "text", { entityType: "record", path: ["type"] }, t().diff)).toBe(value);
+      expect(formatComparisonValue(value, "text", { entityType: "paragraph", path: ["text"] }, t().diff)).toBe(value);
+      expect(formatComparisonValue(value, "text", { entityType: "field", path: ["name"] }, t().diff)).toBe(value);
     }
     expect(t().diff.changeValue("cell", ["valueType"], 999)).toBeUndefined();
-    expect(formatComparisonValue("private-stable-id", "reference", { entityType: "slide", path: ["masterPageId"] })).toBe("private-stable-id");
+    expect(formatComparisonValue("private-stable-id", "reference", { entityType: "slide", path: ["masterPageId"] }, t().diff)).toBe("private-stable-id");
   });
 
   it("distinguishes comparison operations, branch identity and Doc structures", async () => {

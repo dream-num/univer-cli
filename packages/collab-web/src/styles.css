@@ -1,5 +1,6 @@
 @import "tailwindcss" source("..");
 @import "tw-animate-css";
+@import "@univer/unit-comparison-viewer/styles.css";
 @import "@univerjs-pro/bases-history-ui/lib/index.css";
 @import "@univerjs-pro/boards-history-ui/lib/index.css";
 @import "@univerjs-pro/edit-history-ui/lib/index.css";
@@ -148,22 +149,4 @@
   body {
     @apply bg-background font-sans text-sm text-foreground antialiased;
   }
-}
-
-/* Native comparison panes are inspection-only. Product-local creation controls sit below the
- * shared workbench, so the host suppresses those affordances while preserving view navigation. */
-[data-native-diff-host="true"] [data-u-comp="base-toolbar"],
-[data-native-diff-host="true"] [data-u-comp="base-left-panel"],
-[data-native-diff-host="true"] [data-u-comp="base-add-view-button"],
-[data-native-diff-host="true"] [data-u-comp="base-table-sidebar-new-button"],
-[data-native-diff-host="true"] [data-u-comp="base-table-sidebar"] > header button,
-[data-native-diff-host="true"] [data-board-left-toolbar="true"],
-[data-native-diff-host="true"] [data-board-top-right-menu="true"],
-[data-native-diff-product="slide"] header:has(> button) {
-  display: none !important;
-}
-
-[data-native-diff-product="slide"] [data-u-comp="left-sidebar"] {
-  width: 0 !important;
-  overflow: hidden !important;
 }
