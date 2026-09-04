@@ -1,0 +1,56 @@
+# Diagram generation review
+
+Use this reference when testing several Board profiles or assessing skill coverage. Test the installed SDK, not
+only the APIs described by an unreleased change. Keep semantic specs, realization scripts, persisted readbacks,
+full screenshots, and raw layout diagnostics together in a local output directory. Do not add generated user
+artifacts to repository history unless requested.
+
+## Evidence by profile
+
+One moderately complex example exercises a profile; it does not cover every UML grammar feature or every UI action.
+Select cases based on the request and explicitly list omissions instead of claiming exhaustive coverage.
+
+| Profile       | Evidence beyond a successful insert                                                                                                                                                                       |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Flowchart     | Decision labels, distinct branch ports, merge, and a feedback path outside the main flow.                                                                                                                 |
+| UML activity  | Responsibility lanes with actual `parentId`/`laneId`; guards and correct fork/join semantics when requested. A single-decision example is not a fork/join test.                                           |
+| Dataflow      | Producer/consumer direction, named payloads, storage, fan-in and fan-out without accidental shared terminal legs.                                                                                         |
+| Architecture  | Runtime responsibilities, external dependencies, scope membership, and readable primary versus secondary relationships.                                                                                   |
+| Deployment    | Host/runtime nesting and trust boundaries, with connectors bound to the intended service rather than its enclosing container.                                                                             |
+| UML sequence  | Native lifelines; ordered messages; bound activations; fragment operator and operand guards. Check synchronous/asynchronous/reply separately from create/destroy/self, and report untested message types. |
+| UML class     | Editable attribute/operation compartments; inheritance direction; whole-side composition/aggregation diamonds; dependency/realization dashes; independently readable endpoint roles and multiplicities.   |
+| ERD           | All fields and PK/FK information preserved; identifying versus non-identifying edges; exact optional/mandatory and one/many cardinalities at both ends.                                                   |
+| UML use case  | Actors outside a real system boundary, separate associations, and correctly directed `include`/`extend` when present. Prefer direct association lines when orthogonal fan-out would look like a bus.      |
+| UML state     | Initial/final symbols, transition guards/events, recovery path, and composite/concurrent state semantics if requested.                                                                                    |
+| UML component | Components plus the provided/required interface relationship when the user needs it; dependency-only examples do not exercise assembly connectors.                                                        |
+| UML package   | Actual group membership and nested packages when requested; package dependency is not class inheritance.                                                                                                  |
+| Mindmap       | One semantic root, acyclic parent/child tree, sibling order, branch-side choice, and no truncated labels.                                                                                                 |
+| Tree          | Correct structured layout and hierarchy readback; do not replace native tree branches with ordinary connectors.                                                                                           |
+| Timeline      | Explicit stage order and event children. State whether positions mean chronological time or conceptual progression; do not invent historical dates.                                                       |
+
+For structured-table, chart, image, sticky, external-resource, embed, and ink payloads, add a separate mixed-content
+case when those capabilities are in scope. An unavailable sticky/embed API is a capability limitation, not permission
+to silently substitute a generic shape and call it a native test. An embed descriptor alone does not prove the
+child resource loaded, rendered, or is interactive.
+
+## Review diagnostics in semantic context
+
+Retain the raw diagnostics even when visual review shows a likely false positive. Native mind-map/tree branches can
+share a trunk intentionally. A sequence message may cross an intermediate lifeline or a fragment frame without
+being incorrectly routed. Verify native ownership and exact implicated elements before recording such an exception;
+never suppress all overlaps for a profile. Crossing text, an unrelated node, or a wrong activation is still a defect.
+
+Do not normalize layout-owned native branches to make a generic connector report green. Use the owning structured
+layout API if adjustment is needed. Apply routing normalization only to ordinary implicated connectors, once, as
+described in the main skill. Report `clean`, `visually reviewed with diagnostic exceptions`, or `blocked` separately;
+a reviewed exception is not a zero-error lint result.
+
+Check long labels, multilingual text, compartment sizing, and frame guards at readable scale. Draw sequence frames
+behind participants/messages and keep message labels clear of intermediate activation bars. Use inset endpoint text
+for UML roles/multiplicities; do not concatenate several values into one space-padded label as a substitute for the
+multi-label API. If unavailable, retain the semantics in the spec and report the missing visible annotation.
+
+Full screenshots must include lifeline extensions and the last message, not just participant shape bounds. If a
+region capture is unsupported or fails, report it and keep a full screenshot; do not present a cropped overview as
+proof of readable endpoint labels. A screenshot confirms static rendering, not drag/edit/menu/undo behavior. Claim
+UI-interaction coverage only after actual interactions and persisted-state assertions have been exercised.

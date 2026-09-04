@@ -34,6 +34,8 @@ model.
 
 Before authoring or realizing a semantic diagram, read `references/board-spec.md`. It defines the compact contract,
 profile-to-API routing, structural checks, mixed-content behavior, and connector-animation decision rule.
+For a multi-profile generation request or a skill coverage audit, also read `references/diagram-review.md` for
+profile-specific evidence and the distinction between a generated example and complete feature coverage.
 
 ## Completion gate
 
@@ -42,12 +44,14 @@ A generated Board is complete only after all of the following evidence is clean:
 1. Read back the persisted elements and run `board.analyzeModelLayout(48)`.
 2. Run a full `univer screenshot ... --json` and inspect `outputs[0].layoutAnalysis`.
 3. Resolve every blocking issue and review each warning with a focused screenshot.
-4. If routing issues identify connectors, normalize only those connector IDs at most once, then
+4. If routing issues identify ordinary connectors, normalize only those connector IDs at most once, then
    rerun the full screenshot.
 5. Finish with a clean full-Board screenshot and a final model readback.
 
 Command success, model-only analysis, or a cropped screenshot is not completion evidence. A Board
 may be temporarily invalid while it is being edited; apply this gate before final handoff.
+For layout-owned branches or sequence-frame intersections, use the semantic review in
+`references/diagram-review.md`; retain any reviewed diagnostic exceptions in the handoff instead of claiming clean lint.
 
 `inspect board` is a selector-free overview of ordered elements, counts, bounds, relationships, and
 text summaries. Use `inspect board-element id:<element-id> ...` for type-specific detail without
@@ -77,6 +81,11 @@ sequence-fragment, and ERD structures; custom Board shapes provide actors, compo
 symbols. Use `createSwimlane()` for lanes, `createContainer()` for nested scopes and system boundaries, and
 `insertMindMap()` for mind maps, trees, or timelines. Query every selected symbol before generating code because the
 installed CLI and SDK are the source of truth.
+
+An indexed type is not proof that its runtime enum or helper is exposed. Probe selected runtime methods and
+`api.Enum` entries in a read-only `execute` before a large batch. If a semantic helper is unavailable, use the
+installed lower-level connector contract only when it preserves the requested semantics, and report the reduced
+coverage. Do not claim independent multi-label coverage when the installed SDK only supports one label.
 
 ## Connectors and layout verification
 
@@ -137,6 +146,10 @@ Marker names are a closed API union. Query `BoardConnectorMarkerType` and use va
 `filledTriangle`, `openArrow`, `filledDiamond`, or `crowFoot`; do not abbreviate them to invented
 names such as `diamond`. To render no marker, use `{ type: "none" }` rather than `null`. Keep
 `animation: null` only for disabling connector animation, where the Facade explicitly supports it.
+
+Connector `style.dash` is a numeric pattern, such as `[6, 4]`; `[]` is solid. It is not the string `"dash"`,
+`"solid"`, or a `strokeDash` property. Query `IBoardConnectorStyle` rather than borrowing another shape's style
+contract. Likewise, label `lineBreak` interrupts the line behind text; it does not control text wrapping.
 
 ```js
 const shapes = board.insertShapes([
@@ -203,6 +216,11 @@ For containers and swimlanes, `insertShapeAtPoint()` accepts a Board-world point
 parent and `laneId` at that point. Inspect the returned descriptor to confirm membership. Direct
 low-level insertion into a known parent uses parent-local coordinates instead; do not mix those two
 coordinate systems.
+
+The insertion point is the shape's top-left corner, not its center. Keep it inside the container's content area,
+outside its title and lane headers. Verify both world bounds and membership after insertion; a visually enclosed
+shape with no `parentId` is not a container child. If the installed version mishandles drop coordinates, insert at
+the root and use `moveElementsToContainer()`, then read back the bounds and lane identity again.
 
 Specify connector intent, marker type/size/offset, and routing mode; do not hand-calculate arrow
 depth or terminal-leg length. Render geometry accounts for marker paint bounds, stroke width,

@@ -13,6 +13,11 @@ BoardSpec is not an SDK input, a second Board model, or a reason to replace dire
   "title": "Order event topology",
   "nodes": [
     {
+      "id": "checkout",
+      "label": "Checkout API",
+      "semanticRole": "service"
+    },
+    {
       "id": "orders",
       "label": "orders.v1",
       "semanticRole": "message-bus",
@@ -116,10 +121,25 @@ sequence-fragment Board table preset for `alt`, `opt`, `loop`, `par`, `break`, `
 guard/operand rows are structured content, not connector labels. Never simulate lifelines with generic dashed
 connectors—the semantic helper intentionally rejects them.
 
+When fragments or activations matter, include their semantic scope in the spec rather than guessing it during
+layout. An optional `fragments` list can contain `{ id, operator, operands: [{ guard, messageIds }] }`; use stable
+relation IDs and explicit nested fragment IDs if nesting is needed. An optional `activations` list can contain
+`{ participantId, startsAtMessageId, endsAtMessageId }`. Validate those references and message ordering. These
+authoring fields express control flow and duration without storing frame bounds or activation geometry.
+
 For UML classes and ER entities, create the compartment tables first. Use `insertClassRelations()` or
 `insertEntityRelations()` once the generated element IDs are known. Endpoint roles, multiplicities, relation names,
 and ER cardinalities are connector semantics and must remain separate fields in BoardSpec even though realization
 turns visible text into multiple connector labels.
+
+A table preset owns its initial dimensions and may override requested `rows`, `columns`, `width`, or `height`.
+After insertion, call `getStructure()`, grow with `insertRows()` / `insertColumns()` if necessary, and size with
+`resizeRows()` / `resizeColumns()` before `setValues()`. Read back both `getStructure()` and `getValues()`; a
+successful insertion can still contain placeholder fields or too few rows. Style header and body text separately
+when a preset's defaults are insufficient for the requested language or screenshot scale.
+Also read the Board element's transform: table-resource row/column sizes and the host's visible bounds can differ.
+For a sequence frame, verify its actual bounds enclose every operand's messages and all participating lifelines;
+adjust the host with `setElementTransform()` when necessary, then recapture instead of assuming table resize did it.
 
 ## Structured and mixed content
 
@@ -160,7 +180,8 @@ For an embed, retain its host/type and source reference but never copy opaque em
 JSON is the canonical exchange form because agents can emit and validate it deterministically. YAML may be accepted
 as a human-authored input and Markdown may wrap fenced JSON, but normalize either to the same in-memory object before
 checking IDs and relations. Do not maintain parallel JSON/YAML/Markdown schemas. Compact JSON usually costs fewer
-tokens than verbose YAML once quoting ambiguities and repair instructions are included.
+tokens than pretty-printed JSON, but do not claim a universal token advantage over YAML; compare equivalent content
+when token cost matters.
 
 ## Structural checks
 
