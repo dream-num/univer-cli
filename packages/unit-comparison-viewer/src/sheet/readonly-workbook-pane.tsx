@@ -24,7 +24,7 @@ import {
   SetScrollOperation,
   SheetSkeletonManagerService,
 } from "@univerjs/sheets-ui";
-import { useUnitComparisonViewerMessages } from "../messages.js";
+import { useUnitComparisonViewerMessages } from "../i18n/messages.js";
 import { registerFormulaTextDisplay } from "./formula-text-display.js";
 import {
   createNativeComparisonHighlightController,

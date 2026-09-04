@@ -21,6 +21,7 @@
     "@univerjs-pro/bases": "1.0.0-insiders.20260902-a58c423",
     "@univerjs-pro/boards": "1.0.0-insiders.20260902-a58c423",
     "@univerjs-pro/boards-ui": "1.0.0-insiders.20260902-a58c423",
+    "@univerjs-pro/edit-history-ui": "1.0.0-insiders.20260902-a58c423",
     "@univerjs-pro/slides": "1.0.0-insiders.20260902-a58c423",
     "@univerjs-pro/slides-ui": "1.0.0-insiders.20260902-a58c423",
     "@univerjs/core": "1.0.0-insiders.20260902-a58c423",

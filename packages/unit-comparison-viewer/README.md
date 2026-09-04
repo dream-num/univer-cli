@@ -1,7 +1,9 @@
 # Unit Comparison Viewer
 
-`@univer/unit-comparison-viewer` is a copyable React package for rendering a read-only,
-side-by-side comparison of Sheet, Doc, Slide, Base, or Board Units.
+[English](README.md) | [简体中文](README.zh-CN.md)
+
+`@univer/unit-comparison-viewer` is a React package for rendering a read-only, side-by-side
+comparison of Sheet, Doc, Slide, Base, or Board Units.
 
 The package consumes fully decoded `unitData`. It does not fetch comparison sessions, decode wire
 payloads, own route state, or create a configured Univer runtime. The host supplies those concerns.
@@ -61,11 +63,9 @@ per visible side and owns calling `dispose()`.
 Optional props are:
 
 - `leftHeaderControl`: host UI rendered in the left-side header, such as a comparison-source picker.
-- `messages`: localized viewer copy. Without it, the package uses its built-in English messages.
+- `messages`: partial host wording overrides layered over the built-in locale selected by `locale`.
 
-## Copying
-
-Copy this directory as one workspace package and add it to the destination workspace. Its runtime
-imports are limited to React, Lucide, and published Univer packages declared in `package.json`; it
-does not import another `@univer/*` workspace package. Keep the Univer dependency versions aligned
-with the host runtime so dependency-injection tokens resolve to the same SDK modules.
+The package owns complete Viewer message packs for the same 17 locales supported by the
+collaboration viewer. It falls back to English for an unsupported `LocaleType`. Entity names,
+property paths, and schema enum values come from the matching Univer History SDK locale; user
+content is never translated. Hosts normally do not need to pass `messages`.

@@ -1,17 +1,5 @@
-import {
-  comparisonTerm,
-  localizedComparisonEntity,
-  localizedComparisonEnum,
-  localizedComparisonPath,
-  type UnitComparisonTranslate
-} from "./comparison-labels.js";
-
 /** English shell copy; this table is the structural authority for every other language. */
-function buildEnUsMessages(translateComparison: UnitComparisonTranslate) {
-  const comparisonPathLabel = (path: readonly string[]): string =>
-    localizedComparisonPath(translateComparison, path);
-  const comparisonEntityLabel = (category: string): string =>
-    localizedComparisonEntity(translateComparison, category);
+function buildEnUsMessages() {
   return {
   app: {
     title: "Collaboration Viewer"
@@ -101,112 +89,9 @@ function buildEnUsMessages(translateComparison: UnitComparisonTranslate) {
     refreshComparison: "Refresh"
   },
   diff: {
-    compare: "Compare",
-    changes: "Changes",
-    structuralDiff: "Structural diff",
-    kind: { insert: "Added", delete: "Deleted", update: "Modified" },
-    entity: comparisonEntityLabel,
-    entityAt: (category: string, index: number): string =>
-      `${comparisonEntityLabel(category)} ${index}`,
-    changePath: comparisonPathLabel,
-    changeValue: (entityType: string, path: readonly string[], value: unknown): string | undefined => localizedComparisonEnum(translateComparison, entityType, path, value),
-    renderFailed: comparisonTerm(translateComparison, "loadFailed"),
-    comparisonFailed: comparisonTerm(translateComparison, "comparisonFailed"),
-    incompletePage: comparisonTerm(translateComparison, "incompletePage"),
-    wholeItem: "Entire item",
-    present: "Present",
-    itemCount: (count: number): string => `${count} item${count === 1 ? "" : "s"}`,
-    propertyCount: (count: number): string => `${count} propert${count === 1 ? "y" : "ies"}`,
-    moved: "Moved",
-    rightCurrentVersion: "Right · Current version",
-    revision: (revision: number): string => `r${revision}`,
-    readOnly: "Read only",
-    side: { left: "Left", right: "Right" },
-    changeCount: (count: number): string => `${count} changes`,
-    changedSlides: "Changed slides",
-    changedBaseTables: "Changed Base tables",
-    noRawTableChanges: "No raw table data changed.",
-    rawTableData: "Raw table data",
-    baseAlignmentHint:
-      "Fields and records are aligned by stable ID. Grid, Kanban, Calendar, and other views reuse the same raw-table comparison.",
-    checkboxState: { checked: "Checked", unchecked: "Unchecked" },
-    comparingMaterializedSnapshots: "Comparing materialized snapshots.",
-    snapshot: "Snapshot comparison",
-    noStructuralChanges: "No structural changes",
-    notPresent: "Not present on this side",
-    workbookTitle: "Workbook comparison",
-    invalidPayloadTitle: "Comparison payload is invalid",
-    invalidPayloadBody: "The target snapshot is missing or cannot be rendered.",
-    summaryUnavailable: "No comparison summary is available.",
-    scopeLabel: "Comparison scope",
-    displayModeLabel: "Comparison display mode",
-    worksheet: "Worksheet",
-    workbook: "Workbook",
-    content: "Content",
-    formatting: "Formatting",
-    showFormulas: "Show formulas",
-    searchChanges: "Search changes",
-    noItems: "No comparison items in this scope.",
-    selectItemHint: "Select a comparison item to inspect the affected sheet content.",
-    snapshotUnavailable: "This snapshot is unavailable for rendering.",
-    formulaDiff: "Formula comparison",
-    baseFormula: "Base formula",
-    currentFormula: "Current formula",
-    baseValue: "Base value",
-    currentValue: "Current value",
-    base: "Base",
-    current: "Current",
-    summaryLabel: "Comparison summary",
-    sheetTree: {
-      categories: {
-        chart: "Charts",
-        cell: "Cells",
-        conditionFormat: "Conditional formats",
-        dataValidation: "Data validation",
-        move: "Moves",
-        pivot: "Pivots",
-        rowColumn: "Rows and columns",
-        shape: "Shapes",
-        sparkline: "Sparklines",
-        table: "Tables",
-        workbook: "Workbook",
-        worksheet: "Worksheet"
-      },
-      emptyText: "(empty)",
-      noActiveSheet: "No active sheet",
-      noCompareData: "No comparison data",
-      row: (index: number): string => `Row ${index}`,
-      styles: "Styles",
-      workbookRoot: "Workbook",
-      terms: {
-        formula: "Formula",
-        value: "Value",
-        start: "Start",
-        count: "Count",
-        position: "Position",
-        name: "Name",
-        background: "Background",
-        bold: "Bold",
-        textColor: "Text color",
-        fontSize: "Font size",
-        italic: "Italic",
-        numberFormat: "Number format"
-      },
-      titles: {
-        insertedRows: "Inserted rows",
-        deletedRows: "Deleted rows",
-        insertedColumns: "Inserted columns",
-        deletedColumns: "Deleted columns",
-        rowsMoved: "Rows moved",
-        columnsMoved: "Columns moved",
-        rowChanged: (index: number): string => `Row ${index} changed`,
-        columnChanged: (index: number): string => `Column ${index} changed`,
-        sheetAdded: (name: string): string => `Sheet added: ${name}`,
-        sheetDeleted: (name: string): string => `Sheet deleted: ${name}`,
-        sheetRenamed: "Sheet renamed",
-        workbookRenamed: "Workbook renamed"
-      }
-    }
+    comparisonFailed: "Comparison failed",
+    incompletePage: "Comparison returned an incomplete page",
+    revision: (revision: number): string => `r${revision}`
   },
   settings: {
     title: "Settings",
@@ -268,6 +153,6 @@ function buildEnUsMessages(translateComparison: UnitComparisonTranslate) {
 
 export type Messages = ReturnType<typeof buildEnUsMessages>;
 
-export function createEnUsMessages(translateComparison: UnitComparisonTranslate): Messages {
-  return buildEnUsMessages(translateComparison);
+export function createEnUsMessages(): Messages {
+  return buildEnUsMessages();
 }

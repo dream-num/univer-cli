@@ -18,7 +18,7 @@ import { Badge } from "../ui/badge.js";
 import { Spinner } from "../ui/spinner.js";
 import { structuralDiffItemsFromContext } from "../comparison-presentation";
 import { structuralDiffFocusTarget } from "./comparison-focus";
-import { useUnitComparisonViewerMessages } from "../messages.js";
+import { useUnitComparisonViewerMessages } from "../i18n/messages.js";
 import { cn } from "../ui/cn.js";
 import { ComparisonPageTabs, type ComparisonPageTabOption } from "../shared/scope-tabs";
 import { shouldClearDiffSidebarSelection } from "../shared/sidebar-selection";

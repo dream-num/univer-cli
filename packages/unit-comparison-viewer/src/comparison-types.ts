@@ -9,7 +9,7 @@ import type {
 import type { IBoardData } from "@univerjs-pro/boards";
 import type { ISlideData } from "@univerjs-pro/slides";
 import type { ReactNode } from "react";
-import type { IUnitComparisonViewerMessages } from "./messages.js";
+import type { UnitComparisonViewerMessageOverrides } from "./i18n/types.js";
 
 export type UnitComparisonType =
   | UniverInstanceType.UNIVER_DOC
@@ -208,8 +208,8 @@ export interface IUnitComparisonViewerProps {
   readonly leftHeaderControl?: ReactNode;
   readonly locale: LocaleType;
   readonly darkMode: boolean;
-  /** Optional shell copy. Omit for the package's built-in English labels. */
-  readonly messages?: IUnitComparisonViewerMessages;
+  /** Optional wording overrides layered over the package-owned locale selected by `locale`. */
+  readonly messages?: UnitComparisonViewerMessageOverrides;
 }
 
 export type UnitComparisonUniverFactory = (

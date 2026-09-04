@@ -1,8 +1,10 @@
 export { UnitComparisonViewer } from "./unit-comparison-viewer.js";
 export {
   defaultUnitComparisonViewerMessages,
+  resolveUnitComparisonViewerMessages,
   type IUnitComparisonViewerMessages,
-} from "./messages.js";
+  type UnitComparisonViewerMessageOverrides,
+} from "./i18n/messages.js";
 export type {
   IUnitComparisonResult,
   IUnitComparisonUniverFactoryOptions,
