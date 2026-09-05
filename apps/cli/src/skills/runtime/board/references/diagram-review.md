@@ -33,6 +33,11 @@ case when those capabilities are in scope. An unavailable sticky/embed API is a 
 to silently substitute a generic shape and call it a native test. An embed descriptor alone does not prove the
 child resource loaded, rendered, or is interactive.
 
+For component assembly, include a matched provided/required pair plus an unconsumed provided interface and an
+unbound required interface. Distinguish their native symbols from dashed dependencies. Move an assembly symbol,
+verify both connectors follow without rebinding, and check one-step Undo/Redo restores complete snapshots while
+unrelated components and wires stay unchanged. This does not prove typed-port or delegation support.
+
 ## Multi-label class and ER relationship cases
 
 A multi-label coverage claim needs more than several single-label connectors. Include a class association or

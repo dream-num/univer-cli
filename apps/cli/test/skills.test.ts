@@ -74,6 +74,38 @@ describe("application Skill library", () => {
     }
   });
 
+  it("ships component assemblies with matching declared contracts and unbound interfaces", async () => {
+    const library = createApplicationSkillLibrary(assetsRoot);
+    const board = await library.read({ full: true, name: "board" });
+    const reference = board.files?.find((file) => file.path === "references/board-spec.md");
+    const examples = [...reference!.content.matchAll(/```json\s*\n([\s\S]*?)```/g)].map((match) =>
+      JSON.parse(match[1]!),
+    );
+    const spec = examples.find((example) => example.diagramType === "uml-component");
+    expect(spec?.schemaVersion).toBe(1);
+    const nodes = new Map<string, { provides?: string[]; requires?: string[] }>(
+      spec.nodes.map((node: { id: string; provides?: string[]; requires?: string[] }) => [
+        node.id,
+        node,
+      ]),
+    );
+    expect(nodes.size).toBe(spec.nodes.length);
+    const used = new Set<string>();
+    for (const relation of spec.relations) {
+      expect(relation.semantic).toBe("assembly");
+      expect(nodes.get(relation.from)?.provides).toContain(relation.contract);
+      expect(nodes.get(relation.to)?.requires).toContain(relation.contract);
+      used.add(relation.contract);
+    }
+    expect(used.size).toBeGreaterThan(0);
+    expect([...nodes.values()].some((node) => node.provides?.some((id) => !used.has(id)))).toBe(
+      true,
+    );
+    expect([...nodes.values()].some((node) => node.requires?.some((id) => !used.has(id)))).toBe(
+      true,
+    );
+  });
+
   it("keeps native Chart guidance on the direct host and live Chart contract", async () => {
     const library = createApplicationSkillLibrary(assetsRoot);
     const contracts = [

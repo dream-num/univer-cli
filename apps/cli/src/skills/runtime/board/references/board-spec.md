@@ -199,6 +199,58 @@ For UML classes and ER entities, create the compartment tables first. Use `inser
 and ER cardinalities are connector semantics and must remain separate fields in BoardSpec even though realization
 turns visible text into multiple connector labels.
 
+For component diagrams, a component may declare `provides` and `requires` as lists of named interface contracts.
+An `assembly` relation identifies its `contract`, with `from` as the provider and `to` as the consumer; this
+orientation records ownership, not a call arrow. For example:
+
+```json
+{
+  "schemaVersion": 1,
+  "diagramType": "uml-component",
+  "nodes": [
+    {
+      "id": "model",
+      "label": "Model Gateway",
+      "semanticRole": "component",
+      "provides": ["IInference", "IHealth"]
+    },
+    {
+      "id": "planner",
+      "label": "Planner",
+      "semanticRole": "component",
+      "requires": ["IInference", "ICredentials"]
+    }
+  ],
+  "relations": [
+    {
+      "id": "inference",
+      "from": "model",
+      "to": "planner",
+      "semantic": "assembly",
+      "contract": "IInference"
+    }
+  ]
+}
+```
+
+The contract must appear in the provider's `provides` and consumer's `requires`. Unassembled declarations are
+meaningful: keep the unconsumed provided interface and the unbound required interface visible when relevant; do not
+invent a consumer/provider. Use stable contract identifiers when display names alone cannot distinguish contracts.
+Names identify the intended match, not proof of signature or protocol compatibility.
+
+Query `BoardCustomShapeType.ComponentBox`, `ProvidedInterface`, `RequiredInterface`, and `AssemblyConnector`.
+Use the native ball for a provided interface, socket for a required interface, and ball-and-socket for assembly.
+Connect an assembly symbol to its provider and consumer with two ordinary bound connectors, without arrowheads;
+keep a separate dashed `«use»` dependency when needed. The symbol and both connectors remain independent editable
+Board objects, not a compiler-managed composite. Ports and delegation are separate UML concepts: do not claim their
+coverage from an assembly symbol. These distinctions follow [OMG UML component notation](https://www.omg.org/spec/UML/ISO/19505-2/PDF).
+
+Inspect the installed positioned-endpoint contract before connecting native interface stems. When supported, an
+explicit side-center `position: 0.5` projects to the native outline; the plain frame-side anchor may leave a gap
+because the glyph has internal padding. Check both stems at readable scale and test movement with single-step
+Undo/Redo. A reversed-terminal diagnostic on an open stem is not an acceptable UML exception; report a runtime
+limitation if the installed version cannot bind it correctly, rather than replacing the binding with a free point.
+
 A table preset owns its initial dimensions and may override requested `rows`, `columns`, `width`, or `height`.
 After insertion, call `getStructure()`, grow with `insertRows()` / `insertColumns()` if necessary, and size with
 `resizeRows()` / `resizeColumns()` before `setValues()`. Read back both `getStructure()` and `getValues()`; a
@@ -295,6 +347,8 @@ Before calling Facade APIs, check the spec in memory or with a short script:
    supported and every message order fits within the intended participant lifelines.
 8. Use-case `include`/`extend` endpoints are use cases; referenced extension points exist on the base (`to`) use case.
    Generalization connects like kinds (actor to actor or use case to use case), with no inheritance cycle.
+9. Component `assembly` relations match a declared provided contract to the same required contract. Missing or
+   ambiguous contract references must be resolved before creating symbols and wires.
 
 Return diagnostics and repair the spec before mutation when a check fails. Do not validate coordinates, routing, or
 paint here; Board model analysis and rendered screenshot analysis own those checks after realization. Do not add a
