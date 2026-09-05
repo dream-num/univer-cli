@@ -7,9 +7,11 @@ The fixture renders the production `Topbar` with application actions replaced by
 readout. It is a Vite development page, not a production entry point. The sidebar placeholder is
 256px wide; its collapsed toggle exercises the Header's existing toggle spacer.
 
-`Topbar` selects the current-version or Worktree application component. The Worktree component
-owns its header container, content, and layout hook in `src/ui/worktree-header/`; it can also be
-mounted directly with `app`, `snap`, and `worktreeId` props.
+`Topbar` selects the current-version Header or `WorktreeHeaderConnector`. The connector reads
+application data and binds commands to the selected Worktree. `buildWorktreeHeaderModel` converts
+selected business facts to presentation data without application or DOM access. The renderer in
+`src/ui/worktree-header/` owns its container and layout hook and accepts only a `model` and event
+callbacks; it can be mounted without an `App` or `AppSnapshot`.
 
 The layout hook returns one React state model for layout mode, status presentation, toggle
 orientation, and sizing variables. Intrinsic measurements use a disposable copy inside an empty,
@@ -35,4 +37,5 @@ Expected behavior:
   disables merge while keeping discard available. No action in this fixture modifies user data.
 
 `worktree-header-layout.test.tsx` covers measurement decisions and observer cleanup;
+`worktree-header-model.test.ts` covers status and action rules in a Node environment;
 `app-worktree-actions.test.tsx` covers application action wiring and status semantics.

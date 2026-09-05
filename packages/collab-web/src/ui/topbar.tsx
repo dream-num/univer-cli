@@ -5,11 +5,11 @@ import { Button } from "../components/ui/button";
 import { t } from "../i18n";
 import type { App, AppSnapshot } from "./app";
 import { TitleUnitIcon } from "./title-unit-icon";
-import { WorktreeHeader } from "./worktree-header";
+import { WorktreeHeaderConnector } from "./worktree-header-connector";
 
 export function Topbar({ app, snap }: { app: App; snap: AppSnapshot }): ReactElement {
   return snap.view.kind === "worktree" ? (
-    <WorktreeHeader app={app} snap={snap} worktreeId={snap.view.worktreeId} />
+    <WorktreeHeaderConnector app={app} snap={snap} worktreeId={snap.view.worktreeId} />
   ) : (
     <TrunkHeader app={app} snap={snap} />
   );

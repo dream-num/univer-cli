@@ -2,7 +2,7 @@ import type { UnitSummary, Worktree } from "@univer/collab-gateway-contract";
 import { flushSync } from "react-dom";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { setLang } from "../src/i18n";
+import { setLang, t } from "../src/i18n";
 import { AppView } from "../src/ui/app-view";
 import type { App, AppSnapshot } from "../src/ui/app";
 import { Topbar } from "../src/ui/topbar";
@@ -125,17 +125,82 @@ describe("collab-web worktree actions", () => {
     );
   });
 
-  it("renders a complete Worktree Header independently of Topbar", () => {
-    const { app, snapshot, merge } = createApp("ready");
-    snapshot.sidebarCollapsed = true;
+  it("renders and emits events using only display data, without an App or snapshot", () => {
+    const merge = vi.fn();
+    const compare = vi.fn();
+    const source = vi.fn();
     root = createRoot(document.getElementById("root")!);
-    flushSync(() => root?.render(<WorktreeHeader app={app} snap={snapshot} worktreeId="wt-1" />));
+    flushSync(() =>
+      root?.render(
+        <WorktreeHeader
+          model={{
+            title: "Independent Header",
+            unitType: 2,
+            viewMode: "view",
+            previewSource: "preview",
+            primaryAction: { kind: "merge", disabled: false },
+            canDiscard: true,
+            canRefreshComparison: false,
+            reserveSidebarToggle: true
+          }}
+          onPrimaryAction={merge}
+          onViewModeChange={compare}
+          onPreviewSourceChange={source}
+          onDiscard={vi.fn()}
+          onRefreshComparison={vi.fn()}
+        />
+      )
+    );
     const header = document.querySelector("header")!;
-    expect(header.querySelector("[data-header-name]")?.textContent).toBe("Demo changes");
+    expect(header.querySelector("[data-header-name]")?.textContent).toBe("Independent Header");
     expect(header.dataset.headerLayout).toBe("flow");
     expect(header.querySelector(".sidebar-toggle-spacer")).not.toBeNull();
     topbarButton("Merge into current version")?.click();
-    expect(merge).toHaveBeenCalledWith("wt-1");
+    topbarButton("Compare")?.click();
+    topbarButton("Original edits")?.click();
+    expect(merge).toHaveBeenCalledOnce();
+    expect(compare).toHaveBeenCalledWith("diff");
+    expect(source).toHaveBeenCalledWith("original");
+  });
+
+  it("binds presentation and commands to the selected Worktree", () => {
+    const { app, snapshot, ready, discard, merge } = createApp("ready");
+    snapshot.worktrees.push({
+      ...snapshot.worktrees[0]!,
+      worktreeId: "wt-2",
+      name: "Other edits",
+      status: "draft"
+    });
+    snapshot.view = { kind: "worktree", worktreeId: "wt-2" };
+    snapshot.previews.set("wt-1", {
+      worktreeId: "wt-1",
+      mergeable: false,
+      diverged: true,
+      units: [],
+      conflicts: ["unit-1"]
+    });
+    render(app);
+    expect(document.querySelector("[data-header-name]")?.textContent).toBe("Other edits");
+    expect(document.querySelector("[data-header-status]")).toBeNull();
+    topbarButton("Submit for confirmation")?.click();
+    topbarButton("Discard")?.click();
+    expect(ready).toHaveBeenCalledWith("wt-2");
+    expect(discard).toHaveBeenCalledWith("wt-2");
+    expect(merge).not.toHaveBeenCalled();
+  });
+
+  it("routes the stale comparison refresh event through the application connector", () => {
+    const { app, snapshot } = createApp("ready");
+    const refresh = vi.spyOn(app, "refreshUnitComparison");
+    snapshot.comparisonMode = true;
+    snapshot.comparisonData = { response: { stale: true } } as AppSnapshot["comparisonData"];
+    root = createRoot(document.getElementById("root")!);
+    flushSync(() => root?.render(<Topbar app={app} snap={snapshot} />));
+    topbarButton(t().topbar.refreshComparison)?.click();
+    expect(refresh).toHaveBeenCalledOnce();
+    snapshot.comparisonMode = false;
+    flushSync(() => root?.render(<Topbar app={app} snap={snapshot} />));
+    expect(topbarButton(t().topbar.refreshComparison)).toBeUndefined();
   });
 
   it("switches between current-version and Worktree headers without retaining layout state", () => {
@@ -229,6 +294,7 @@ function createApp(status: "draft" | "ready"): {
     unitBadgeInfo: () => ({ variant: "added", text: "A" }),
     setComparisonMode: compare,
     setViewPreview: viewPreview,
+    refreshUnitComparison: vi.fn(),
     topbarUnits: () => [unit],
     pendingWorktreeCount: () => 0,
     doReady: ready,
