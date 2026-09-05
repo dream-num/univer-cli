@@ -184,6 +184,16 @@ authoring fields express control flow and duration without storing frame bounds 
 When executions overlap, give each activation a semantic `id` and reference it with `ends.from.activationId` or
 `ends.to.activationId` on the message. Translate those semantic IDs to generated bar IDs during realization.
 
+For `par`, preserve message order within each operand, not a strict order across operands. The horizontal dashed
+divider separates parallel operands; their vertical stacking does not mean one finishes before the other starts.
+Do not add an `else` guard to mean a second parallel branch. These are
+[UML parallel-fragment semantics](https://www.omg.org/spec/UML/ISO/19505-2/PDF), not an execution scheduler.
+Realization may use separate message batches with operand-local `order` and explicit offsets while retaining one
+Board-world origin. Those offsets position the drawing; they do not create cross-operand precedence in BoardSpec.
+Keep aggregation after the fragment when it requires both results. A native fragment table is a visual scope,
+not a container that owns its messages: moving/resizing it does not reschedule messages or their activation spans.
+Review operand boundaries and label clearance after frame edits, and preserve all unrelated bindings and content.
+
 For UML classes and ER entities, create the compartment tables first. Use `insertClassRelations()` or
 `insertEntityRelations()` once the generated element IDs are known. Endpoint roles, multiplicities, relation names,
 and ER cardinalities are connector semantics and must remain separate fields in BoardSpec even though realization
