@@ -33,8 +33,8 @@ Expected behavior:
 
 - View/Compare is geometrically centered when both sides fit symmetrically. Otherwise controls
   share an off-center row until their total width no longer fits, then wrap in DOM order.
-- The title group reserves up to 260px (302px with a sidebar toggle). Name text has a 280px maximum
-  and shrinks with ellipsis; short names keep their intrinsic width. At supported frame widths of
+- The title group's minimum is measured from its icon, badge, optional sidebar toggle, and name.
+  Name text has a 280px maximum and shrinks with ellipsis; short names keep their intrinsic width. At supported frame widths of
   480px and above, long names retain at least 100px. The full name is available on hover, and the
   Unit change badge immediately follows it.
 - Merge status always shows the complete message. Status text wraps within the title group;
@@ -49,3 +49,6 @@ content changes, and observer cleanup. `worktree-header-model.test.ts` covers st
 rules in a Node environment;
 `app-worktree-actions.test.tsx` covers standalone rendering, application action wiring, and status
 semantics. Verify layout in a real browser because jsdom does not implement CSS layout.
+
+`pnpm --filter @univer/collab-web typecheck` includes this fixture. Production builds use only
+the application HTML entries; this test HTML page is not part of the published browser assets.
