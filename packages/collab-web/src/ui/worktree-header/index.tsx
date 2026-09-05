@@ -1,5 +1,5 @@
 import { CircleCheck, GitMerge, RefreshCw, Trash2, TriangleAlert } from "lucide-react";
-import type { ReactElement } from "react";
+import type { CSSProperties, ReactElement } from "react";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { ChangeTag } from "../../components/ui/change-tag";
@@ -7,6 +7,7 @@ import { SegmentedToggle } from "../../components/ui/toggle-group";
 import { t } from "../../i18n";
 import { cn } from "../../lib/utils";
 import { TitleUnitIcon } from "../title-unit-icon";
+import { useHeaderLayout } from "./layout";
 import type { WorktreeHeaderEvents, WorktreeHeaderModel } from "./model";
 
 export interface WorktreeHeaderProps extends WorktreeHeaderEvents {
@@ -22,23 +23,29 @@ export function WorktreeHeader({
   onRefreshComparison
 }: WorktreeHeaderProps): ReactElement {
   const { title, unitType, changeTag, status, primaryAction } = model;
+  const messages = t().topbar;
+  const titleMinimum = model.reserveSidebarToggle ? 302 : 260;
+  const { headerRef, layout } = useHeaderLayout(model, messages, titleMinimum);
   const toggleClass =
     "grid h-auto w-full max-w-full shrink-0 grid-cols-2 gap-0 rounded-lg bg-muted p-0.5";
   const toggleItemClass =
-    "min-h-7 min-w-0 whitespace-normal px-3.5 py-1 text-[13px] [overflow-wrap:anywhere]";
+    "min-h-7 min-w-0 whitespace-normal px-3.5 py-1 text-[13px] [overflow-wrap:anywhere] group-data-[header-layout=centered]/header:whitespace-nowrap group-data-[header-layout=measuring]/header:whitespace-nowrap";
   const actionClass =
     "h-auto min-h-8 max-w-full whitespace-normal py-1.5 leading-4 [&>span]:min-w-0 [&>span]:[overflow-wrap:anywhere]";
-  // Equal zero-basis side groups center View/Compare until an intrinsic minimum takes over.
-  // Flex wrapping and bounded text handle narrower containers without measuring the DOM.
   return (
-    <header className="topbar relative flex min-h-11 min-w-0 shrink-0 flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-border bg-background px-4 py-1.5">
+    <header
+      ref={headerRef}
+      data-header-layout={layout}
+      style={{ "--header-title-min": `${titleMinimum}px` } as CSSProperties}
+      className={cn(
+        "topbar group/header relative min-h-11 min-w-0 shrink-0 items-center gap-x-3 gap-y-1.5 border-b border-border bg-background px-4 py-1.5",
+        layout === "flow" ? "flex flex-wrap" : "grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]"
+      )}
+    >
       <div
         data-testid="worktree-title"
         data-header-title
-        className={cn(
-          "flex flex-[1_1_0] flex-wrap items-center gap-x-2.5 gap-y-1.5",
-          model.reserveSidebarToggle ? "min-w-[min(302px,100%)]" : "min-w-[min(260px,100%)]"
-        )}
+        className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5 group-data-[header-layout=flow]/header:min-w-[min(var(--header-title-min),100%)] group-data-[header-layout=flow]/header:flex-[1_1_var(--header-title-min)]"
       >
         <div className="flex min-w-0 max-w-full items-center gap-2.5">
           <span data-header-leading className="flex shrink-0 items-center gap-2.5">
@@ -89,35 +96,43 @@ export function WorktreeHeader({
       <div
         data-testid="view-diff-center"
         data-header-segment="view"
-        className="min-w-[min(174px,100%)] max-w-full flex-none"
+        className={cn(
+          "flex-none",
+          layout === "flow" ? "min-w-[min(174px,100%)] max-w-full" : "w-max min-w-[174px]"
+        )}
       >
         <SegmentedToggle
           className={toggleClass}
           itemClassName={toggleItemClass}
           value={model.viewMode}
           options={[
-            { value: "view", label: t().topbar.segView },
-            { value: "diff", label: t().topbar.segDiff }
+            { value: "view", label: messages.segView },
+            { value: "diff", label: messages.segDiff }
           ]}
           onChange={onViewModeChange}
         />
       </div>
       <div
         data-header-trailing
-        className="flex min-w-fit max-w-full flex-[1_1_0] flex-wrap items-center justify-end gap-x-3 gap-y-1.5"
+        className={
+          layout === "flow" ? "contents" : "flex w-max items-center justify-self-end gap-3"
+        }
       >
         {model.previewSource !== undefined && (
           <div
             data-header-segment="preview"
-            className="min-w-[min(236px,100%)] max-w-full flex-none"
+            className={cn(
+              "flex-none",
+              layout === "flow" ? "min-w-[min(236px,100%)] max-w-full" : "min-w-[236px]"
+            )}
           >
             <SegmentedToggle
               className={toggleClass}
               itemClassName={toggleItemClass}
               value={model.previewSource}
               options={[
-                { value: "preview", label: t().topbar.segPreview },
-                { value: "original", label: t().topbar.segOriginal }
+                { value: "preview", label: messages.segPreview },
+                { value: "original", label: messages.segOriginal }
               ]}
               onChange={onPreviewSourceChange}
             />
@@ -125,7 +140,10 @@ export function WorktreeHeader({
         )}
         <div
           data-testid="worktree-actions"
-          className="flex min-w-0 max-w-full flex-none flex-wrap items-center justify-end gap-2 empty:hidden"
+          className={cn(
+            "flex min-w-0 flex-none items-center justify-end gap-2 empty:hidden",
+            layout === "flow" ? "ml-auto max-w-full flex-wrap" : "flex-nowrap"
+          )}
         >
           {model.canRefreshComparison && (
             <Button
@@ -135,7 +153,7 @@ export function WorktreeHeader({
               onClick={onRefreshComparison}
             >
               <RefreshCw />
-              <span>{t().topbar.refreshComparison}</span>
+              <span>{messages.refreshComparison}</span>
             </Button>
           )}
           {primaryAction && (
@@ -148,8 +166,8 @@ export function WorktreeHeader({
               {primaryAction.kind === "submit" ? <CircleCheck /> : <GitMerge />}
               <span>
                 {primaryAction.kind === "submit"
-                  ? t().topbar.submitForReview
-                  : t().topbar.mergeToCurrent}
+                  ? messages.submitForReview
+                  : messages.mergeToCurrent}
               </span>
             </Button>
           )}
@@ -161,7 +179,7 @@ export function WorktreeHeader({
               onClick={onDiscard}
             >
               <Trash2 />
-              <span>{t().topbar.discard}</span>
+              <span>{messages.discard}</span>
             </Button>
           )}
         </div>
