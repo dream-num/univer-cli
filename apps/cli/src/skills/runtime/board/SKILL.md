@@ -21,6 +21,20 @@ return { shapeId: shape.getId(), elements: board.describeElements() };'
 univer open canvas.univer --worktree <id>
 ```
 
+## Completion gate
+
+A generated Board is complete only after all of the following evidence is clean:
+
+1. Read back the persisted elements and run `board.analyzeModelLayout(48)`.
+2. Run a full `univer screenshot ... --json` and inspect `outputs[0].layoutAnalysis`.
+3. Resolve every blocking issue and review each warning with a focused screenshot.
+4. If routing issues identify connectors, normalize only those connector IDs at most once, then
+   rerun the full screenshot.
+5. Finish with a clean full-Board screenshot and a final model readback.
+
+Command success, model-only analysis, or a cropped screenshot is not completion evidence. A Board
+may be temporarily invalid while it is being edited; apply this gate before final handoff.
+
 `inspect board` is a selector-free overview of ordered elements, counts, bounds, relationships, and
 text summaries. Use `inspect board-element id:<element-id> ...` for type-specific detail without
 loading the full Board snapshot. Both commands are read-only; use them before editing to discover
@@ -63,6 +77,18 @@ Reuse a position only for an intentional shared port. Keep feedback edges on an 
 sites facing that lane, and prefer explicit orthogonal miter waypoints when a curve would cross the
 main flow.
 
+Use `labelText` when automatic placement is sufficient. When a label must sit on a specific route
+segment, pass `label: { id, text, pathRatio, offset }` while inserting the connector. `pathRatio` is
+the normalized distance along the complete rendered path and `offset` is a Board-unit adjustment;
+this keeps intended label placement in the editable model without a follow-up low-level element
+patch.
+
+Shape-site positions are most predictable on rectangles and rounded rectangles. For ellipses,
+diamonds, hexagons, and other non-rectangular nodes, start with the side center by omitting
+`position`. Add an explicit position only after a rendered screenshot proves the marker clears the
+outline. If lint reports marker overlap, first use a smaller marker or more spacing; do not freeze a
+poor auto route into manual waypoints merely to silence the finding.
+
 ```js
 const shapes = board.insertShapes([
   {
@@ -87,8 +113,8 @@ if (
   throw new Error("Cannot arrange Board shapes");
 const connectors = board.insertConnectors([
   {
-    start: { elementId: source.getId() },
-    end: { elementId: target.getId() },
+    fromElementId: source.getId(),
+    toElementId: target.getId(),
     style: { endMarker: { type: "filledTriangle", size: "md" } },
   },
 ]);
@@ -200,10 +226,12 @@ return connectors.map((connector) => ({
 }));
 ```
 
-A still screenshot verifies geometry, labels, and persisted styles but cannot prove motion direction or speed. After
-model and rendered layout checks pass, open the Board viewer and observe at least one full animation cycle. Confirm
-that markers remain static, moving effects follow rounded/curved paths, labels interrupt animated paint cleanly, and
-reverse arrows point along their actual travel direction.
+A still screenshot verifies geometry, labels, and persisted styles but cannot prove motion direction or speed. The
+CLI renders Board screenshots from a detached in-memory copy with connector animation disabled, so pixel stability
+checks do not require editing and restoring the Board. After model and rendered layout checks pass, open the Board
+viewer and observe at least one full animation cycle. Confirm that markers remain static, moving effects follow
+rounded/curved paths, labels interrupt animated paint cleanly, and reverse arrows point along their actual travel
+direction.
 
 ## Images
 
