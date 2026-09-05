@@ -22,14 +22,24 @@ describe("Header layout lifecycle", () => {
   let root: Root;
   let width: number;
   let trailingWidth: number;
+  let titleRowWidth: number;
+  let nameWidth: number;
   let renders: number;
   let observers: { notify: () => void; disconnect: ReturnType<typeof vi.fn> }[];
 
   function Harness({ value = model }: { value?: WorktreeHeaderModel }): ReactElement {
     renders++;
-    const { headerRef, layout } = useHeaderLayout(value, messages, 260);
+    const { headerRef, layout, titleMinimum } = useHeaderLayout(value, messages);
     return (
-      <header ref={headerRef} data-layout={layout} style={{ padding: "6px 16px", columnGap: 12 }}>
+      <header
+        ref={headerRef}
+        data-layout={layout}
+        data-title-minimum={titleMinimum}
+        style={{ padding: "6px 16px", columnGap: 12 }}
+      >
+        <div data-header-title-row>
+          <span data-header-name style={{ flexBasis: 100 }} />
+        </div>
         <div data-header-segment="view" />
         <div data-header-trailing />
       </header>
@@ -39,13 +49,24 @@ describe("Header layout lifecycle", () => {
   beforeEach(() => {
     width = 1182;
     trailingWidth = 452;
+    titleRowWidth = 260;
+    nameWidth = 100;
     renders = 0;
     observers = [];
     document.body.innerHTML = '<main id="root"></main>';
     root = createRoot(document.getElementById("root")!);
     vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(() => width);
     vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockImplementation(() => trailingWidth);
-    vi.spyOn(Element.prototype, "getBoundingClientRect").mockReturnValue({ width: 174 } as DOMRect);
+    vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(
+      function (this: Element) {
+        const width = this.hasAttribute("data-header-title-row")
+          ? titleRowWidth
+          : this.hasAttribute("data-header-name")
+            ? nameWidth
+            : 174;
+        return { width } as DOMRect;
+      }
+    );
     vi.stubGlobal(
       "ResizeObserver",
       class {
@@ -78,6 +99,24 @@ describe("Header layout lifecycle", () => {
     width = 1182;
     flushSync(() => observers[0]!.notify());
     expect(header.dataset.layout).toBe("centered");
+  });
+
+  it("keeps short and truncated long titles centered when their actual contents fit", () => {
+    width = 674;
+    trailingWidth = 204;
+    titleRowWidth = 130;
+    nameWidth = 54;
+    flushSync(() => root.render(<Harness value={{ ...model, title: "diff-doc" }} />));
+    const header = document.querySelector("header")!;
+    expect(header.dataset.layout).toBe("centered");
+    expect(header.dataset.titleMinimum).toBe("130");
+
+    // Longer names may shrink to 100px, while icon, badge and internal gaps remain intact.
+    titleRowWidth = 356;
+    nameWidth = 280;
+    flushSync(() => root.render(<Harness value={{ ...model, title: "Budget".repeat(100) }} />));
+    expect(header.dataset.layout).toBe("centered");
+    expect(header.dataset.titleMinimum).toBe("176");
   });
 
   it("remeasures changed controls and disconnects observers on replacement and unmount", () => {

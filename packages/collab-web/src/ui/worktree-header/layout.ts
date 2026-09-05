@@ -7,11 +7,11 @@ type HeaderLayout = "measuring" | "centered" | "flow";
 /** Only choose symmetric columns or a flat flex flow; CSS handles every row and text wrap. */
 export function useHeaderLayout(
   model: WorktreeHeaderModel,
-  messages: Messages["topbar"],
-  titleMinimum: number
-): { headerRef: RefObject<HTMLElement | null>; layout: HeaderLayout } {
+  messages: Messages["topbar"]
+): { headerRef: RefObject<HTMLElement | null>; layout: HeaderLayout; titleMinimum: number } {
   const headerRef = useRef<HTMLElement>(null);
   const [layout, setLayout] = useState<HeaderLayout>("measuring");
+  const [titleMinimum, setTitleMinimum] = useState(0);
 
   useLayoutEffect(() => {
     const header = headerRef.current!;
@@ -42,15 +42,25 @@ export function useHeaderLayout(
     const style = getComputedStyle(header);
     const view = header.querySelector<HTMLElement>('[data-header-segment="view"]')!;
     const trailing = header.querySelector<HTMLElement>("[data-header-trailing]")!;
+    const titleRow = header.querySelector<HTMLElement>("[data-header-title-row]")!;
+    const name = header.querySelector<HTMLElement>("[data-header-name]")!;
+    const nameWidth = name.getBoundingClientRect().width;
+    // Measure the uncompressed row; only the filename may shrink to its CSS flex basis.
+    const minimum = Math.ceil(
+      titleRow.getBoundingClientRect().width -
+        nameWidth +
+        Math.min(nameWidth, parseFloat(getComputedStyle(name).flexBasis))
+    );
+    setTitleMinimum(minimum);
     const available =
       header.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
     const required =
       view.getBoundingClientRect().width +
-      2 * Math.max(titleMinimum, trailing.scrollWidth) +
+      2 * Math.max(minimum, trailing.scrollWidth) +
       2 * parseFloat(style.columnGap);
     // React renders the measuring state and settles the final layout before paint.
     setLayout(available >= required ? "centered" : "flow");
-  }, [layout, titleMinimum]);
+  }, [layout]);
 
-  return { headerRef, layout };
+  return { headerRef, layout, titleMinimum };
 }
