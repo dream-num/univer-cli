@@ -83,6 +83,8 @@ https://discord.gg/nThHPupraR
 6. Agent 将 Worktree 标记为 `ready`，并返回本地 Viewer URL。
 7. 用户审阅结果，并明确选择合并、重新打开或放弃。
 
+审阅 Header 显示当前文档名，超长名称会截断，控件随可用空间自然换行。
+
 进入 Worktree 后，Viewer 为 Sheet、Doc、Slide、Base 和 Board Unit 提供只读的 **查看** 与
 **对比** 模式。默认对比当前 Worktree 与固定的 Trunk 状态；左侧也可以改选包含当前产品类型变更的其他
 active Worktree。对比前，两侧都会物化到各自固定的 head；对比过期后由用户显式刷新。Slide 与 Base 的

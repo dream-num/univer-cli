@@ -20,8 +20,8 @@ export function WorktreeHeaderConnector({
   const preview = snap.previews.get(worktreeId);
   const model = buildWorktreeHeaderModel(
     {
-      worktreeId,
-      name: worktree?.name,
+      unitId: unit?.unitId,
+      unitName: unit?.name,
       worktreeStatus: worktree?.status,
       unitType: unit?.type,
       changeTag: worktree && unit ? app.unitBadgeInfo(worktree, unit) : undefined,

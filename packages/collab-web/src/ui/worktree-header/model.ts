@@ -33,8 +33,8 @@ export interface WorktreeHeaderEvents {
 }
 
 export interface WorktreeHeaderInput {
-  worktreeId: string;
-  name?: string | undefined;
+  unitId?: string | undefined;
+  unitName?: string | undefined;
   worktreeStatus?: WorktreeStatus | undefined;
   unitType?: number | undefined;
   changeTag?: WorktreeHeaderModel["changeTag"];
@@ -74,7 +74,7 @@ export function buildWorktreeHeaderModel(
         : undefined;
 
   return {
-    title: input.name || input.worktreeId || messages.fallbackWorktreeName,
+    title: input.unitName || input.unitId || messages.fallbackDocumentName,
     unitType: input.unitType ?? 2,
     changeTag: input.changeTag,
     status,

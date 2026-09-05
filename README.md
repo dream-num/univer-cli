@@ -83,6 +83,8 @@ Every content type supports isolated draft editing, review, revision, merge, and
 6. It marks the Worktree `ready` and returns a local Viewer URL.
 7. The user reviews the result and explicitly chooses merge, reopen, or discard.
 
+The review Header shows the selected document name, truncates long names, and wraps controls as space narrows.
+
 Inside a Worktree, the Viewer offers read-only **View** and **Compare** modes for Sheet, Doc, Slide,
 Base, and Board Units. Diff compares the current Worktree with a pinned Trunk state by default; the
 left side can instead be another active Worktree that contains changes for the selected product type.
