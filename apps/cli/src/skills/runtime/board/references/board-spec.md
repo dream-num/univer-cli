@@ -114,8 +114,44 @@ Choose the closest profile and query its installed APIs before writing the reali
 The profile narrows the API search; it does not force every node into one primitive. A deployment diagram can mix
 containers, components, images, tables, and connectors when that better expresses the intent.
 
-For UML sequence diagrams, realize participants first and align the bottoms of their headers so lifeline offsets
-share a time origin. Create activation bars with `BoardSequenceShapeType.ActivationBar` and bind their sequence
+For activity control flow, distinguish `fork` / `join` from `decision` / `merge` in `semanticRole`.
+A fork starts concurrent branches; the ordinary join waits for all incoming branches. A merge accepts alternative
+paths without synchronization. Use a merge for initial entry plus a retry path, not a join that waits for both.
+Keep decision conditions on outgoing relations as semantic `condition` text and render them as `[guard]` labels.
+These distinctions follow [OMG UML activity control nodes](https://www.omg.org/spec/UML/ISO/19505-2/PDF).
+
+Realize fork/join with native `BoardCustomShapeType.StateBar`, not sequence activation bars or a free thick line.
+Use the native initial/final symbols, diamonds for decision/merge, and action shapes for work. An unlabeled merge
+diamond is intentional. Bind each control-flow endpoint to its node; distribute independent branch ports along
+the bar and verify both incoming and outgoing arrows visually. A cross-lane bar can belong to the swimlane pool's
+`contains` without belonging to any individual lane; actions belong in the responsible lane's `contains` instead.
+Read back `parentId` and `laneId`: visual enclosure does not establish ownership. Route retries around the main
+flow, then verify moving a branch action preserves its lane, both bindings, and single-step Undo/Redo.
+This is diagram authoring, not an execution engine or proof of deadlock freedom.
+
+For use-case diagrams, distinguish behavioral reuse from temporal flow. `include` points from the including use
+case to the included use case; `extend` points from the extending use case to the base use case. Both realize as
+dashed connectors with an `openArrow` at the target and a separate `«include»` or `«extend»` label. Generalization
+points from the specialized actor/use case to the general one, using a solid line and target `openTriangle`.
+Actor associations normally have neither arrowhead nor stereotype. Do not use flow arrows or animation to imply
+execution order. These meanings follow [OMG UML use-case semantics](https://www.omg.org/spec/UML/2.5.1).
+
+When extension locations matter, declare `extensionPoints` on the base use-case node and reference those names in
+the extending relation's `extensionPoints` list. Keep its optional `condition` as semantic text. Every referenced
+point must belong to the relation's `to` node, not its `from` node. Preserve the condition and locations in readable
+annotation content; for strict UML notation, use a note attached to the extend relationship. If that attachment is
+unavailable, report the notation limitation instead of silently discarding the condition. Keep actors outside the
+system container and read back real membership for the enclosed use cases. Check non-central ellipse attachments
+visually; a rectangle's normalized port placement can intersect an ellipse's outline.
+
+For UML sequence diagrams, realize participants first. Query `IBoardFacadeInsertSequenceMessagesOptions`: when
+`timeOriginY` is supported, choose one Board-world origin and reuse it across batches, including single-message
+calls. Message time is `timeOriginY + firstOffsetY + (order - 1) * step`, not an independent offset from each header.
+Without that option, align existing participants' header bottoms or derive each endpoint's lifeline offset from
+the same world time with the installed lower-level connector API. Do not align a late-created participant with
+participants that already exist at the beginning.
+
+Create activation bars with `BoardSequenceShapeType.ActivationBar` and bind their sequence
 activation data to a lifeline, then create the ordered messages. An endpoint within an execution span must bind to
 the activation bar's facing edge, not the lifeline center. Query the installed `insertSequenceMessages()` contract:
 versions supporting activation selection use the unique covering bar; overlapping executions require explicit
@@ -125,10 +161,20 @@ activation's world bounds; it runs top-to-bottom on either vertical side. Outsid
 `{ kind: "lifeline", shapeId: participantId, offsetY }`. Never replace this binding with a free point or pixel offset.
 The generated binding is fixed: later adding/removing an execution or changing its semantic span requires reviewing
 affected messages; resizing a bar preserves normalized attachment positions, not absolute message times.
-Use the dedicated
-sequence-fragment Board table preset for `alt`, `opt`, `loop`, `par`, `break`, `critical`, and `ref` frames; its
-guard/operand rows are structured content, not connector labels. Never simulate lifelines with generic dashed
+Use native sequence-fragment Board tables, with guard/operand rows as structured content rather than connector
+labels. Query `BoardTableDiagramPreset`: prefer `UMLSequenceAlternativeFragment` for multi-operand `alt`/`par` and
+`UMLSequenceFragment` for single-operand `opt`, `loop`, `break`, `critical`, and `ref`. Set the operator cell explicitly;
+a preset's placeholder title is not the requested operator. Never simulate lifelines with generic dashed
 connectors—the semantic helper intentionally rejects them.
+
+For self calls, send and receive times must differ: inspect `selfMessageHeight` and `selfMessageWidth` support before
+using the helper. A same-participant synchronous call also needs a return leg; a zero-length line is not a self call.
+Keep the receive time inside its intended activation/lifetime and leave room before the next message. For `create`,
+position the new participant header at the receive time and bind to its facing header edge; do not bind to a
+lifeline below the header. For `destroy`, end the receiving lifeline at the receive time and verify the cross there.
+The insertion helper does not reposition participants or truncate their lifelines. Prepare those native elements
+first, inspect the installed lifecycle validation, and verify endpoint readback and export rather than assuming
+that a supported message-type string implements all of its semantics.
 
 When fragments or activations matter, include their semantic scope in the spec rather than guessing it during
 layout. An optional `fragments` list can contain `{ id, operator, operands: [{ guard, messageIds }] }`; use stable
@@ -151,6 +197,10 @@ when a preset's defaults are insufficient for the requested language or screensh
 Also read the Board element's transform: table-resource row/column sizes and the host's visible bounds can differ.
 For a sequence frame, verify its actual bounds enclose every operand's messages and all participating lifelines;
 adjust the host with `setElementTransform()` when necessary, then recapture instead of assuming table resize did it.
+Leave a left gutter for the frame's title notch and top-aligned operand guards, clear of lifelines and activation
+bars. Place operand dividers and the bottom border between rendered message label bounds, not merely between
+connector Y positions; a following message's label can extend upward into the frame. If a guard needs a shorter
+visible form, preserve its full condition in the spec and keep the abbreviation unambiguous.
 
 ## Structured and mixed content
 
@@ -174,19 +224,46 @@ A node may include a semantic `content` payload when its information cannot be r
 Supported semantic content kinds are open-ended, but use these established decisions:
 
 - `structured-table`: realize as a Board table, including UML/ERD presets where applicable.
-- `chart`: keep the data and analytical intent; realize with native `FBoard.newChart()` / `insertChart()`.
+- `chart`: keep the data and analytical intent; realize with native `FBoard.newChart()` / `insertChart()`. Bind
+  relations to `chart.getElementId()`, not its chart resource `getId()`. Check axis bounds and units visually;
+  use a zero baseline for magnitude comparisons with bars, and label illustrative data as such.
 - `image`: retain the asset reference and its purpose, then use `insertImage()`.
 - `sticky`: use for an intentionally informal note. A cluster of unrelated sticky notes does not need BoardSpec.
-- `external-resource` or `embed`: retain the authorized source reference and relationship semantics. Let the host
-  capability determine whether it becomes an embed, image, link card, or other editable element.
+- `external-resource`: retain the authorized source reference and relationship semantics; query the installed host
+  and provider capabilities before choosing a link card, preview, or native embed.
+- `embed`: use a native interactive child when editing is part of the intent. Query `FUniver.createEmbed`,
+  `FEmbed.loadAsync`, and `FEmbedHostSurface.BoardFloating`; do not silently substitute an image or link card.
 - `ink`: describe the annotation intent, not points or paths. Generate or edit strokes only during realization. For
   existing user ink, refer to its element ID instead of copying stroke geometry into the spec.
+
+Not every semantic relation needs a connector. An `annotates` relation can become an Ink underline or nearby note;
+verify that the intended subject is unambiguous without drawing an extra arrow. Preserve native editable Ink data,
+not just a visually equivalent image or generic line. Semantic annotation does not itself create an editing
+constraint: use supported grouping or containment when the note and its annotation should move together.
 
 BoardSpec can mention every Board element as semantic content, but it is not mandatory for every element and does
 not make every element relational. A chart's source data, an image's asset reference, a sticky note's text, an
 embed's authorized URL, and ink stroke geometry remain payloads consumed by their dedicated APIs. Put them in
 `content` only when they participate in a larger diagram; otherwise call the direct Facade API without BoardSpec.
 For an embed, retain its host/type and source reference but never copy opaque embed runtime state into the spec.
+
+Native Board embeds are created through `api.createEmbed()`, not `board.insertShape()`. Supply the Board host unit,
+`BoardFloating` surface, authorized source reference and child unit type; choose bounds during realization, not in
+BoardSpec. Creation establishes the descriptor and host anchor, but does not prove the child can load. Await
+`embed.loadAsync()` and verify the returned child, visible content and intended interaction. Report unavailable
+plugins, unsupported sources, loading failures or access restrictions rather than claiming an empty anchor is a
+working embed. Do not fetch unrelated content or broaden authorization to make a source load.
+
+Use `embed.getHostAnchorId()` for Board connector endpoints and element inspection. `embed.getId()` identifies the
+embed descriptor and `getChildUnitId()` identifies the child document; neither is the Board element ID. Keep these
+IDs distinct in readback. Inspect `getDisplayTarget()` separately from the child's current selection/navigation;
+local child navigation is not proof that the persisted display target changed.
+
+The current native `BoardFloating` host is root-only: it does not support container/lane membership, rotation or
+flips. If the spec requires such membership, report the unsupported mapping and resolve the requested structure;
+visual enclosure is not a substitute for `parentId` / `laneId`. Query the installed contract before relying on a
+newer capability. For editable embeds, verify child edits do not alter host relationships, and check host
+move/resize and delete/undo preserve connector bindings, labels and element order.
 
 JSON is the canonical exchange form because agents can emit and validate it deterministically. YAML may be accepted
 as a human-authored input and Markdown may wrap fenced JSON, but normalize either to the same in-memory object before
@@ -206,6 +283,8 @@ Before calling Facade APIs, check the spec in memory or with a short script:
 6. Required structured content exists for UML classes, ERD entities, and charts.
 7. Class/ER relation ends use valid roles, multiplicities, and cardinalities; sequence `messageType` values are
    supported and every message order fits within the intended participant lifelines.
+8. Use-case `include`/`extend` endpoints are use cases; referenced extension points exist on the base (`to`) use case.
+   Generalization connects like kinds (actor to actor or use case to use case), with no inheritance cycle.
 
 Return diagnostics and repair the spec before mutation when a check fails. Do not validate coordinates, routing, or
 paint here; Board model analysis and rendered screenshot analysis own those checks after realization. Do not add a
@@ -228,6 +307,35 @@ connectors, keep structural UML/ERD relationships static, and keep dense diagram
 readback, rendered layout analysis, a still screenshot, and—when animation is enabled—one observed viewer cycle.
 
 ## Compact examples
+
+Use-case reuse and conditional extension remain semantic, without coordinates or marker configuration:
+
+```json
+{
+  "schemaVersion": 1,
+  "diagramType": "uml-use-case",
+  "nodes": [
+    {
+      "id": "run",
+      "label": "Execute task",
+      "semanticRole": "use-case",
+      "extensionPoints": ["high-risk-call"]
+    },
+    { "id": "validate", "label": "Validate constraints", "semanticRole": "use-case" },
+    { "id": "approve", "label": "Human approval", "semanticRole": "use-case" }
+  ],
+  "relations": [
+    { "from": "run", "to": "validate", "semantic": "include" },
+    {
+      "from": "approve",
+      "to": "run",
+      "semantic": "extend",
+      "condition": "Tool call is high risk",
+      "extensionPoints": ["high-risk-call"]
+    }
+  ]
+}
+```
 
 Sequence messages use semantic order rather than coordinates:
 

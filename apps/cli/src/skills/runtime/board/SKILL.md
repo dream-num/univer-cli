@@ -103,7 +103,11 @@ manual geometry. Do not use rounded orthogonal corners when a terminal leg or co
 
 Branch endpoints need deliberate port separation. On one source side, order normalized `position`
 values by target geometry, such as `0.25` for the upper branch and `0.75` for the lower branch.
-Reuse a position only for an intentional shared port. Keep feedback edges on an outer lane, use
+For fan-in, apply the same rule on the target side, ordering positions by source geometry. A successful auto route
+can still share its terminal leg with another relation; normalization cannot distinguish an intentional bus from
+independent inputs. Inspect the implicated pair, then separate its attachments with `setConnectorConnection()`
+when the relationships must remain independently readable. Reuse a position only for an intentional shared port.
+Keep feedback edges on an outer lane, use
 sites facing that lane, and prefer explicit orthogonal miter waypoints when a curve would cross the
 main flow.
 
@@ -111,16 +115,23 @@ Use `labelText` when one automatically placed label is sufficient. Use `labels` 
 multiplicities, ER names, protocol annotations, or any connector that needs several independently editable texts.
 Each label needs a stable `id`. Prefer semantic placement over manual offsets:
 
-- `placement.anchor`: `start`, `center`, `end`, or `path`.
+Before configuring label size, wrapping, gaps, or several texts on one connector, read
+`references/connector-labels.md`. It distinguishes declared constraints from runtime measurement and checks the
+installed SDK before using newer label contracts.
+
+- `placement.anchor`: `start`, `center`, `end`, or `path`; use `auto` only when the installed anchor enum supports it.
 - `placement.side`: `left`, `onPath`, or `right`, relative to connector direction from start to end.
-- `placement.alongOffset`: distance inward from a start/end anchor.
-- `placement.distance`: perpendicular distance from the path.
+- `placement.alongOffset`: endpoint inset; check whether the installed contract measures it to the box edge.
+- `placement.distance`: side spacing; check whether the installed contract measures it to the box edge or center.
 - `placement.pathRatio`: normalized distance along the complete rendered path when anchor is `path`.
 - `placement.orientation`: `horizontal`, `followPath`, or `auto`.
 
-Use `pathRatio` and `offset` only for intentional custom placement or legacy snapshots. The floating connector menu can
-select, add, delete, format, and reposition labels by stable ID; dragging one label converts only that label to a
-custom `path` anchor. Read labels with `getConnectorLabels()` and update one with `updateConnectorLabel()`.
+For intentional custom placement, use `placement: { anchor: "path", pathRatio: 0.75 }`. Do not mirror the ratio at the
+label's top level; legacy snapshot loading is separate from the new-write contract. For deliberate free displacement,
+query the installed offset contract in `references/connector-labels.md`; do not assume a top-level `offset` is accepted.
+The floating connector menu can select, add, delete,
+format, and reposition labels by stable ID; dragging one label converts only that label to a custom `path` anchor.
+Read labels with `getConnectorLabels()` and update one with `updateConnectorLabel()`.
 
 For diagram grammar, prefer the semantic batch helpers. They still create regular Board connectors, so the result
 remains editable and interoperable with `getConnectorConnection()`, label APIs, routing normalization, undo/redo,
@@ -151,7 +162,8 @@ names such as `diamond`. To render no marker, use `{ type: "none" }` rather than
 
 Connector `style.dash` is a numeric pattern, such as `[6, 4]`; `[]` is solid. It is not the string `"dash"`,
 `"solid"`, or a `strokeDash` property. Query `IBoardConnectorStyle` rather than borrowing another shape's style
-contract. Likewise, label `lineBreak` interrupts the line behind text; it does not control text wrapping.
+contract. Label route interruption and text wrapping are independent; query the installed label-style contract
+as described in `references/connector-labels.md` rather than borrowing a wrapping field from another text API.
 
 ```js
 const shapes = board.insertShapes([
@@ -344,7 +356,12 @@ const info = board
   .setSize(640, 360)
   .build();
 const inserted = await board.insertChart(info);
-return { chartId: inserted.getId(), info: inserted.getInfo(), data: inserted.getDataSource() };
+return {
+  chartId: inserted.getId(),
+  elementId: inserted.getElementId(),
+  info: inserted.getInfo(),
+  data: inserted.getDataSource(),
+};
 ```
 
 `board.getCharts()` and `board.getChart(id)` return live charts. Common setters such as
@@ -353,6 +370,10 @@ return { chartId: inserted.getId(), info: inserted.getInfo(), data: inserted.get
 with `chart.toBuilder()`, call `.build()`, then `await chart.update(info)`. Remove it with
 `await chart.remove()` and check the returned boolean. Await `insertChart`, `setDataSource`,
 `update`, and `remove` before `execute` returns.
+
+Chart resource IDs and Board element IDs are different. Use `chart.getElementId()` for connector endpoints,
+container membership, and Board element inspection; `chart.getId()` identifies the chart resource. Keep both in
+the realization readback instead of using the resource ID as `fromElementId` or `toElementId`.
 
 Verify each operation in a fresh no-write `execute` with
 `board.getCharts().map((item) => ({ id: item.getId(), type: item.getType(), info: item.getInfo(), data: item.getDataSource() }))`.

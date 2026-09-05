@@ -64,6 +64,11 @@ test an inactive interval separately. For nested executions, preserve explicit e
 choosing the topmost bar by appearance. Verify bar movement/resizing keeps attachments; do not claim this from a
 static screenshot alone.
 
+Include unequal participant header heights and a late-created participant in the sequence review. Ordinary
+send/receive endpoints must share a world Y; self calls need distinct send/receive Y values and a readable editable
+loop. Check creation at the new header edge and destruction at the actual lifeline end. Test these separately from
+marker style, and verify export as well as insertion: a header-bound connector exercises the common Shape adapter.
+
 Do not normalize layout-owned native branches to make a generic connector report green. Use the owning structured
 layout API if adjustment is needed. Apply routing normalization only to ordinary implicated connectors, once, as
 described in the main skill. Report `clean`, `visually reviewed with diagnostic exceptions`, or `blocked` separately;

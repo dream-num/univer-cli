@@ -30,6 +30,50 @@ describe("application Skill library", () => {
     expect(discovery.content).toContain("univer skills get core");
   });
 
+  it("delivers the Board label reference through the runtime full-skill reader", async () => {
+    const library = createApplicationSkillLibrary(assetsRoot);
+    const board = await library.read({ full: true, name: "board" });
+    const path = "references/connector-labels.md";
+    const content = await readFile(resolve(assetsRoot, "runtime/board", path), "utf8");
+
+    expect(board.files).toEqual(
+      expect.arrayContaining([expect.objectContaining({ path, content })]),
+    );
+  });
+
+  it("ships a valid use-case example with extension locations owned by the base case", async () => {
+    const library = createApplicationSkillLibrary(assetsRoot);
+    const board = await library.read({ full: true, name: "board" });
+    const reference = board.files?.find((file) => file.path === "references/board-spec.md");
+    expect(reference).toBeDefined();
+    const examples = [...reference!.content.matchAll(/```json\s*\n([\s\S]*?)```/g)].map((match) =>
+      JSON.parse(match[1]!),
+    );
+    const spec = examples.find((example) => example.diagramType === "uml-use-case");
+    expect(spec?.schemaVersion).toBe(1);
+    const nodes = new Map<string, { semanticRole: string; extensionPoints?: string[] }>(
+      spec.nodes.map((node: { id: string; semanticRole: string; extensionPoints?: string[] }) => [
+        node.id,
+        node,
+      ]),
+    );
+    expect(nodes.size).toBe(spec.nodes.length);
+    expect(
+      new Set(spec.relations.map((relation: { semantic: string }) => relation.semantic)),
+    ).toEqual(new Set(["include", "extend"]));
+    for (const relation of spec.relations) {
+      expect(nodes.get(relation.from)?.semanticRole).toBe("use-case");
+      expect(nodes.get(relation.to)?.semanticRole).toBe("use-case");
+      if (relation.semantic === "extend") {
+        expect(relation.condition.trim().length).toBeGreaterThan(0);
+        expect(relation.extensionPoints.length).toBeGreaterThan(0);
+        for (const point of relation.extensionPoints) {
+          expect(nodes.get(relation.to)?.extensionPoints).toContain(point);
+        }
+      }
+    }
+  });
+
   it("keeps native Chart guidance on the direct host and live Chart contract", async () => {
     const library = createApplicationSkillLibrary(assetsRoot);
     const contracts = [
