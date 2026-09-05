@@ -38,6 +38,13 @@ unbound required interface. Distinguish their native symbols from dashed depende
 verify both connectors follow without rebinding, and check one-step Undo/Redo restores complete snapshots while
 unrelated components and wires stay unchanged. This does not prove typed-port or delegation support.
 
+For composite/concurrent states, include two real child regions, region-local initial/final symbols, a bounded
+retry, an outer completion transition, and an external recovery path. Verify each region's ownership, that local
+retry does not imply re-entry of the other region, and that completing one region is not presented as completing
+the enclosing state. Move the outer container through the UI and a region through its installed API; check world
+bounds, bindings, labels, unrelated objects, and complete one-step Undo/Redo snapshots. A static region separator
+does not prove native nesting, and a correct drawing does not prove an executable state machine.
+
 ## Multi-label class and ER relationship cases
 
 A multi-label coverage claim needs more than several single-label connectors. Include a class association or

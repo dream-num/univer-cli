@@ -129,6 +129,27 @@ Read back `parentId` and `laneId`: visual enclosure does not establish ownership
 flow, then verify moving a branch action preserves its lane, both bindings, and single-step Undo/Redo.
 This is diagram authoring, not an execution engine or proof of deadlock freedom.
 
+For composite state diagrams, represent the enclosing state as a group with `semanticRole: "composite-state"`.
+Use `semanticRole: "orthogonal-state"` when its child regions execute concurrently, and `state-region` groups for
+those regions. Keep real nesting in `contains`; regions are not responsibility swimlanes. On states, optional
+`entry`, `do`, and `exit` describe behavior. On transitions, keep `trigger`, `condition`, and `effect` separate;
+realize them as `trigger [guard] / effect`. Short event names should not be split by an arbitrary fixed width.
+For a long annotation, place explicit line breaks between semantic parts or choose a tested wrapping width.
+
+Entering an orthogonal state enters all its regions. A region's final state completes that region, not the whole
+machine. Mark an untriggered outgoing completion transition with `completion: true`; it becomes eligible only
+after the enclosing state's completion requirements, including all regions, are satisfied. Do not invent an event
+for that transition. Keep bounded retries inside their region when other regions should remain active; a transition
+that exits and re-enters the enclosing state also exits and re-enters its regions. These are
+[OMG UML state-machine semantics](https://www.omg.org/spec/UML/ISO/19505-2/PDF), not executable Board behavior.
+
+Realize the enclosing state and its regions as native nested containers, using a dashed separator for orthogonal
+regions and native initial/final symbols. When ownership is already known, inspect `createContainer()` and pass
+`parentId` with parent-local coordinates at creation. Creating overlapping containers at the root and reparenting
+later can let automatic capture reverse the intended hierarchy. Read back ownership before inserting transitions.
+Bind completion/error transitions to the enclosing state when that is their semantic source, and local transitions
+to the actual substates. Verify both region movement and outer-state movement preserve descendants and bindings.
+
 For use-case diagrams, distinguish behavioral reuse from temporal flow. `include` points from the including use
 case to the included use case; `extend` points from the extending use case to the base use case. Both realize as
 dashed connectors with an `openArrow` at the target and a separate `«include»` or `«extend»` label. Generalization
