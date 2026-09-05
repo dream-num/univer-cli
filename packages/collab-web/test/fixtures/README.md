@@ -7,6 +7,10 @@ The fixture renders the production `Topbar` with application actions replaced by
 readout. It is a Vite development page, not a production entry point. The sidebar placeholder is
 256px wide; its collapsed toggle exercises the Header's existing toggle spacer.
 
+`Topbar` selects the current-version or Worktree application component. The Worktree component
+owns its header container, content, and layout hook in `src/ui/worktree-header/`; it can also be
+mounted directly with `app`, `snap`, and `worktreeId` props.
+
 Check 1440, 1300, 1130, 960, 940, 720, and 480px frame widths with Chinese and English labels,
 short/default/long names, and ready/preview states. Include draft, stale comparison, conflict,
 preview error, merged, and missing-badge states. Check other supported locales at narrow widths,

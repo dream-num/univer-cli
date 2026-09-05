@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   updateWorktreeHeaderLayout,
   useWorktreeHeaderLayout
-} from "../src/ui/worktree-header-layout";
+} from "../src/ui/worktree-header/layout";
 
 // Supply browser measurements; actual Flex/Grid geometry is covered by the browser fixture.
 function setWidth(element: Element, width: number): void {
@@ -137,7 +137,7 @@ describe("content-driven Worktree Header", () => {
     });
     const cancel = vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => undefined);
     function Probe(): ReactElement {
-      const { headerRef } = useWorktreeHeaderLayout(true);
+      const { headerRef } = useWorktreeHeaderLayout();
       return (
         <header
           ref={headerRef}

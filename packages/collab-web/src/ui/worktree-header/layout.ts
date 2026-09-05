@@ -97,7 +97,7 @@ export function updateWorktreeHeaderLayout(header: HTMLElement): SegmentLayout {
 }
 
 /** Re-measure on rendered state/locale changes, available-width changes, and font loads. */
-export function useWorktreeHeaderLayout(enabled: boolean): WorktreeHeaderLayout {
+export function useWorktreeHeaderLayout(): WorktreeHeaderLayout {
   const headerRef = useRef<HTMLElement>(null);
   const [segments, setSegments] = useState<SegmentLayout>({
     viewStacked: false,
@@ -105,7 +105,7 @@ export function useWorktreeHeaderLayout(enabled: boolean): WorktreeHeaderLayout 
   });
   const measureRef = useRef((): void => {});
   measureRef.current = (): void => {
-    if (!enabled || !headerRef.current) return;
+    if (!headerRef.current) return;
     const next = updateWorktreeHeaderLayout(headerRef.current);
     setSegments((previous) =>
       previous.viewStacked === next.viewStacked && previous.previewStacked === next.previewStacked
@@ -120,7 +120,7 @@ export function useWorktreeHeaderLayout(enabled: boolean): WorktreeHeaderLayout 
 
   useLayoutEffect(() => {
     const header = headerRef.current;
-    if (!enabled || !header) return;
+    if (!header) return;
     let frame: number | undefined;
     let width = header.getBoundingClientRect().width;
     let disposed = false;
@@ -150,7 +150,7 @@ export function useWorktreeHeaderLayout(enabled: boolean): WorktreeHeaderLayout 
       fonts?.removeEventListener("loadingdone", schedule);
       window.removeEventListener("resize", schedule);
     };
-  }, [enabled]);
+  }, []);
 
   return { headerRef, ...segments };
 }

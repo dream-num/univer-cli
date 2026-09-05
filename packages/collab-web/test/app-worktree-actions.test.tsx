@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setLang } from "../src/i18n";
 import { AppView } from "../src/ui/app-view";
 import type { App, AppSnapshot } from "../src/ui/app";
+import { Topbar } from "../src/ui/topbar";
+import { WorktreeHeader } from "../src/ui/worktree-header";
 
 const unit: UnitSummary = {
   unitId: "unit-1",
@@ -123,6 +125,40 @@ describe("collab-web worktree actions", () => {
     );
   });
 
+  it("renders a complete Worktree Header independently of Topbar", () => {
+    const { app, snapshot, merge } = createApp("ready");
+    snapshot.sidebarCollapsed = true;
+    root = createRoot(document.getElementById("root")!);
+    flushSync(() => root?.render(<WorktreeHeader app={app} snap={snapshot} worktreeId="wt-1" />));
+    const header = document.querySelector("header")!;
+    expect(header.querySelector("[data-header-name]")?.textContent).toBe("Demo changes");
+    expect(header.dataset.headerLayout).toBe("flow");
+    expect(header.querySelector(".sidebar-toggle-spacer")).not.toBeNull();
+    topbarButton("Merge into current version")?.click();
+    expect(merge).toHaveBeenCalledWith("wt-1");
+  });
+
+  it("switches between current-version and Worktree headers without retaining layout state", () => {
+    const { app, snapshot } = createApp("ready");
+    root = createRoot(document.getElementById("root")!);
+    const renderTopbar = (): void => {
+      flushSync(() => root?.render(<Topbar app={app} snap={snapshot} />));
+    };
+    renderTopbar();
+    expect(document.querySelector("[data-header-title]")).not.toBeNull();
+    snapshot.view = { kind: "trunk" };
+    renderTopbar();
+    expect(document.querySelectorAll("header")).toHaveLength(1);
+    expect(document.querySelector("[data-header-title]")).toBeNull();
+    expect(document.querySelector("header")?.hasAttribute("data-header-layout")).toBe(false);
+    expect(topbarButton("Merge into current version")).toBeUndefined();
+    snapshot.view = { kind: "worktree", worktreeId: "wt-1" };
+    renderTopbar();
+    expect(document.querySelectorAll("header")).toHaveLength(1);
+    expect(document.querySelector("[data-header-name]")?.textContent).toBe("Demo changes");
+    expect(topbarButton("Merge into current version")).toBeDefined();
+  });
+
   function render(app: App): void {
     const host = document.getElementById("root");
     if (host === null) {
@@ -194,6 +230,7 @@ function createApp(status: "draft" | "ready"): {
     setComparisonMode: compare,
     setViewPreview: viewPreview,
     topbarUnits: () => [unit],
+    pendingWorktreeCount: () => 0,
     doReady: ready,
     doMerge: merge,
     doDiscard: discard,
