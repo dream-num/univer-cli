@@ -1,6 +1,6 @@
 ---
 name: board
-description: "Create, edit, chart, read back, and visually verify Board canvas units with the Lite Interface."
+description: "Plan, create, edit, chart, read back, and visually verify Board canvas units with the Lite Interface."
 ---
 
 # Board units
@@ -21,6 +21,22 @@ return { shapeId: shape.getId(), elements: board.describeElements() };'
 univer open canvas.univer --worktree <id>
 ```
 
+## Semantic diagram planning
+
+For a new relationship-heavy Board, first write a semantic BoardSpec in JSON, then realize it with the existing
+Facade APIs. Use this planning step for UML, ERD, flowcharts, architecture/data-flow diagrams, mind maps, and
+swimlanes. Skip it for a small freeform canvas, a sticky-note cluster, isolated media, or direct ink editing.
+
+BoardSpec describes intent and structure, not rendering. Keep coordinates, colors, concrete shape types, connector
+ports/routes, and animation modes out of it. The agent chooses those after inspecting the installed API and the
+current Board. Do not pass BoardSpec to the SDK: it is an authoring artifact, not a Facade input or persisted Board
+model.
+
+Before authoring or realizing a semantic diagram, read `references/board-spec.md`. It defines the compact contract,
+profile-to-API routing, structural checks, mixed-content behavior, and connector-animation decision rule.
+For a multi-profile generation request or a skill coverage audit, also read `references/diagram-review.md` for
+profile-specific evidence and the distinction between a generated example and complete feature coverage.
+
 ## Completion gate
 
 A generated Board is complete only after all of the following evidence is clean:
@@ -28,12 +44,14 @@ A generated Board is complete only after all of the following evidence is clean:
 1. Read back the persisted elements and run `board.analyzeModelLayout(48)`.
 2. Run a full `univer screenshot ... --json` and inspect `outputs[0].layoutAnalysis`.
 3. Resolve every blocking issue and review each warning with a focused screenshot.
-4. If routing issues identify connectors, normalize only those connector IDs at most once, then
+4. If routing issues identify ordinary connectors, normalize only those connector IDs at most once, then
    rerun the full screenshot.
 5. Finish with a clean full-Board screenshot and a final model readback.
 
 Command success, model-only analysis, or a cropped screenshot is not completion evidence. A Board
 may be temporarily invalid while it is being edited; apply this gate before final handoff.
+For layout-owned branches or sequence-frame intersections, use the semantic review in
+`references/diagram-review.md`; retain any reviewed diagnostic exceptions in the handoff instead of claiming clean lint.
 
 `inspect board` is a selector-free overview of ordered elements, counts, bounds, relationships, and
 text summaries. Use `inspect board-element id:<element-id> ...` for type-specific detail without
@@ -53,9 +71,21 @@ inspect it with an available browser tool.
 Resolve additional Board methods and types from the version-matched Facade index:
 
 ```bash
-univer api show FUniver.createBoard FUniver.getBoard FBoard.insertShape FBoard.insertShapes FBoard.arrangeElementsInLayers FBoard.insertConnector FBoard.insertConnectors FShape FBoard.newChart FBoard.insertChart FBoard.getCharts FBoard.getChart FBoardChart FChart
+univer api show FUniver.createBoard FUniver.getBoard FBoard.insertShape FBoard.insertShapes FBoard.arrangeElementsInLayers FBoard.insertConnector FBoard.insertConnectors FBoard.insertClassRelation FBoard.insertClassRelations FBoard.insertEntityRelation FBoard.insertEntityRelations FBoard.insertSequenceMessage FBoard.insertSequenceMessages FBoard.getConnectorLabels FBoard.setConnectorLabels FBoard.updateConnectorLabel FBoard.createContainer FBoard.createSwimlane FBoard.insertTable FBoard.insertMindMap FShape BoardCustomShapeType BoardSequenceShapeType BoardTableDiagramPreset FBoard.newChart FBoard.insertChart FBoard.getCharts FBoard.getChart FBoardChart FChart
 univer api find board shape element
 ```
+
+Choose native diagram primitives before generic rounded rectangles. Flowchart shapes communicate process semantics;
+`BoardSequenceShapeType` provides editable lifelines and activation bars; Board table presets provide UML class,
+sequence-fragment, and ERD structures; custom Board shapes provide actors, components, interfaces, storage, and state
+symbols. Use `createSwimlane()` for lanes, `createContainer()` for nested scopes and system boundaries, and
+`insertMindMap()` for mind maps, trees, or timelines. Query every selected symbol before generating code because the
+installed CLI and SDK are the source of truth.
+
+An indexed type is not proof that its runtime enum or helper is exposed. Probe selected runtime methods and
+`api.Enum` entries in a read-only `execute` before a large batch. If a semantic helper is unavailable, use the
+installed lower-level connector contract only when it preserves the requested semantics, and report the reduced
+coverage. Do not claim independent multi-label coverage when the installed SDK only supports one label.
 
 ## Connectors and layout verification
 
@@ -73,21 +103,67 @@ manual geometry. Do not use rounded orthogonal corners when a terminal leg or co
 
 Branch endpoints need deliberate port separation. On one source side, order normalized `position`
 values by target geometry, such as `0.25` for the upper branch and `0.75` for the lower branch.
-Reuse a position only for an intentional shared port. Keep feedback edges on an outer lane, use
+For fan-in, apply the same rule on the target side, ordering positions by source geometry. A successful auto route
+can still share its terminal leg with another relation; normalization cannot distinguish an intentional bus from
+independent inputs. Inspect the implicated pair, then separate its attachments with `setConnectorConnection()`
+when the relationships must remain independently readable. Reuse a position only for an intentional shared port.
+Keep feedback edges on an outer lane, use
 sites facing that lane, and prefer explicit orthogonal miter waypoints when a curve would cross the
 main flow.
 
-Use `labelText` when automatic placement is sufficient. When a label must sit on a specific route
-segment, pass `label: { id, text, pathRatio, offset }` while inserting the connector. `pathRatio` is
-the normalized distance along the complete rendered path and `offset` is a Board-unit adjustment;
-this keeps intended label placement in the editable model without a follow-up low-level element
-patch.
+Use `labelText` when one automatically placed label is sufficient. Use `labels` for UML roles,
+multiplicities, ER names, protocol annotations, or any connector that needs several independently editable texts.
+Each label needs a stable `id`. Prefer semantic placement over manual offsets:
+
+Before configuring label size, wrapping, gaps, or several texts on one connector, read
+`references/connector-labels.md`. It distinguishes declared constraints from runtime measurement and checks the
+installed SDK before using newer label contracts.
+
+- `placement.anchor`: `start`, `center`, `end`, or `path`; use `auto` only when the installed anchor enum supports it.
+- `placement.side`: `left`, `onPath`, or `right`, relative to connector direction from start to end.
+- `placement.alongOffset`: endpoint inset; check whether the installed contract measures it to the box edge.
+- `placement.distance`: side spacing; check whether the installed contract measures it to the box edge or center.
+- `placement.pathRatio`: normalized distance along the complete rendered path when anchor is `path`.
+- `placement.orientation`: `horizontal`, `followPath`, or `auto`.
+
+For intentional custom placement, use `placement: { anchor: "path", pathRatio: 0.75 }`. Do not mirror the ratio at the
+label's top level; legacy snapshot loading is separate from the new-write contract. For deliberate free displacement,
+query the installed offset contract in `references/connector-labels.md`; do not assume a top-level `offset` is accepted.
+The floating connector menu can select, add, delete,
+format, and reposition labels by stable ID; dragging one label converts only that label to a custom `path` anchor.
+Read labels with `getConnectorLabels()` and update one with `updateConnectorLabel()`.
+
+For diagram grammar, prefer the semantic batch helpers. They still create regular Board connectors, so the result
+remains editable and interoperable with `getConnectorConnection()`, label APIs, routing normalization, undo/redo,
+resources, and collaboration:
+
+- `insertClassRelations()` maps association, directed association, aggregation, composition, generalization,
+  realization, and dependency to markers/dashes. Relation name, endpoint roles, and multiplicities become separate
+  path-relative labels.
+- `insertEntityRelations()` maps identifying/non-identifying lines and `one`, `zeroOrOne`, `oneOrMany`, or
+  `zeroOrMany` endpoint cardinalities to Crow's Foot markers.
+- `insertSequenceMessage()` and `insertSequenceMessages()` validate native Board lifelines; the batch API also rejects
+  duplicate/non-positive orders, and both persist
+  stable message offsets from `firstOffsetY` and `step`. It maps synchronous, asynchronous, reply, create, destroy,
+  and self messages to normal connectors.
+  For activation bars, follow the version-aware binding rules in `references/board-spec.md`: an active execution
+  endpoint belongs on the bar edge, not the lifeline center. Create bars before messages and read back the bindings.
 
 Shape-site positions are most predictable on rectangles and rounded rectangles. For ellipses,
 diamonds, hexagons, and other non-rectangular nodes, start with the side center by omitting
 `position`. Add an explicit position only after a rendered screenshot proves the marker clears the
 outline. If lint reports marker overlap, first use a smaller marker or more spacing; do not freeze a
 poor auto route into manual waypoints merely to silence the finding.
+
+Marker names are a closed API union. Query `BoardConnectorMarkerType` and use values such as
+`filledTriangle`, `openArrow`, `filledDiamond`, or `crowFoot`; do not abbreviate them to invented
+names such as `diamond`. To render no marker, use `{ type: "none" }` rather than `null`. Keep
+`animation: null` only for disabling connector animation, where the Facade explicitly supports it.
+
+Connector `style.dash` is a numeric pattern, such as `[6, 4]`; `[]` is solid. It is not the string `"dash"`,
+`"solid"`, or a `strokeDash` property. Query `IBoardConnectorStyle` rather than borrowing another shape's style
+contract. Label route interruption and text wrapping are independent; query the installed label-style contract
+as described in `references/connector-labels.md` rather than borrowing a wrapping field from another text API.
 
 ```js
 const shapes = board.insertShapes([
@@ -144,6 +220,22 @@ is using a vertical dashed connector as a likely fake lifeline. Rebuild that par
 errors. `normalizeConnectorRouting()` does not repair endpoint semantics and must not substitute
 for rebinding them.
 
+For sequence participants, keep the shape transform at the participant's native/default height.
+The dashed lifeline is an extension below that participant; stretching the shape height stretches
+the actor/control/entity symbol itself and pushes `{ kind: "lifeline", shapeId, offsetY }` messages
+down by the same amount. Keep message offsets within the configured lifeline height and order them
+by time.
+
+For containers and swimlanes, `insertShapeAtPoint()` accepts a Board-world point and resolves the
+parent and `laneId` at that point. Inspect the returned descriptor to confirm membership. Direct
+low-level insertion into a known parent uses parent-local coordinates instead; do not mix those two
+coordinate systems.
+
+The insertion point is the shape's top-left corner, not its center. Keep it inside the container's content area,
+outside its title and lane headers. Verify both world bounds and membership after insertion; a visually enclosed
+shape with no `parentId` is not a container child. If the installed version mishandles drop coordinates, insert at
+the root and use `moveElementsToContainer()`, then read back the bounds and lane identity again.
+
 Specify connector intent, marker type/size/offset, and routing mode; do not hand-calculate arrow
 depth or terminal-leg length. Render geometry accounts for marker paint bounds, stroke width,
 endpoint gap, rounded corners, and dash phase. For orthogonal auto connectors without manual
@@ -189,6 +281,9 @@ univer screenshot canvas.univer --worktree <id> --unit <board-id> \
 Connector animation is off by default. When a diagram has a small number of important flows—roughly twelve or fewer
 animated connectors—and motion makes direction or activity easier to understand, prefer enabling animation instead
 of leaving every relationship visually identical. Keep dense diagrams static: animation is emphasis, not decoration.
+BoardSpec may identify a relation as primary, continuous, triggered, or replayed semantic activity, but it must not
+select an animation mode or speed. Choose animation during realization and animate only the relations whose motion
+adds information.
 
 Use `style.animation.mode` to choose the visual: `dash` moves a dash pattern, `particle` moves one dot, `pulse`
 highlights the full path, `gradient` moves a fading highlight, `particles` renders a repeated dot sequence, and
@@ -261,7 +356,12 @@ const info = board
   .setSize(640, 360)
   .build();
 const inserted = await board.insertChart(info);
-return { chartId: inserted.getId(), info: inserted.getInfo(), data: inserted.getDataSource() };
+return {
+  chartId: inserted.getId(),
+  elementId: inserted.getElementId(),
+  info: inserted.getInfo(),
+  data: inserted.getDataSource(),
+};
 ```
 
 `board.getCharts()` and `board.getChart(id)` return live charts. Common setters such as
@@ -271,6 +371,10 @@ with `chart.toBuilder()`, call `.build()`, then `await chart.update(info)`. Remo
 `await chart.remove()` and check the returned boolean. Await `insertChart`, `setDataSource`,
 `update`, and `remove` before `execute` returns.
 
+Chart resource IDs and Board element IDs are different. Use `chart.getElementId()` for connector endpoints,
+container membership, and Board element inspection; `chart.getId()` identifies the chart resource. Keep both in
+the realization readback instead of using the resource ID as `fromElementId` or `toElementId`.
+
 Verify each operation in a fresh no-write `execute` with
 `board.getCharts().map((item) => ({ id: item.getId(), type: item.getType(), info: item.getInfo(), data: item.getDataSource() }))`.
 For an update, confirm the chart ID, count, type, title, position, size, and data. For a removal,
@@ -278,5 +382,6 @@ confirm the chart is absent. Use
 `board.describeElements()` or `board.save()` for element readback and the viewer link for visual
 confirmation.
 
-Mind maps, tables, ink, and other advanced editing remain outside this Skill's verified authoring
-contract.
+For mind maps, tables, images, sticky notes, external resources, embeds, and ink intent inside a larger semantic
+Board, follow the mixed-content rules in `references/board-spec.md`, query the installed Facade, and apply the same
+readback and screenshot completion gate.

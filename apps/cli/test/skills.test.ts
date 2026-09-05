@@ -30,6 +30,82 @@ describe("application Skill library", () => {
     expect(discovery.content).toContain("univer skills get core");
   });
 
+  it("delivers the Board label reference through the runtime full-skill reader", async () => {
+    const library = createApplicationSkillLibrary(assetsRoot);
+    const board = await library.read({ full: true, name: "board" });
+    const path = "references/connector-labels.md";
+    const content = await readFile(resolve(assetsRoot, "runtime/board", path), "utf8");
+
+    expect(board.files).toEqual(
+      expect.arrayContaining([expect.objectContaining({ path, content })]),
+    );
+  });
+
+  it("ships a valid use-case example with extension locations owned by the base case", async () => {
+    const library = createApplicationSkillLibrary(assetsRoot);
+    const board = await library.read({ full: true, name: "board" });
+    const reference = board.files?.find((file) => file.path === "references/board-spec.md");
+    expect(reference).toBeDefined();
+    const examples = [...reference!.content.matchAll(/```json\s*\n([\s\S]*?)```/g)].map((match) =>
+      JSON.parse(match[1]!),
+    );
+    const spec = examples.find((example) => example.diagramType === "uml-use-case");
+    expect(spec?.schemaVersion).toBe(1);
+    const nodes = new Map<string, { semanticRole: string; extensionPoints?: string[] }>(
+      spec.nodes.map((node: { id: string; semanticRole: string; extensionPoints?: string[] }) => [
+        node.id,
+        node,
+      ]),
+    );
+    expect(nodes.size).toBe(spec.nodes.length);
+    expect(
+      new Set(spec.relations.map((relation: { semantic: string }) => relation.semantic)),
+    ).toEqual(new Set(["include", "extend"]));
+    for (const relation of spec.relations) {
+      expect(nodes.get(relation.from)?.semanticRole).toBe("use-case");
+      expect(nodes.get(relation.to)?.semanticRole).toBe("use-case");
+      if (relation.semantic === "extend") {
+        expect(relation.condition.trim().length).toBeGreaterThan(0);
+        expect(relation.extensionPoints.length).toBeGreaterThan(0);
+        for (const point of relation.extensionPoints) {
+          expect(nodes.get(relation.to)?.extensionPoints).toContain(point);
+        }
+      }
+    }
+  });
+
+  it("ships component assemblies with matching declared contracts and unbound interfaces", async () => {
+    const library = createApplicationSkillLibrary(assetsRoot);
+    const board = await library.read({ full: true, name: "board" });
+    const reference = board.files?.find((file) => file.path === "references/board-spec.md");
+    const examples = [...reference!.content.matchAll(/```json\s*\n([\s\S]*?)```/g)].map((match) =>
+      JSON.parse(match[1]!),
+    );
+    const spec = examples.find((example) => example.diagramType === "uml-component");
+    expect(spec?.schemaVersion).toBe(1);
+    const nodes = new Map<string, { provides?: string[]; requires?: string[] }>(
+      spec.nodes.map((node: { id: string; provides?: string[]; requires?: string[] }) => [
+        node.id,
+        node,
+      ]),
+    );
+    expect(nodes.size).toBe(spec.nodes.length);
+    const used = new Set<string>();
+    for (const relation of spec.relations) {
+      expect(relation.semantic).toBe("assembly");
+      expect(nodes.get(relation.from)?.provides).toContain(relation.contract);
+      expect(nodes.get(relation.to)?.requires).toContain(relation.contract);
+      used.add(relation.contract);
+    }
+    expect(used.size).toBeGreaterThan(0);
+    expect([...nodes.values()].some((node) => node.provides?.some((id) => !used.has(id)))).toBe(
+      true,
+    );
+    expect([...nodes.values()].some((node) => node.requires?.some((id) => !used.has(id)))).toBe(
+      true,
+    );
+  });
+
   it("keeps native Chart guidance on the direct host and live Chart contract", async () => {
     const library = createApplicationSkillLibrary(assetsRoot);
     const contracts = [
@@ -110,9 +186,34 @@ describe("application Skill library", () => {
     expect(board.content).toContain("normalize only those connector IDs at most once");
     expect(board.content).toContain("fromElementId: source.getId()");
     expect(board.content).toContain("toElementId: target.getId()");
-    expect(board.content).toContain("label: { id, text, pathRatio, offset }");
+    expect(board.content).toContain("Use `labels` for UML roles");
+    expect(board.content).toContain("insertClassRelations()");
+    expect(board.content).toContain("insertEntityRelations()");
+    expect(board.content).toContain("insertSequenceMessages()");
+    expect(board.content).toContain("placement.anchor");
     expect(board.content).toContain("For ellipses,");
     expect(board.content).toContain("detached in-memory copy with connector animation disabled");
+    expect(board.content).toContain("first write a semantic BoardSpec in JSON");
+    expect(board.content).toContain("BoardSpec may identify a relation as primary");
+    expect(board.content).toContain("FBoard.insertMindMap");
+    expect(board.content).toContain("Marker names are a closed API union");
+    expect(board.content).toContain("insertShapeAtPoint()");
+    expect(board.files).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          content: expect.stringContaining('"semanticRole": "message-bus"'),
+          path: "references/board-spec.md",
+        }),
+        expect.objectContaining({
+          content: expect.stringContaining('"messageType": "reply"'),
+          path: "references/board-spec.md",
+        }),
+        expect.objectContaining({
+          content: expect.stringContaining('"multiplicity": "0..*"'),
+          path: "references/board-spec.md",
+        }),
+      ]),
+    );
     expect(board.content).not.toContain("start: { elementId: source.getId() }");
   });
 
