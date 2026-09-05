@@ -148,6 +148,7 @@ export function messagesFromVocabulary(
       discard: v.discard,
       previewUnavailable: `${v.preview}: ${v.cannot}`,
       conflictCount: (n) => `${n} ${v.conflict} · ${v.cannot} ${v.merge}`,
+      latestVersionChanged: v.latestChanged,
       divergedShowingPreview: `${v.latestChanged} · ${v.preview}`,
       divergedShowingOriginal: `${v.latestChanged} · ${v.modification}`,
       segPreview: v.preview,

@@ -4,19 +4,13 @@ import {
   Check,
   ChevronRight,
   CircleCheck,
-  Eye,
   FolderOpen,
-  GitMerge,
-  RefreshCw,
-  Lock,
   Moon,
   PanelLeftClose,
   PanelLeftOpen,
   Pencil,
   Settings,
-  Sun,
-  Trash2,
-  TriangleAlert
+  Sun
 } from "lucide-react";
 import {
   useCallback,
@@ -43,7 +37,6 @@ import {
   MenuTrigger
 } from "../components/ui/menu";
 import { Spinner } from "../components/ui/spinner";
-import { SegmentedToggle } from "../components/ui/toggle-group";
 import { LOCALE_MANIFEST, t, type Lang } from "../i18n";
 import { sdkLocaleOf } from "../i18n";
 import type { Appearance } from "../appearance";
@@ -55,9 +48,9 @@ import {
 import { createCollabWebComparisonUniver } from "../core/create-collab-web-comparison-univer";
 import type { App, AppSnapshot } from "./app";
 import { relativeTime, summaryText } from "./format";
-import { toast } from "./modals";
 import { UnitIcon } from "./unit-icon";
 import { DiscordIcon } from "./discord-icon";
+import { Topbar } from "./topbar";
 const SIDEBAR_DRAWER_ID = "gateway-sidebar-hover-drawer";
 const SIDEBAR_DRAWER_OPEN_DELAY_MS = 120;
 const SIDEBAR_DRAWER_CLOSE_DELAY_MS = 200;
@@ -683,254 +676,6 @@ function SettingsMenu({
         </MenuSubmenuRoot>
       </MenuContent>
     </MenuRoot>
-  );
-}
-
-// ---- topbar ----
-
-function Topbar({ app, snap }: { app: App; snap: AppSnapshot }): ReactElement {
-  const leading = snap.sidebarCollapsed ? (
-    <span aria-hidden="true" className="sidebar-toggle-spacer size-8 shrink-0" />
-  ) : undefined;
-  return (
-    <header
-      className={cn(
-        "topbar relative min-h-11 shrink-0 items-center gap-x-4 gap-y-2 border-b border-border bg-background px-4",
-        snap.view.kind === "worktree"
-          ? "grid grid-cols-1 py-2 @min-[1100px]/workbench:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] @min-[1100px]/workbench:py-1"
-          : "flex flex-wrap justify-between py-1"
-      )}
-    >
-      {snap.view.kind === "trunk" ? (
-        <TrunkTitle app={app} snap={snap} leading={leading} />
-      ) : (
-        <WorktreeTitle app={app} snap={snap} worktreeId={snap.view.worktreeId} leading={leading} />
-      )}
-    </header>
-  );
-}
-
-function TitleUnitIcon({
-  type,
-  className,
-  children
-}: {
-  type: number;
-  className?: string;
-  children?: ReactNode;
-}): ReactElement {
-  return (
-    <span
-      className={cn(
-        "flex size-7 shrink-0 items-center justify-center rounded-md border shadow-xs [&_svg]:size-4",
-        className ?? "border-border bg-background text-muted-foreground"
-      )}
-    >
-      {children ?? <UnitIcon type={type} />}
-    </span>
-  );
-}
-
-function TrunkTitle({
-  app,
-  snap,
-  leading
-}: {
-  app: App;
-  snap: AppSnapshot;
-  leading?: ReactNode;
-}): ReactElement {
-  const unit = snap.trunkUnits.find((u) => u.unitId === snap.selectedUnitId);
-  const pending = app.pendingWorktreeCount();
-  return (
-    <>
-      <div className="flex min-w-0 items-center gap-2.5">
-        {leading}
-        <TitleUnitIcon type={unit?.type ?? 2} />
-        <div className="flex min-w-0 items-baseline gap-1.5">
-          <span className="truncate text-sm font-semibold">{unit?.name ?? app.univerfileName}</span>
-          <span className="shrink-0 text-xs text-muted-foreground">
-            · {t().topbar.currentVersion}
-          </span>
-        </div>
-      </div>
-      <div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2">
-        {unit === undefined ? (
-          <Badge variant="outline">
-            <Eye />
-            {t().topbar.viewOnly}
-          </Badge>
-        ) : pending === 0 ? (
-          <Badge variant="ok">
-            <Pencil />
-            {t().topbar.editable}
-          </Badge>
-        ) : snap.trunkEditingOptIn ? (
-          <>
-            <Badge variant="warn">
-              <Pencil />
-              {t().topbar.editingPending(pending)}
-            </Badge>
-            <Button variant="outline" size="sm" onClick={() => app.stopTrunkEdit()}>
-              {t().topbar.stopEditing}
-            </Button>
-          </>
-        ) : (
-          <>
-            <Badge variant="warn">
-              <Lock />
-              {t().topbar.lockedPending(pending)}
-            </Badge>
-            <Button variant="outline" size="sm" onClick={() => void app.startTrunkEdit()}>
-              {t().topbar.editAnyway}
-            </Button>
-          </>
-        )}
-      </div>
-    </>
-  );
-}
-
-function WorktreeTitle({
-  app,
-  snap,
-  worktreeId,
-  leading
-}: {
-  app: App;
-  snap: AppSnapshot;
-  worktreeId: string;
-  leading?: ReactNode;
-}): ReactElement {
-  const worktree = snap.worktrees.find((f) => f.worktreeId === worktreeId);
-  const unit = app.topbarUnits().find((u) => u.unitId === snap.selectedUnitId);
-  const preview = snap.previews.get(worktreeId);
-  const previewError = snap.previewErrors.get(worktreeId);
-  const mergeable = preview?.mergeable ?? false;
-  const unitBadge =
-    worktree !== undefined && unit !== undefined ? app.unitBadgeInfo(worktree, unit) : undefined;
-  return (
-    <>
-      <div className="flex min-w-0 items-center gap-2.5" data-testid="worktree-title">
-        {leading}
-        <TitleUnitIcon
-          type={unit?.type ?? 2}
-          className="border-amber-200/80 bg-amber-50 text-amber-600"
-        />
-        <div className="flex min-w-0 items-baseline gap-1.5">
-          <span
-            className="min-w-0 truncate text-sm font-semibold"
-            title={worktree?.name || worktreeId || t().topbar.fallbackWorktreeName}
-          >
-            {worktree?.name || worktreeId || t().topbar.fallbackWorktreeName}
-          </span>
-          {unit !== undefined && (
-            <span className="min-w-0 max-w-[40%] shrink-0 truncate text-xs text-muted-foreground" title={unit.name}>
-              · {unit.name}
-            </span>
-          )}
-        </div>
-        {previewError !== undefined ? (
-          <Badge variant="warn" title={previewError}>
-            <TriangleAlert />
-            {t().topbar.previewUnavailable}
-          </Badge>
-        ) : preview?.diverged ? (
-          <Badge variant={mergeable ? "info" : "danger"}>
-            {!mergeable && <TriangleAlert />}
-            {mergeable
-              ? snap.viewPreview
-                ? t().topbar.divergedShowingPreview
-                : t().topbar.divergedShowingOriginal
-              : t().topbar.conflictCount(preview.conflicts.length)}
-          </Badge>
-        ) : (
-          unitBadge && <ChangeTag variant={unitBadge.variant}>{unitBadge.text}</ChangeTag>
-        )}
-      </div>
-      <div
-        className="min-w-0 w-full @min-[1100px]/workbench:w-auto"
-        data-testid="view-diff-center"
-      >
-        <SegmentedToggle
-          className="h-12 w-full bg-muted/80 p-0.5 shadow-xs @min-[1100px]/workbench:h-8"
-          itemClassName="h-11 min-w-0 flex-1 basis-0 px-5 py-0 text-[13px] @min-[1100px]/workbench:h-7 @min-[1100px]/workbench:min-w-[72px] @min-[1100px]/workbench:flex-none"
-          value={snap.comparisonMode ? "diff" : "view"}
-          options={[
-            { value: "view", label: t().topbar.segView },
-            { value: "diff", label: t().topbar.segDiff }
-          ]}
-          onChange={(value) => void app.setComparisonMode(value === "diff")}
-        />
-      </div>
-      <div
-        className="flex min-w-0 max-w-full flex-wrap items-center gap-2 empty:hidden @min-[1100px]/workbench:justify-end @min-[1100px]/workbench:justify-self-end"
-        data-testid="worktree-actions"
-      >
-        {snap.comparisonMode && (
-          <>
-            {snap.comparisonData?.response.stale && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => void app.refreshUnitComparison()}
-              >
-                <RefreshCw />
-                {t().topbar.refreshComparison}
-              </Button>
-            )}
-          </>
-        )}
-        {preview?.diverged && (
-          <SegmentedToggle
-            value={snap.viewPreview ? "preview" : "original"}
-            options={[
-              { value: "preview", label: t().topbar.segPreview },
-              { value: "original", label: t().topbar.segOriginal }
-            ]}
-            onChange={(v) => app.setViewPreview(v === "preview")}
-          />
-        )}
-        {worktree?.status === "draft" && (
-          <Button
-            size="sm"
-            className="h-11 min-w-0 flex-1 whitespace-normal @min-[1100px]/workbench:h-8 @min-[1100px]/workbench:flex-none"
-            onClick={() => void app.doReady(worktreeId)}
-          >
-            <CircleCheck />
-            {t().topbar.submitForReview}
-          </Button>
-        )}
-        {worktree?.status === "ready" && (
-          <Button
-            size="sm"
-            className="h-11 min-w-0 flex-1 whitespace-normal @min-[1100px]/workbench:h-8 @min-[1100px]/workbench:flex-none"
-            disabled={preview !== undefined && !mergeable}
-            onClick={() => {
-              if (preview !== undefined && !mergeable) {
-                toast(t().toast.conflictsCannotMerge);
-                return;
-              }
-              void app.doMerge(worktreeId);
-            }}
-          >
-            <GitMerge />
-            {t().topbar.mergeToCurrent}
-          </Button>
-        )}
-        {(worktree?.status === "draft" || worktree?.status === "ready") && (
-          <Button
-            variant="destructiveGhost"
-            size="sm"
-            className="h-11 @min-[1100px]/workbench:h-8"
-            onClick={() => void app.doDiscard(worktreeId)}
-          >
-            <Trash2 />
-            {t().topbar.discard}
-          </Button>
-        )}
-      </div>
-    </>
   );
 }
 

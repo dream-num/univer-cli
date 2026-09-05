@@ -49,22 +49,78 @@ describe("collab-web worktree actions", () => {
     expect(discard).toHaveBeenCalledOnce();
   });
 
-  it("gives view and compare a full-width narrow row and a compact wide-screen slot", () => {
-    const { app } = createApp("draft");
+  it("keeps comparison and preview toggles independent and badges beside the title", () => {
+    const { app, snapshot, compare, viewPreview } = createApp("ready");
+    snapshot.previews.set("wt-1", {
+      worktreeId: "wt-1",
+      mergeable: true,
+      diverged: true,
+      units: [],
+      conflicts: []
+    });
+    snapshot.viewPreview = true;
     render(app);
-
-    const switcher = document.querySelector('[data-testid="view-diff-center"]');
-    const compareButton = [...(switcher?.querySelectorAll("button") ?? [])].find(
-      (button) => button.textContent === "Compare"
+    const title = document.querySelector('[data-testid="worktree-title"]');
+    expect(title?.textContent).not.toContain(unit.name);
+    const name = title?.querySelector("[data-header-name]");
+    expect(name?.nextElementSibling?.getAttribute("data-slot")).toBe("change-tag");
+    expect(name?.getAttribute("title")).toBe("Demo changes");
+    expect(title?.querySelector("[data-header-status-full]")?.textContent).toContain(
+      "showing the merged result"
     );
-    expect(switcher).not.toBeNull();
-    expect(switcher?.classList.contains("w-full")).toBe(true);
-    expect(switcher?.classList.contains("@min-[1100px]/workbench:w-auto")).toBe(true);
-    expect(switcher?.firstElementChild?.classList.contains("h-12")).toBe(true);
-    expect(compareButton?.classList.contains("h-11")).toBe(true);
-    expect(compareButton?.classList.contains("@min-[1100px]/workbench:h-7")).toBe(true);
-    expect(compareButton?.classList.contains("px-5")).toBe(true);
+    expect(title?.querySelector("[data-header-status-short]")?.textContent).toBe(
+      "Latest version changed"
+    );
+    topbarButton("Compare")?.click();
+    topbarButton("Original edits")?.click();
+    expect(compare).toHaveBeenCalledWith(true);
+    expect(viewPreview).toHaveBeenCalledWith(false);
     expect(document.querySelector(".topbar select")).toBeNull();
+  });
+
+  it("keeps conflict details visible and prevents merge while preserving discard", () => {
+    const { app, snapshot, merge, discard } = createApp("ready");
+    snapshot.previews.set("wt-1", {
+      worktreeId: "wt-1",
+      mergeable: false,
+      diverged: true,
+      units: [],
+      conflicts: ["unit-1"]
+    });
+    render(app);
+    expect(topbarButton("Merge into current version")?.disabled).toBe(true);
+    expect(document.querySelector("[data-header-status-full]")?.textContent).toContain(
+      "1 conflict"
+    );
+    expect(document.querySelector("[data-header-status-short]")).toBeNull();
+    topbarButton("Merge into current version")?.click();
+    topbarButton("Discard")?.click();
+    expect(merge).not.toHaveBeenCalled();
+    expect(discard).toHaveBeenCalledOnce();
+  });
+
+  it("updates full preview context and title tooltip on re-render", () => {
+    const { app, snapshot } = createApp("ready");
+    snapshot.previews.set("wt-1", {
+      worktreeId: "wt-1",
+      mergeable: true,
+      diverged: true,
+      units: [],
+      conflicts: []
+    });
+    render(app);
+    expect(document.querySelector("[data-header-status-full]")?.textContent).toContain(
+      "original edits"
+    );
+    snapshot.viewPreview = true;
+    snapshot.worktrees[0]!.name = "A".repeat(300);
+    render(app);
+    expect(document.querySelector("[data-header-status-full]")?.textContent).toContain(
+      "merged result"
+    );
+    expect(document.querySelector("[data-header-name]")?.getAttribute("title")).toBe(
+      "A".repeat(300)
+    );
   });
 
   function render(app: App): void {
@@ -72,7 +128,7 @@ describe("collab-web worktree actions", () => {
     if (host === null) {
       throw new Error("Missing test root");
     }
-    root = createRoot(host);
+    root ??= createRoot(host);
     flushSync(() => root?.render(<AppView app={app} />));
   }
 });
@@ -82,10 +138,15 @@ function createApp(status: "draft" | "ready"): {
   discard: ReturnType<typeof vi.fn>;
   merge: ReturnType<typeof vi.fn>;
   ready: ReturnType<typeof vi.fn>;
+  snapshot: AppSnapshot;
+  compare: ReturnType<typeof vi.fn>;
+  viewPreview: ReturnType<typeof vi.fn>;
 } {
   const discard = vi.fn();
   const merge = vi.fn();
   const ready = vi.fn();
+  const compare = vi.fn();
+  const viewPreview = vi.fn();
   const worktree: Worktree = {
     worktreeId: "wt-1",
     status,
@@ -102,6 +163,11 @@ function createApp(status: "draft" | "ready"): {
     worktrees: [worktree],
     previews: new Map(),
     previewErrors: new Map(),
+    comparisonMode: false,
+    comparisonLeft: { kind: "trunk" },
+    comparisonSession: undefined,
+    comparisonData: undefined,
+    comparisonError: undefined,
     viewPreview: false,
     trunkEditingOptIn: false,
     flashWorktreeId: undefined,
@@ -124,7 +190,9 @@ function createApp(status: "draft" | "ready"): {
     selectWorktreeUnit: () => Promise.resolve(),
     worktreeDeletedUnits: () => [],
     worktreeChangeSummary: () => ({ modified: 0, added: 1, deleted: 0 }),
-    unitBadgeInfo: () => undefined,
+    unitBadgeInfo: () => ({ variant: "added", text: "A" }),
+    setComparisonMode: compare,
+    setViewPreview: viewPreview,
     topbarUnits: () => [unit],
     doReady: ready,
     doMerge: merge,
@@ -132,7 +200,7 @@ function createApp(status: "draft" | "ready"): {
     chooseAppearance: () => undefined,
     chooseLang: () => Promise.resolve()
   } as unknown as App;
-  return { app, discard, merge, ready };
+  return { app, snapshot, discard, merge, ready, compare, viewPreview };
 }
 
 function topbarButton(label: string): HTMLButtonElement | undefined {
