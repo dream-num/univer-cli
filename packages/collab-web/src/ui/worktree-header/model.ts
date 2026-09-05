@@ -12,7 +12,6 @@ export interface WorktreeHeaderModel {
   status?:
     | {
         text: string;
-        compactText?: string;
         tooltip: string;
         tone: "info" | "warn" | "danger";
       }
@@ -61,7 +60,7 @@ export function buildWorktreeHeaderModel(
       const text = input.viewPreview
         ? messages.divergedShowingPreview
         : messages.divergedShowingOriginal;
-      status = { text, tooltip: text, compactText: messages.latestVersionChanged, tone: "info" };
+      status = { text, tooltip: text, tone: "info" };
     } else {
       const text = messages.conflictCount(preview.conflictCount);
       status = { text, tooltip: text, tone: "danger" };

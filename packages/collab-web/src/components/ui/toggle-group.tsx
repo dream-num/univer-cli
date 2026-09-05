@@ -14,7 +14,6 @@ interface SegmentedToggleProps<T extends string> {
   onChange: (value: T) => void;
   className?: string;
   itemClassName?: string;
-  orientation?: "horizontal" | "vertical";
 }
 
 /** shadcn tabs-list style segmented control over Base UI ToggleGroup + Toggle. */
@@ -23,12 +22,10 @@ export function SegmentedToggle<T extends string>({
   options,
   onChange,
   className,
-  itemClassName,
-  orientation = "horizontal"
+  itemClassName
 }: SegmentedToggleProps<T>): ReactElement {
   return (
     <ToggleGroup
-      orientation={orientation}
       value={[value]}
       onValueChange={(groupValue) => {
         const next = groupValue[0] as T | undefined;

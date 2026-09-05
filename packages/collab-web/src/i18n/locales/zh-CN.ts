@@ -73,7 +73,6 @@ export function createZhCnMessages(): Messages {
     discard: "丢弃",
     previewUnavailable: "合并预览不可用 · 正在看原始修改",
     conflictCount: (n: number): string => `${n} 处冲突,无法自动合并`,
-    latestVersionChanged: "最新版本已变化",
     divergedShowingPreview: "最新版本已变化 · 正在显示合并结果",
     divergedShowingOriginal: "最新版本已变化 · 正在显示原始修改",
     segPreview: "合并预览",

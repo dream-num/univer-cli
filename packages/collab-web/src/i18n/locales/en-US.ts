@@ -72,7 +72,6 @@ function buildEnUsMessages() {
     previewUnavailable: "Merge preview unavailable · viewing the original edits",
     conflictCount: (n: number): string =>
       `${n} conflict${n === 1 ? "" : "s"}, cannot merge automatically`,
-    latestVersionChanged: "Latest version changed",
     divergedShowingPreview: "The latest version has changed · showing the merged result",
     divergedShowingOriginal: "The latest version has changed · viewing the original edits",
     segPreview: "Merge preview",

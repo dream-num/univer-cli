@@ -70,8 +70,8 @@ describe("collab-web worktree actions", () => {
     expect(title?.querySelector("[data-header-status-full]")?.textContent).toContain(
       "showing the merged result"
     );
-    expect(title?.querySelector("[data-header-status-short]")?.textContent).toBe(
-      "Latest version changed"
+    expect(title?.querySelector("[data-header-status-full]")?.textContent).toContain(
+      "The latest version has changed"
     );
     topbarButton("Compare")?.click();
     topbarButton("Original edits")?.click();
@@ -94,7 +94,6 @@ describe("collab-web worktree actions", () => {
     expect(document.querySelector("[data-header-status-full]")?.textContent).toContain(
       "1 conflict"
     );
-    expect(document.querySelector("[data-header-status-short]")).toBeNull();
     topbarButton("Merge into current version")?.click();
     topbarButton("Discard")?.click();
     expect(merge).not.toHaveBeenCalled();
@@ -153,7 +152,6 @@ describe("collab-web worktree actions", () => {
     );
     const header = document.querySelector("header")!;
     expect(header.querySelector("[data-header-name]")?.textContent).toBe("Independent Header");
-    expect(header.dataset.headerLayout).toBe("flow");
     expect(header.querySelector(".sidebar-toggle-spacer")).not.toBeNull();
     topbarButton("Merge into current version")?.click();
     topbarButton("Compare")?.click();

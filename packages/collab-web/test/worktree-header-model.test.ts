@@ -45,7 +45,6 @@ describe("Worktree Header presentation model", () => {
       previewSource: "preview",
       status: {
         text: messages.divergedShowingPreview,
-        compactText: messages.latestVersionChanged,
         tone: "info"
       }
     });
@@ -54,10 +53,10 @@ describe("Worktree Header presentation model", () => {
     ).toMatchObject({
       viewMode: "diff",
       previewSource: "original",
-      status: { text: messages.divergedShowingOriginal, compactText: messages.latestVersionChanged }
+      status: { text: messages.divergedShowingOriginal }
     });
-    expect(buildWorktreeHeaderModel(input, createZhCnMessages().topbar).status?.compactText).toBe(
-      "最新版本已变化"
+    expect(buildWorktreeHeaderModel(input, createZhCnMessages().topbar).status?.text).toBe(
+      "最新版本已变化 · 正在显示合并结果"
     );
   });
 
@@ -74,7 +73,6 @@ describe("Worktree Header presentation model", () => {
       canDiscard: true,
       status: { text: messages.conflictCount(2), tone: "danger" }
     });
-    expect(model.status?.compactText).toBeUndefined();
   });
 
   it("prioritizes preview errors without losing their details or inventing a conflict", () => {
