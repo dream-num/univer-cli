@@ -1,12 +1,54 @@
-import { useLayoutEffect, useRef, useState, type RefObject } from "react";
+import { useCallback, useLayoutEffect, useRef, useState, type RefObject } from "react";
 
-interface SegmentLayout {
+interface HeaderLayout {
+  mode: "centered" | "flow";
   viewStacked: boolean;
   previewStacked: boolean;
+  statusCompact: boolean;
+  statusRow: boolean;
+  nameNatural: number;
+  available: number;
+  titleMinimum: number;
+  titleCopyWidth: number;
 }
 
-interface WorktreeHeaderLayout extends SegmentLayout {
+interface WorktreeHeaderLayout {
   headerRef: RefObject<HTMLElement | null>;
+  measurementRef: RefObject<HTMLDivElement | null>;
+  layout: HeaderLayout;
+}
+
+const initialLayout: HeaderLayout = {
+  mode: "flow",
+  viewStacked: false,
+  previewStacked: false,
+  statusCompact: false,
+  statusRow: false,
+  nameNatural: 100,
+  available: 0,
+  titleMinimum: 260,
+  titleCopyWidth: 0
+};
+
+function sameLayout(previous: HeaderLayout, next: HeaderLayout): boolean {
+  return (Object.keys(next) as (keyof HeaderLayout)[]).every((key) => previous[key] === next[key]);
+}
+
+/** Only the empty, inert measurement host is mutated; React owns the visible Header. */
+export function measureWorktreeHeaderLayout(
+  header: HTMLElement,
+  measurementHost: HTMLElement
+): HeaderLayout | null {
+  const copy = header.cloneNode(true) as HTMLElement;
+  copy.removeAttribute("id");
+  for (const element of copy.querySelectorAll("[id]")) element.removeAttribute("id");
+  copy.style.width = `${header.getBoundingClientRect().width}px`;
+  measurementHost.append(copy);
+  try {
+    return measureHeaderCopy(copy);
+  } finally {
+    copy.remove();
+  }
 }
 
 function textWidth(element: HTMLElement): number {
@@ -22,8 +64,8 @@ function px(style: CSSStyleDeclaration, property: string): number {
   return Number.parseFloat(style.getPropertyValue(property)) || 0;
 }
 
-/** Measure the actual rendered labels, including controls absent from the basic ready state. */
-export function updateWorktreeHeaderLayout(header: HTMLElement): SegmentLayout {
+/** Temporary layout changes are confined to the disposable measurement copy. */
+function measureHeaderCopy(header: HTMLElement): HeaderLayout | null {
   const title = header.querySelector<HTMLElement>("[data-header-title]");
   const name = header.querySelector<HTMLElement>("[data-header-name]");
   const leading = header.querySelector<HTMLElement>("[data-header-leading]");
@@ -31,7 +73,7 @@ export function updateWorktreeHeaderLayout(header: HTMLElement): SegmentLayout {
   const preview = header.querySelector<HTMLElement>('[data-header-segment="preview"]');
   const trailing = header.querySelector<HTMLElement>("[data-header-trailing]");
   if (!title || !name || !leading || !view || !trailing) {
-    return { viewStacked: false, previewStacked: false };
+    return null;
   }
 
   const style = getComputedStyle(header);
@@ -44,8 +86,8 @@ export function updateWorktreeHeaderLayout(header: HTMLElement): SegmentLayout {
   header.style.setProperty("--header-name-natural", `${nameNatural}px`);
   header.style.setProperty("--header-available", `${available}px`);
 
-  // A synchronous intrinsic pass is restored before paint. Do not measure a wrapped action
-  // group or a stacked toggle: that would underestimate the width needed for a single row.
+  // Start from intrinsic control widths so a wrapped or stacked layout cannot make itself
+  // appear to fit when the available width changes.
   header.dataset.headerLayout = "centered";
   view.dataset.stacked = "false";
   if (preview) preview.dataset.stacked = "false";
@@ -56,7 +98,8 @@ export function updateWorktreeHeaderLayout(header: HTMLElement): SegmentLayout {
   const previewWidth = preview?.scrollWidth ?? 0;
   const trailingWidth = trailing.scrollWidth;
   const centeredMinimum = viewWidth + 2 * Math.max(titleMinimum, trailingWidth) + 2 * gap;
-  header.dataset.headerLayout = available >= centeredMinimum ? "centered" : "flow";
+  const mode = available >= centeredMinimum ? "centered" : "flow";
+  header.dataset.headerLayout = mode;
 
   const viewStacked = viewWidth > available;
   const previewStacked = previewWidth > available;
@@ -73,6 +116,7 @@ export function updateWorktreeHeaderLayout(header: HTMLElement): SegmentLayout {
   const statusFull = title.querySelector<HTMLElement>("[data-header-status-full]");
   const statusShort = title.querySelector<HTMLElement>("[data-header-status-short]");
   header.dataset.statusCompact = "false";
+  let statusCompact = false;
   let statusMinimum = 0;
   if (status && statusFull) {
     const statusStyle = getComputedStyle(status);
@@ -83,39 +127,39 @@ export function updateWorktreeHeaderLayout(header: HTMLElement): SegmentLayout {
       (statusIcon ? statusIcon.getBoundingClientRect().width + px(statusStyle, "column-gap") : 0);
     statusMinimum = textWidth(statusFull) + inset;
     if (statusShort && leadingMinimum + titleGap + statusMinimum > titleWidth) {
+      statusCompact = true;
       header.dataset.statusCompact = "true";
       statusMinimum = textWidth(statusShort) + inset;
     }
   }
   const statusRow = status !== null && leadingMinimum + titleGap + statusMinimum > titleWidth;
-  header.dataset.statusRow = String(statusRow);
-  header.style.setProperty(
-    "--header-title-copy-width",
-    `${Math.max(0, titleWidth - leadingWidth - titleGap)}px`
-  );
-  return { viewStacked, previewStacked };
+  return {
+    mode,
+    viewStacked,
+    previewStacked,
+    statusCompact,
+    statusRow,
+    nameNatural,
+    available,
+    titleMinimum,
+    titleCopyWidth: Math.max(0, titleWidth - leadingWidth - titleGap)
+  };
 }
 
 /** Re-measure on rendered state/locale changes, available-width changes, and font loads. */
 export function useWorktreeHeaderLayout(): WorktreeHeaderLayout {
   const headerRef = useRef<HTMLElement>(null);
-  const [segments, setSegments] = useState<SegmentLayout>({
-    viewStacked: false,
-    previewStacked: false
-  });
-  const measureRef = useRef((): void => {});
-  measureRef.current = (): void => {
-    if (!headerRef.current) return;
-    const next = updateWorktreeHeaderLayout(headerRef.current);
-    setSegments((previous) =>
-      previous.viewStacked === next.viewStacked && previous.previewStacked === next.previewStacked
-        ? previous
-        : next
-    );
-  };
+  const measurementRef = useRef<HTMLDivElement>(null);
+  const [layout, setLayout] = useState<HeaderLayout>(initialLayout);
+
+  const measure = useCallback((): void => {
+    if (!headerRef.current || !measurementRef.current) return;
+    const next = measureWorktreeHeaderLayout(headerRef.current, measurementRef.current);
+    if (next) setLayout((previous) => (sameLayout(previous, next) ? previous : next));
+  }, []);
 
   useLayoutEffect(() => {
-    measureRef.current();
+    measure();
   });
 
   useLayoutEffect(() => {
@@ -128,7 +172,7 @@ export function useWorktreeHeaderLayout(): WorktreeHeaderLayout {
       if (disposed || frame !== undefined) return;
       frame = window.requestAnimationFrame(() => {
         frame = undefined;
-        measureRef.current();
+        measure();
       });
     };
     const observer = new ResizeObserver(() => {
@@ -150,7 +194,7 @@ export function useWorktreeHeaderLayout(): WorktreeHeaderLayout {
       fonts?.removeEventListener("loadingdone", schedule);
       window.removeEventListener("resize", schedule);
     };
-  }, []);
+  }, [measure]);
 
-  return { headerRef, ...segments };
+  return { headerRef, measurementRef, layout };
 }

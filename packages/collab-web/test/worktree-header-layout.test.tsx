@@ -3,7 +3,7 @@ import { flushSync } from "react-dom";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  updateWorktreeHeaderLayout,
+  measureWorktreeHeaderLayout,
   useWorktreeHeaderLayout
 } from "../src/ui/worktree-header/layout";
 
@@ -56,6 +56,18 @@ function content(): string {
   <div data-header-segment="view" data-width="174"></div>
   <div data-header-trailing data-width="458"><div data-header-segment="preview" data-width="236"></div></div>`;
 }
+function measure(header: HTMLElement): NonNullable<ReturnType<typeof measureWorktreeHeaderLayout>> {
+  const host = document.createElement("div");
+  host.inert = true;
+  host.style.visibility = "hidden";
+  document.body.append(host);
+  try {
+    return measureWorktreeHeaderLayout(header, host)!;
+  } finally {
+    host.remove();
+  }
+}
+
 function fixture(width: number): HTMLElement {
   const header = document.createElement("header");
   header.style.cssText = "padding:6px 16px;column-gap:12px";
@@ -66,53 +78,81 @@ function fixture(width: number): HTMLElement {
 }
 
 describe("content-driven Worktree Header", () => {
+  it("returns layout without changing the visible Header and removes its measurement copy", () => {
+    const header = fixture(1182);
+    header.dataset.headerLayout = "flow";
+    header.dataset.statusCompact = "true";
+    header.style.setProperty("--header-available", "190px");
+    header.querySelector('[data-header-segment="preview"]')!.setAttribute("data-stacked", "true");
+    const before = header.outerHTML;
+    const host = document.createElement("div");
+    document.body.append(host);
+
+    expect(measureWorktreeHeaderLayout(header, host)).toMatchObject({
+      mode: "centered",
+      previewStacked: false,
+      statusCompact: false,
+      available: 1150,
+      nameNatural: 800
+    });
+    expect(header.outerHTML).toBe(before);
+    expect(host.childNodes).toHaveLength(0);
+  });
+
+  it("removes the measurement copy even when a browser measurement fails", () => {
+    const header = fixture(1182);
+    const before = header.outerHTML;
+    const host = document.createElement("div");
+    document.body.append(host);
+    vi.spyOn(Element.prototype, "scrollWidth", "get").mockImplementation(() => {
+      throw new Error("Measurement failed");
+    });
+    expect(() => measureWorktreeHeaderLayout(header, host)).toThrow("Measurement failed");
+    expect(header.outerHTML).toBe(before);
+    expect(host.childNodes).toHaveLength(0);
+  });
+
   it("uses symmetric space when available, and flow when only the sum fits", () => {
     const header = fixture(1182);
-    updateWorktreeHeaderLayout(header);
-    expect(header.dataset.headerLayout).toBe("centered");
+    expect(measure(header).mode).toBe("centered");
     setWidth(header, 1042);
-    updateWorktreeHeaderLayout(header);
-    expect(header.dataset.headerLayout).toBe("flow");
+    expect(measure(header).mode).toBe("flow");
     // Ordinary controls at the same width fit symmetrically; there is no shared breakpoint.
     setWidth(header.querySelector("[data-header-trailing]")!, 210);
-    updateWorktreeHeaderLayout(header);
-    expect(header.dataset.headerLayout).toBe("centered");
+    expect(measure(header).mode).toBe("centered");
   });
 
   it("re-measures intrinsic widths when widening from stacked preview controls", () => {
     const header = fixture(222);
-    expect(updateWorktreeHeaderLayout(header)).toEqual({
+    expect(measure(header)).toMatchObject({
       viewStacked: false,
       previewStacked: true
     });
+    header.dataset.headerLayout = "flow";
+    header.querySelector('[data-header-segment="preview"]')!.setAttribute("data-stacked", "true");
     setWidth(header, 1182);
-    expect(updateWorktreeHeaderLayout(header)).toEqual({
+    expect(measure(header)).toMatchObject({
       viewStacked: false,
       previewStacked: false
     });
-    expect(header.dataset.headerLayout).toBe("centered");
+    expect(measure(header).mode).toBe("centered");
     // Wider translations can require a vertical View/Compare control too.
     setWidth(header, 222);
     setWidth(header.querySelector('[data-header-segment="view"]')!, 250);
-    expect(updateWorktreeHeaderLayout(header).viewStacked).toBe(true);
+    expect(measure(header).viewStacked).toBe(true);
   });
 
   it("preserves version-change information as title space shrinks and restores full context", () => {
     const header = fixture(872);
     const title = header.querySelector("[data-header-title]")!;
-    updateWorktreeHeaderLayout(header);
-    expect(header.dataset.statusCompact).toBe("false");
+    expect(measure(header).statusCompact).toBe(false);
     setWidth(title, 340);
-    updateWorktreeHeaderLayout(header);
-    expect(header.dataset.statusCompact).toBe("true");
-    expect(header.dataset.statusRow).toBe("false");
+    expect(measure(header)).toMatchObject({ statusCompact: true, statusRow: false });
     setWidth(title, 190);
-    updateWorktreeHeaderLayout(header);
-    expect(header.dataset.statusRow).toBe("true");
+    expect(measure(header).statusRow).toBe(true);
     setWidth(title, 420);
-    updateWorktreeHeaderLayout(header);
-    expect(header.dataset.statusCompact).toBe("false");
-    expect(header.dataset.statusRow).toBe("false");
+    expect(measure(header).statusCompact).toBe(false);
+    expect(measure(header).statusRow).toBe(false);
   });
 
   it("responds to container resize without an App render and cleans up pending work", async () => {
@@ -137,14 +177,20 @@ describe("content-driven Worktree Header", () => {
     });
     const cancel = vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => undefined);
     function Probe(): ReactElement {
-      const { headerRef } = useWorktreeHeaderLayout();
+      const { headerRef, measurementRef, layout } = useWorktreeHeaderLayout();
       return (
-        <header
-          ref={headerRef}
-          data-width="1182"
-          style={{ padding: "6px 16px", columnGap: 12 }}
-          dangerouslySetInnerHTML={{ __html: content() }}
-        />
+        <>
+          <header
+            ref={headerRef}
+            data-header-layout={layout.mode}
+            data-status-compact={layout.statusCompact}
+            data-status-row={layout.statusRow}
+            data-width="1182"
+            style={{ padding: "6px 16px", columnGap: 12 }}
+            dangerouslySetInnerHTML={{ __html: content() }}
+          />
+          <div ref={measurementRef} aria-hidden="true" inert />
+        </>
       );
     }
     root = createRoot(document.getElementById("root")!);

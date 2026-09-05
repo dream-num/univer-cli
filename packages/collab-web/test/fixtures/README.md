@@ -11,6 +11,11 @@ readout. It is a Vite development page, not a production entry point. The sideba
 owns its header container, content, and layout hook in `src/ui/worktree-header/`; it can also be
 mounted directly with `app`, `snap`, and `worktreeId` props.
 
+The layout hook returns one React state model for layout mode, status presentation, toggle
+orientation, and sizing variables. Intrinsic measurements use a disposable copy inside an empty,
+invisible, inert host; they never alter the visible Header. The copy is removed before measurement
+returns, including when measurement fails.
+
 Check 1440, 1300, 1130, 960, 940, 720, and 480px frame widths with Chinese and English labels,
 short/default/long names, and ready/preview states. Include draft, stale comparison, conflict,
 preview error, merged, and missing-badge states. Check other supported locales at narrow widths,
