@@ -114,6 +114,20 @@ Choose the closest profile and query its installed APIs before writing the reali
 The profile narrows the API search; it does not force every node into one primitive. A deployment diagram can mix
 containers, components, images, tables, and connectors when that better expresses the intent.
 
+For nested deployment views, distinguish `trust-boundary`, `deployment-node`, and `execution-environment` with
+`semanticRole` on groups; place services and stores in their actual group's `contains`. Code packages describe
+namespaces instead, using `groupType: "uml-package"`; do not infer deployment hosts from package nesting.
+Create known container parents before their children, with the installed parent-local insertion contract, and
+read back every membership. For shapes whose insertion contract lacks `parentId`, insert at world coordinates,
+then use `moveElementsToContainer()` and verify the resulting world bounds. Do not invent unsupported fields.
+
+Choose relationship endpoints by meaning: a service request binds the service, while a host communication path
+binds the host. Package import/access relations point from the importing/accessing package to the referenced
+package; realize them as dashed dependencies with separate `«import»` / `«access»` labels, not inheritance.
+A stored container kind does not guarantee a folder-tab or three-dimensional device glyph. Inspect the installed
+rendering and disclose simplified scope boxes when strict UML notation is unavailable. Keep native bindings on
+storage/component outlines; a reversed terminal is a geometry defect, not a reason to substitute a free endpoint.
+
 For activity control flow, distinguish `fork` / `join` from `decision` / `merge` in `semanticRole`.
 A fork starts concurrent branches; the ordinary join waits for all incoming branches. A merge accepts alternative
 paths without synchronization. Use a merge for initial entry plus a retry path, not a join that waits for both.

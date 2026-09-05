@@ -45,6 +45,13 @@ the enclosing state. Move the outer container through the UI and a region throug
 bounds, bindings, labels, unrelated objects, and complete one-step Undo/Redo snapshots. A static region separator
 does not prove native nesting, and a correct drawing does not prove an executable state machine.
 
+For nested deployment/package cases, exercise a parent with multiple descendants and at least one relationship
+crossing its boundary. Drag the parent through the UI; verify child-local coordinates and ownership stay intact,
+world bounds follow the parent, external endpoints remain bound, and unrelated objects stay unchanged. Check
+complete snapshots after one Undo and one Redo. Preserve deliberately manual dependency guides when their owner
+did not move, and inspect the resulting bends rather than claiming that unchanged waypoints guarantee good layout.
+Distinguish actual package/container ownership from a decorative enclosing rectangle and report simplified notation.
+
 ## Multi-label class and ER relationship cases
 
 A multi-label coverage claim needs more than several single-label connectors. Include a class association or
