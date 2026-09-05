@@ -7,7 +7,6 @@ import type { App, AppSnapshot } from "../../src/ui/app";
 import { Topbar } from "../../src/ui/topbar";
 import "../../src/styles.css";
 
-const unit: UnitSummary = { unitId: "unit-1", name: "Worktree Only Document", type: 1, headRev: 1 };
 const names = {
   short: "预算",
   normal: "all-unit-comparison-changes",
@@ -28,9 +27,10 @@ function HeaderFixture(): ReactElement {
   const [comparisonMode, setComparisonMode] = useState(false);
   const [viewPreview, setViewPreview] = useState(true);
   const [action, setAction] = useState("");
+  const unit: UnitSummary = { unitId: "unit-1", name, type: 1, headRev: 1 };
   const worktree: Worktree = {
     worktreeId: "wt-1",
-    name,
+    name: "Fixture worktree (not the document title)",
     agentId: "test",
     status: scenario === "draft" ? "draft" : scenario === "merged" ? "merged" : "ready",
     baseline: {},

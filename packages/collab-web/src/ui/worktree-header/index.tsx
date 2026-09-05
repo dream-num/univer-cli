@@ -24,8 +24,7 @@ export function WorktreeHeader({
 }: WorktreeHeaderProps): ReactElement {
   const { title, unitType, changeTag, status, primaryAction } = model;
   const messages = t().topbar;
-  const titleMinimum = model.reserveSidebarToggle ? 302 : 260;
-  const { headerRef, layout } = useHeaderLayout(model, messages, titleMinimum);
+  const { headerRef, layout, titleMinimum } = useHeaderLayout(model, messages);
   const toggleClass =
     "grid h-auto w-full max-w-full shrink-0 grid-cols-2 gap-0 rounded-lg bg-muted p-0.5";
   const toggleItemClass =
@@ -47,7 +46,10 @@ export function WorktreeHeader({
         data-header-title
         className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5 group-data-[header-layout=flow]/header:min-w-[min(var(--header-title-min),100%)] group-data-[header-layout=flow]/header:flex-[1_1_var(--header-title-min)]"
       >
-        <div className="flex min-w-0 max-w-full items-center gap-2.5">
+        <div
+          data-header-title-row
+          className="flex min-w-0 max-w-full items-center gap-2.5 group-data-[header-layout=measuring]/header:w-max group-data-[header-layout=measuring]/header:max-w-none group-data-[header-layout=measuring]/header:shrink-0"
+        >
           <span data-header-leading className="flex shrink-0 items-center gap-2.5">
             {model.reserveSidebarToggle && (
               <span aria-hidden="true" className="sidebar-toggle-spacer size-8 shrink-0" />

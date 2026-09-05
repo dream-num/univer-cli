@@ -63,10 +63,11 @@ describe("collab-web worktree actions", () => {
     snapshot.viewPreview = true;
     render(app);
     const title = document.querySelector('[data-testid="worktree-title"]');
-    expect(title?.textContent).not.toContain(unit.name);
+    expect(title?.textContent).toContain(unit.name);
+    expect(title?.textContent).not.toContain("Demo changes");
     const name = title?.querySelector("[data-header-name]");
     expect(name?.nextElementSibling?.getAttribute("data-slot")).toBe("change-tag");
-    expect(name?.getAttribute("title")).toBe("Demo changes");
+    expect(name?.getAttribute("title")).toBe(unit.name);
     expect(title?.querySelector("[data-header-status-full]")?.textContent).toContain(
       "showing the merged result"
     );
@@ -114,7 +115,8 @@ describe("collab-web worktree actions", () => {
       "original edits"
     );
     snapshot.viewPreview = true;
-    snapshot.worktrees[0]!.name = "A".repeat(300);
+    app.topbarUnits = () => [{ ...unit, unitId: "unit-2", name: "A".repeat(300) }];
+    snapshot.selectedUnitId = "unit-2";
     render(app);
     expect(document.querySelector("[data-header-status-full]")?.textContent).toContain(
       "merged result"
@@ -161,7 +163,7 @@ describe("collab-web worktree actions", () => {
     expect(source).toHaveBeenCalledWith("original");
   });
 
-  it("binds presentation and commands to the selected Worktree", () => {
+  it("shows the selected document while binding commands to its Worktree", () => {
     const { app, snapshot, ready, discard, merge } = createApp("ready");
     snapshot.worktrees.push({
       ...snapshot.worktrees[0]!,
@@ -178,7 +180,7 @@ describe("collab-web worktree actions", () => {
       conflicts: ["unit-1"]
     });
     render(app);
-    expect(document.querySelector("[data-header-name]")?.textContent).toBe("Other edits");
+    expect(document.querySelector("[data-header-name]")?.textContent).toBe(unit.name);
     expect(document.querySelector("[data-header-status]")).toBeNull();
     topbarButton("Submit for confirmation")?.click();
     topbarButton("Discard")?.click();
@@ -218,7 +220,7 @@ describe("collab-web worktree actions", () => {
     snapshot.view = { kind: "worktree", worktreeId: "wt-1" };
     renderTopbar();
     expect(document.querySelectorAll("header")).toHaveLength(1);
-    expect(document.querySelector("[data-header-name]")?.textContent).toBe("Demo changes");
+    expect(document.querySelector("[data-header-name]")?.textContent).toBe(unit.name);
     expect(topbarButton("Merge into current version")).toBeDefined();
   });
 

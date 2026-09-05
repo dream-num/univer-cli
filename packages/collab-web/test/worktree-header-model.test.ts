@@ -9,8 +9,8 @@ import {
 
 const messages = createEnUsMessages().topbar;
 const ready: WorktreeHeaderInput = {
-  worktreeId: "wt-1",
-  name: "Budget changes",
+  unitId: "unit-1",
+  unitName: "Budget.xlsx",
   worktreeStatus: "ready",
   comparisonMode: false,
   comparisonStale: false,
@@ -119,14 +119,14 @@ describe("Worktree Header presentation model", () => {
       sidebarCollapsed: true
     });
     expect(buildWorktreeHeaderModel(input, messages)).toMatchObject({
-      title: "Budget changes",
+      title: "Budget.xlsx",
       unitType: 1,
       changeTag: { variant: "added", text: "New" },
       reserveSidebarToggle: true
     });
-    expect(buildWorktreeHeaderModel({ ...ready, name: "" }, messages).title).toBe("wt-1");
-    expect(buildWorktreeHeaderModel({ ...ready, name: "", worktreeId: "" }, messages).title).toBe(
-      messages.fallbackWorktreeName
+    expect(buildWorktreeHeaderModel({ ...ready, unitName: "" }, messages).title).toBe("unit-1");
+    expect(buildWorktreeHeaderModel({ ...ready, unitName: "", unitId: "" }, messages).title).toBe(
+      messages.fallbackDocumentName
     );
   });
 });
