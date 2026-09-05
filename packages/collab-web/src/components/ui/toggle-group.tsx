@@ -1,5 +1,6 @@
 import { Toggle } from "@base-ui-components/react/toggle";
 import { ToggleGroup } from "@base-ui-components/react/toggle-group";
+import type { ReactElement } from "react";
 import { cn } from "../../lib/utils";
 
 export interface SegmentedOption<T extends string> {
@@ -22,7 +23,7 @@ export function SegmentedToggle<T extends string>({
   onChange,
   className,
   itemClassName
-}: SegmentedToggleProps<T>) {
+}: SegmentedToggleProps<T>): ReactElement {
   return (
     <ToggleGroup
       value={[value]}
