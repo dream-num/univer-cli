@@ -34,6 +34,9 @@ model.
 
 Before authoring or realizing a semantic diagram, read `references/board-spec.md`. It defines the compact contract,
 profile-to-API routing, structural checks, mixed-content behavior, and connector-animation decision rule.
+When choosing between mind maps, trees, timelines, charts, tables, or Ink, read
+`references/content-selection.md` for intent-based selection and semantic examples. This also applies to direct
+mixed-content authoring without BoardSpec; do not require a graph just to insert a chart or annotation.
 For a multi-profile generation request or a skill coverage audit, also read `references/diagram-review.md` for
 profile-specific evidence and the distinction between a generated example and complete feature coverage.
 

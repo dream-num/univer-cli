@@ -113,6 +113,9 @@ Choose the closest profile and query its installed APIs before writing the reali
 
 The profile narrows the API search; it does not force every node into one primitive. A deployment diagram can mix
 containers, components, images, tables, and connectors when that better expresses the intent.
+For mind-map family selection or chart/table/Ink usage, read [content-selection.md](content-selection.md).
+Keep selection rules in the skill references, instance-specific meaning in BoardSpec, and concrete layout in
+realization. A relation graph alone does not uniquely determine the most useful presentation.
 
 For nested deployment views, distinguish `trust-boundary`, `deployment-node`, and `execution-environment` with
 `semanticRole` on groups; place services and stores in their actual group's `contains`. Code packages describe
@@ -376,7 +379,8 @@ Before calling Facade APIs, check the spec in memory or with a short script:
 2. Every relation endpoint and every `contains` member exists.
 3. A member belongs to at most one direct container or swimlane lane.
 4. Group containment has no cycle, and every lane ID is unique inside its swimlane.
-5. Ordered profiles such as `uml-sequence` have unique positive relation orders.
+5. Ordered relations have positive orders unique within their semantic scope: a sequential message scope or a
+   tree/timeline parent. Separate parallel operands do not impose cross-operand precedence.
 6. Required structured content exists for UML classes, ERD entities, and charts.
 7. Class/ER relation ends use valid roles, multiplicities, and cardinalities; sequence `messageType` values are
    supported and every message order fits within the intended participant lifelines.

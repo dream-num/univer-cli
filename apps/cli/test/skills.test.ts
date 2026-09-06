@@ -106,6 +106,99 @@ describe("application Skill library", () => {
     );
   });
 
+  it("delivers a connected timeline example with parent-local stage and detail ordering", async () => {
+    const library = createApplicationSkillLibrary(assetsRoot);
+    const board = await library.read({ full: true, name: "board" });
+    const path = "references/content-selection.md";
+    const content = await readFile(resolve(assetsRoot, "runtime/board", path), "utf8");
+    expect(board.files).toEqual(
+      expect.arrayContaining([expect.objectContaining({ path, content })]),
+    );
+    const examples = [...content.matchAll(/```json\s*\n([\s\S]*?)```/g)].map((match) =>
+      JSON.parse(match[1]!),
+    );
+    const spec = examples.find((example) => example.diagramType === "timeline");
+    expect(spec?.schemaVersion).toBe(1);
+    const nodeIds = new Set<string>(spec.nodes.map((node: { id: string }) => node.id));
+    expect(nodeIds.size).toBe(spec.nodes.length);
+    const parentByChild = new Map<string, string>();
+    const ordersByParent = new Map<string, Set<number>>();
+    const relationIds = new Set<string>();
+    for (const relation of spec.relations) {
+      expect(relation.id.length).toBeGreaterThan(0);
+      expect(relationIds.has(relation.id)).toBe(false);
+      relationIds.add(relation.id);
+      expect(relation.semantic).toBe("contains");
+      expect(nodeIds.has(relation.from)).toBe(true);
+      expect(nodeIds.has(relation.to)).toBe(true);
+      expect(parentByChild.has(relation.to)).toBe(false);
+      parentByChild.set(relation.to, relation.from);
+      expect(Number.isInteger(relation.order)).toBe(true);
+      expect(relation.order).toBeGreaterThan(0);
+      const orders = ordersByParent.get(relation.from) ?? new Set<number>();
+      expect(orders.has(relation.order)).toBe(false);
+      orders.add(relation.order);
+      ordersByParent.set(relation.from, orders);
+    }
+    const roots = [...nodeIds].filter((id) => !parentByChild.has(id));
+    expect(roots).toHaveLength(1);
+    for (const id of nodeIds) {
+      const ancestors = new Set<string>();
+      let current = id;
+      while (parentByChild.has(current)) {
+        expect(ancestors.has(current)).toBe(false);
+        ancestors.add(current);
+        current = parentByChild.get(current)!;
+      }
+      expect(current).toBe(roots[0]);
+    }
+    expect(ordersByParent.get(roots[0]!)?.size).toBe(3);
+    expect([...ordersByParent.values()].filter((orders) => orders.has(1))).toHaveLength(3);
+  });
+
+  it("ships consistent chart and table data with an Ink annotation targeting the comparison", async () => {
+    const library = createApplicationSkillLibrary(assetsRoot);
+    const board = await library.read({ full: true, name: "board" });
+    const reference = board.files?.find((file) => file.path === "references/content-selection.md");
+    const examples = [...reference!.content.matchAll(/```json\s*\n([\s\S]*?)```/g)].map((match) =>
+      JSON.parse(match[1]!),
+    );
+    const spec = examples.find((example) => example.diagramType === "architecture");
+    expect(spec?.schemaVersion).toBe(1);
+    const nodeIds = new Set(spec.nodes.map((node: { id: string }) => node.id));
+    expect(nodeIds.size).toBe(spec.nodes.length);
+    for (const relation of spec.relations) {
+      expect(nodeIds.has(relation.from)).toBe(true);
+      expect(nodeIds.has(relation.to)).toBe(true);
+    }
+    const contentNodes = spec.nodes as Array<{
+      id: string;
+      content?: {
+        kind: string;
+        columns?: string[];
+        rows?: unknown[][];
+        data?: unknown[][];
+        source?: string;
+        purpose: string;
+      };
+    }>;
+    const table = contentNodes.find((node) => node.content?.kind === "structured-table")!;
+    const chart = contentNodes.find((node) => node.content?.kind === "chart")!;
+    const ink = contentNodes.find((node) => node.content?.kind === "ink")!;
+    expect(chart.content!.data).toEqual([table.content!.columns, ...table.content!.rows!]);
+    expect(table.content!.source).toBeTruthy();
+    expect(chart.content!.source).toBe(table.content!.source);
+    for (const node of [table, chart, ink]) {
+      expect(node.content!.purpose.trim().length).toBeGreaterThan(0);
+    }
+    expect(spec.relations).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ from: chart.id, to: table.id, semantic: "summarizes" }),
+        expect.objectContaining({ from: ink.id, to: chart.id, semantic: "annotates" }),
+      ]),
+    );
+  });
+
   it("keeps native Chart guidance on the direct host and live Chart contract", async () => {
     const library = createApplicationSkillLibrary(assetsRoot);
     const contracts = [
