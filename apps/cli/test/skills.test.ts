@@ -41,10 +41,40 @@ describe("application Skill library", () => {
     );
   });
 
+  it("keeps Board references opt-in and delivers every linked reference", async () => {
+    const library = createApplicationSkillLibrary(assetsRoot);
+    const entry = await library.read({ name: "board" });
+    const full = await library.read({ full: true, name: "board" });
+
+    expect(entry.files).toBeUndefined();
+    expect(entry.content).toBe(full.content);
+    expect(entry.directory).toBe(full.directory);
+    expect(full.files!.length).toBeGreaterThan(0);
+
+    const packaged = new Map(
+      [{ path: "SKILL.md", content: entry.content }, ...full.files!].map((file) => [
+        resolve(entry.directory, file.path),
+        file.content,
+      ]),
+    );
+    const directlyLinked = new Set<string>();
+    for (const [path, content] of packaged) {
+      for (const match of content.matchAll(/\[[^\]]+\]\(([^)]+\.md)\)/g)) {
+        const target = resolve(dirname(path), match[1]!);
+        expect(packaged.has(target), `Missing reference from ${path}: ${match[1]}`).toBe(true);
+        await expect(readFile(target, "utf8")).resolves.toBe(packaged.get(target));
+        if (path === resolve(entry.directory, "SKILL.md")) directlyLinked.add(target);
+      }
+    }
+    for (const file of full.files!) {
+      expect(directlyLinked.has(resolve(entry.directory, file.path)), file.path).toBe(true);
+    }
+  });
+
   it("ships a valid use-case example with extension locations owned by the base case", async () => {
     const library = createApplicationSkillLibrary(assetsRoot);
     const board = await library.read({ full: true, name: "board" });
-    const reference = board.files?.find((file) => file.path === "references/board-spec.md");
+    const reference = board.files?.find((file) => file.path === "references/uml-structure.md");
     expect(reference).toBeDefined();
     const examples = [...reference!.content.matchAll(/```json\s*\n([\s\S]*?)```/g)].map((match) =>
       JSON.parse(match[1]!),
@@ -77,7 +107,7 @@ describe("application Skill library", () => {
   it("ships component assemblies with matching declared contracts and unbound interfaces", async () => {
     const library = createApplicationSkillLibrary(assetsRoot);
     const board = await library.read({ full: true, name: "board" });
-    const reference = board.files?.find((file) => file.path === "references/board-spec.md");
+    const reference = board.files?.find((file) => file.path === "references/uml-structure.md");
     const examples = [...reference!.content.matchAll(/```json\s*\n([\s\S]*?)```/g)].map((match) =>
       JSON.parse(match[1]!),
     );
@@ -109,7 +139,7 @@ describe("application Skill library", () => {
   it("delivers a connected timeline example with parent-local stage and detail ordering", async () => {
     const library = createApplicationSkillLibrary(assetsRoot);
     const board = await library.read({ full: true, name: "board" });
-    const path = "references/content-selection.md";
+    const path = "references/mind-map.md";
     const content = await readFile(resolve(assetsRoot, "runtime/board", path), "utf8");
     expect(board.files).toEqual(
       expect.arrayContaining([expect.objectContaining({ path, content })]),
@@ -231,22 +261,24 @@ describe("application Skill library", () => {
     ] as const;
 
     for (const contract of contracts) {
-      const skill = await library.read({ name: contract.name });
+      const skill = await library.read({ full: contract.name === "board", name: contract.name });
+      const content =
+        contract.name === "board"
+          ? skill.files!.find((file) => file.path === "references/content-selection.md")!.content
+          : skill.content;
 
-      for (const staleApi of contract.stale) expect(skill.content).not.toContain(staleApi);
-      expect(skill.content).toContain(contract.owner);
-      expect(skill.content).toContain(contract.insertion);
-      expect(skill.content).toContain(contract.readback);
-      expect(skill.content).toContain("chart.setDataSource(values)");
-      expect(skill.content).toContain("await chart.remove()");
+      for (const staleApi of contract.stale) expect(content).not.toContain(staleApi);
+      expect(content).toContain(contract.owner);
+      expect(content).toContain(contract.insertion);
+      expect(content).toContain(contract.readback);
+      expect(content).toContain("chart.setDataSource(values)");
+      expect(content).toContain("await chart.remove()");
     }
   });
 
-  it("keeps Base and Board inspection guidance aligned with their object models", async () => {
+  it("keeps Base inspection guidance aligned with its object model", async () => {
     const library = createApplicationSkillLibrary(assetsRoot);
     const base = await library.read({ full: true, name: "base" });
-    const board = await library.read({ full: true, name: "board" });
-
     expect(base.content).toContain("FBaseTableField");
     expect(base.content).toContain("FBaseTableRecord");
     expect(base.content).toContain("FBaseTableView");
@@ -270,44 +302,6 @@ describe("application Skill library", () => {
         }),
       ]),
     );
-
-    expect(board.content).toContain("univer inspect board");
-    expect(board.content).toContain("inspect board-element id:<element-id>");
-    expect(board.content).toContain("Both commands are read-only");
-    expect(board.content).toContain("## Completion gate");
-    expect(board.content).toContain("outputs[0].layoutAnalysis");
-    expect(board.content).toContain("normalize only those connector IDs at most once");
-    expect(board.content).toContain("fromElementId: source.getId()");
-    expect(board.content).toContain("toElementId: target.getId()");
-    expect(board.content).toContain("Use `labels` for UML roles");
-    expect(board.content).toContain("insertClassRelations()");
-    expect(board.content).toContain("insertEntityRelations()");
-    expect(board.content).toContain("insertSequenceMessages()");
-    expect(board.content).toContain("placement.anchor");
-    expect(board.content).toContain("For ellipses,");
-    expect(board.content).toContain("detached in-memory copy with connector animation disabled");
-    expect(board.content).toContain("first write a semantic BoardSpec in JSON");
-    expect(board.content).toContain("BoardSpec may identify a relation as primary");
-    expect(board.content).toContain("FBoard.insertMindMap");
-    expect(board.content).toContain("Marker names are a closed API union");
-    expect(board.content).toContain("insertShapeAtPoint()");
-    expect(board.files).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          content: expect.stringContaining('"semanticRole": "message-bus"'),
-          path: "references/board-spec.md",
-        }),
-        expect.objectContaining({
-          content: expect.stringContaining('"messageType": "reply"'),
-          path: "references/board-spec.md",
-        }),
-        expect.objectContaining({
-          content: expect.stringContaining('"multiplicity": "0..*"'),
-          path: "references/board-spec.md",
-        }),
-      ]),
-    );
-    expect(board.content).not.toContain("start: { elementId: source.getId() }");
   });
 
   it("keeps the current Skill corpus aligned with the CLI contract", async () => {

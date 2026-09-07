@@ -90,7 +90,7 @@ marker style, and verify export as well as insertion: a header-bound connector e
 
 Do not normalize layout-owned native branches to make a generic connector report green. Use the owning structured
 layout API if adjustment is needed. Apply routing normalization only to ordinary implicated connectors, once, as
-described in the main skill. Report `clean`, `visually reviewed with diagnostic exceptions`, or `blocked` separately;
+described in [connector-routing.md](connector-routing.md). Report `clean`, `visually reviewed with diagnostic exceptions`, or `blocked` separately;
 a reviewed exception is not a zero-error lint result.
 
 Check long labels, multilingual text, compartment sizing, and frame guards at readable scale. Draw sequence frames

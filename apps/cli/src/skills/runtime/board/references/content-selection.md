@@ -1,90 +1,8 @@
 # Selecting native Board content
 
-Use this reference when deciding which structured layout or content element serves the user's intent. These are
-agent authoring decisions, not an automatic SDK classifier. Respect an explicit requested presentation; when it
-cannot preserve the relationships, explain the conflict instead of silently dropping information.
-
-## Mind map, tree, or timeline
-
-Choose the semantic family before the concrete `structureKind`. Inspect the installed `FBoard.insertMindMap`
-contract; the native structure vocabulary below belongs in realization, not BoardSpec.
-
-| User intent and relationship meaning                                        | BoardSpec profile | Native realization candidates               |
-| --------------------------------------------------------------------------- | ----------------- | ------------------------------------------- |
-| Explore one topic through peer categories and subtopics                     | `mindmap`         | `mindmap-horizontal`, `mindmap-vertical`    |
-| Explain ownership, decomposition, or a reporting hierarchy                  | `tree`            | `tree-right`, `tree-left`, `tree-alternate` |
-| Explain ordered stages, milestones, or dated events with supporting details | `timeline`        | `timeline-horizontal`, `timeline-vertical`  |
-
-For example, "map Agent capabilities" favors a mind map; "break down the Agent implementation work" favors a tree;
-"show Agent capability evolution" favors a timeline. "Show calls between Agent modules" instead favors architecture
-or dataflow, even if the modules also have an ownership hierarchy. A chain of calls is not automatically a timeline.
-
-Topology only establishes whether a tree is possible. Use labels, relation `semantic`, `description`, and the user's
-purpose to choose the family. If either mind map or tree would work, choose one and briefly explain the choice;
-ask only when the ambiguity changes the meaning. Do not add a required layout-preference field to BoardSpec.
-
-Choose horizontal/vertical orientation and branch sides from available Board space, readable label lengths, and
-the surrounding content. A wide region can suit a horizontal timeline; a narrow, tall region can suit a vertical
-one. Left/right/alternate tree structures are presentation choices, not different ownership semantics. Preserve
-existing layout and manually chosen branch sides when editing unless the requested change requires rearrangement.
-
-Represent hierarchical edges with `semantic: "contains"`, from parent to child. These describe topic membership,
-not ordinary Board container ownership; do not create containers for every topic. Each native map has one root,
-each non-root has one hierarchical parent, and the hierarchy must be connected and acyclic. Multiple parents,
-cycles, and cross-links cannot become native tree branches: retain meaningful cross-links separately with supported
-bound connectors, or choose a general graph. Do not duplicate an entity or remove a relation without explaining it.
-
-When sibling order matters, use positive `order` values unique within that parent, not globally across the tree.
-For timelines, the root's children are ordered stages; their children are stage details. Record whether the order
-is conceptual progression or chronological in `description`. Keep supplied dates in content, never invent dates,
-and do not imply that equal native timeline spacing measures equal elapsed time.
-
-This conceptual progression has stage-local details; the shared order value `1` under different parents is valid:
-
-```json
-{
-  "schemaVersion": 1,
-  "diagramType": "timeline",
-  "title": "Agent capability progression",
-  "nodes": [
-    {
-      "id": "evolution",
-      "label": "Agent evolution",
-      "semanticRole": "topic",
-      "description": "Conceptual progression, not dated history"
-    },
-    { "id": "tools", "label": "Tool use", "semanticRole": "stage" },
-    { "id": "planning", "label": "Planning", "semanticRole": "stage" },
-    { "id": "teams", "label": "Multi-agent collaboration", "semanticRole": "stage" },
-    { "id": "validation", "label": "Validate tool results", "semanticRole": "capability" },
-    { "id": "handoff", "label": "Explicit task handoffs", "semanticRole": "capability" }
-  ],
-  "relations": [
-    { "id": "stage-tools", "from": "evolution", "to": "tools", "semantic": "contains", "order": 1 },
-    {
-      "id": "stage-planning",
-      "from": "evolution",
-      "to": "planning",
-      "semantic": "contains",
-      "order": 2
-    },
-    { "id": "stage-teams", "from": "evolution", "to": "teams", "semantic": "contains", "order": 3 },
-    {
-      "id": "tool-validation",
-      "from": "tools",
-      "to": "validation",
-      "semantic": "contains",
-      "order": 1
-    },
-    { "id": "team-handoff", "from": "teams", "to": "handoff", "semantic": "contains", "order": 1 }
-  ]
-}
-```
-
-Translate the hierarchy to the installed native blueprint rather than drawing ordinary rectangles and branches.
-Retain semantic-to-generated ID mappings. Verify all nodes, parent/child ownership, sibling order, and full text
-after insertion. For large maps, inspect a readable branch as well as the overview; do not hide truncation by
-zooming out. Test collapse/expand through the owning native API or UI, preserving descendants and unrelated content.
+Choose content from its purpose, not because every capability needs to appear in a diagram. A standalone chart,
+sticky note, image or Ink edit does not need a relationship spec. Semantic payload keys below are authoring
+conventions; translate them through the installed dedicated APIs.
 
 ## Chart, table, or Ink
 
@@ -173,3 +91,49 @@ The agent translates them through the installed dedicated APIs; no coordinates o
 Read back table cells and chart source values, not just element counts. Verify the annotation's target and native
 Ink data, and capture readable content as well as the overview. If an API or provider is unavailable, retain the
 intent and report the limitation; a generic rectangle is not evidence that the requested native element works.
+
+## Media, resources and embeds
+
+Use `content.kind` when an element participates in a larger semantic diagram:
+
+- `structured-table`: realize as a Board table, including UML/ERD presets where applicable.
+- `chart`: keep the data and analytical intent; realize with native `FBoard.newChart()` / `insertChart()`. Bind
+  relations to `chart.getElementId()`, not its chart resource `getId()`. Check axis bounds and units visually;
+  use a zero baseline for magnitude comparisons with bars, and label illustrative data as such.
+- `image`: retain the asset reference and its purpose, then use `insertImage()`.
+- `sticky`: use for an intentionally informal note. A cluster of unrelated sticky notes does not need BoardSpec.
+- `external-resource`: retain the authorized source reference and relationship semantics; query the installed host
+  and provider capabilities before choosing a link card, preview, or native embed.
+- `embed`: use a native interactive child when editing is part of the intent. Query `FUniver.createEmbed`,
+  `FEmbed.loadAsync`, and `FEmbedHostSurface.BoardFloating`; do not silently substitute an image or link card.
+- `ink`: describe the annotation intent, not points or paths. Generate or edit strokes only during realization. For
+  existing user ink, refer to its element ID instead of copying stroke geometry into the spec.
+
+Native Board embeds are created through `api.createEmbed()`, not `board.insertShape()`. Supply the Board host unit,
+`BoardFloating` surface, authorized source reference and child unit type; choose bounds during realization, not in
+BoardSpec. Creation establishes the descriptor and host anchor, but does not prove the child can load. Await
+`embed.loadAsync()` and verify the returned child, visible content and intended interaction. Report unavailable
+plugins, unsupported sources, loading failures or access restrictions rather than claiming an empty anchor is a
+working embed. Do not fetch unrelated content or broaden authorization to make a source load.
+
+Use `embed.getHostAnchorId()` for Board connector endpoints and element inspection. `embed.getId()` identifies the
+embed descriptor and `getChildUnitId()` identifies the child document; neither is the Board element ID. Keep these
+IDs distinct in readback. Inspect `getDisplayTarget()` separately from the child's current selection/navigation;
+local child navigation is not proof that the persisted display target changed.
+
+The current native `BoardFloating` host is root-only: it does not support container/lane membership, rotation or
+flips. If the spec requires such membership, report the unsupported mapping and resolve the requested structure;
+visual enclosure is not a substitute for `parentId` / `laneId`. Query the installed contract before relying on a
+newer capability. Test child editing and host move/resize/delete/undo when those interactions are part of the request.
+
+## Native chart lifecycle
+
+`FBoard.newChart` creates a builder; `build()` produces detached info, not a live chart. Insert with
+`await board.insertChart(info)`, then read back through `board.getCharts()` / `board.getChart()`.
+Use the returned live chart for updates: await `chart.setDataSource(values)` and asynchronous update methods,
+and `await chart.remove()` for removal. Builder replacement and live setters are different contracts.
+Use `chart.getElementId()` for Board bindings, not the chart resource ID. Inspect actual source values and rendered
+axes; bar magnitude comparisons need a zero baseline. A successful insert is not proof the data is visible.
+
+For registry image assets, inspect the installed resource find/export APIs, then pass supported image data to
+`insertImage()` (SVG data URIs use `ImageSourceType.BASE64`). Preserve the original asset and aspect ratio.

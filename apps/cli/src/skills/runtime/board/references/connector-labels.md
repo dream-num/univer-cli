@@ -1,11 +1,7 @@
 # Connector label realization
 
-Keep label geometry out of semantic BoardSpec. Resolve it during realization using the installed Facade contract.
-Query `IBoardConnectorLabel`, `IBoardConnectorLabelLayout`, `BoardConnectorLabelSizing`, and the selected label methods
-with `univer api find` / `univer api show`. Then probe `api.Enum.BoardConnectorLabelSizing` and the actual methods in
-a read-only `execute`. A type-index entry alone does not prove runtime support. Do not upgrade dependencies or send
-unsupported fields merely to follow this reference; report the limitation and use a documented older contract only
-when it preserves the requested result.
+Keep label geometry out of semantic BoardSpec. Relevant installed contracts are `IBoardConnectorLabel`,
+`IBoardConnectorLabelLayout`, `BoardConnectorLabelSizing`, and the selected Facade label methods.
 
 ## Content and constraints
 
@@ -67,7 +63,7 @@ An explicit anchor or path-ratio patch clears free displacement unless the same 
 edits preserve it. In the menu, choosing an anchor clears free displacement but retains side spacing; choose
 OnPath or reset placement as well if the label should sit on the line. Dragging/resizing writes path-relative
 displacement, and width resizing preserves the opposite handle rather than snapping the label back to the route.
-Verify both edges, repeated drag previews, and Undo/Redo when editing generated diagrams.
+Verify both edges, repeated drag previews, and Undo/Redo when label UI interaction is explicitly in scope.
 
 The new contract uses `style.interruptLine`; older SDKs may expose `style.lineBreak` instead. Query
 `IBoardConnectorLabelStyle` and use only the installed field, never both. Legacy snapshot conversion is not
@@ -89,4 +85,4 @@ Repair the affected label or nearby spacing: shorten wording without losing mean
 mode, move an endpoint annotation, or give the terminal more room. Routing normalization does not fix wrapping,
 font readiness, or a label box that is too large. Never silently reduce font size, drop multiplicities, replace
 editable texts with an image, or move unrelated nodes just to obtain a clean diagnostic result. Recheck the final
-readback and screenshot after repair; where editability matters, also exercise a middle-label edit/delete and undo.
+readback and screenshot after repair. For a label-interaction test, also exercise a middle-label edit/delete and undo.
