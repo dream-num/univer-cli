@@ -3,7 +3,7 @@ import http from "node:http";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import WebSocket from "ws";
 import { startServer, type StartedServer } from "../src/server.js";
 import { attachGatewayWebSockets } from "../src/transport/ws.js";
@@ -170,6 +170,31 @@ describe("lifecycle events over WebSocket", () => {
     await server.close();
     expect(Date.now() - started).toBeLessThan(2_000);
     await closedBoth;
+  });
+
+  it("keeps a file alive only while its SDK comb connection is open", async () => {
+    const key = Buffer.from(join(dir, "book.univer")).toString("base64url");
+    server.manager.createByKey(key);
+    const ticketResponse = await fetch(
+      `http://127.0.0.1:${server.port}/uf/${key}/universer-api/user/session-ticket`,
+      { headers: { "x-user-id": "idle-test" } },
+    );
+    expect(ticketResponse.ok).toBe(true);
+    const { ticket } = (await ticketResponse.json()) as { ticket: string };
+    const ws = connect(
+      `/uf/${key}/universer-api/comb/connect?sessionTicket=${encodeURIComponent(ticket)}`,
+    );
+    await onceOpen(ws);
+    server.manager.evictIdle(0);
+    expect(server.manager.size()).toBe(1);
+
+    const closed = onceClosed(ws);
+    ws.close();
+    await closed;
+    await vi.waitFor(() => {
+      server.manager.evictIdle(0);
+      expect(server.manager.size()).toBe(0);
+    });
   });
 });
 

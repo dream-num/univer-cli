@@ -23,6 +23,9 @@ Base 内容升级只属于 v0/v1 到 v2 的受控迁移。它不改变 current v
 
 本 package 不负责 CLI command、Gateway transport、Viewer、daemon 或 headless content runtime。
 
+Worktree Unit 删除仍使用应用现有的 `deleteUnit` 流程。SDK 的可撤销移除接口 `setUnitRemoved`
+在此 adapter 中返回 `INVALID_REQUEST`，不会写入移除状态或改变文件格式。
+
 ```bash
 pnpm --filter @univer/univerfile-sqlite test
 pnpm --filter @univer/univerfile-sqlite typecheck
