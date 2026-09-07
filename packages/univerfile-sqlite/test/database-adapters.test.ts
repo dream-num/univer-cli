@@ -328,6 +328,17 @@ describe("Univerfile SQLite database adapters", () => {
       reqId: 1,
     };
 
+    const before = await adapter.getWorktree(context(), worktreeID);
+    for (const removed of [true, false]) {
+      await expect(
+        adapter.setUnitRemoved(context(), { worktreeID, unitID: "unit-1", removed }),
+      ).rejects.toMatchObject({
+        code: "INVALID_REQUEST",
+        message: "Reversible Worktree Unit removal is not supported by Univerfile",
+      });
+    }
+    expect(await adapter.getWorktree(context(), worktreeID)).toEqual(before);
+
     await adapter.commitDraftChangeset(
       context({
         [UNIVERFILE_WORKTREE_CHANGE_METADATA_KEY]: {

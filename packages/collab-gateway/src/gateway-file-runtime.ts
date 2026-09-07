@@ -207,16 +207,16 @@ function trackEndpointConnections(
   connectionIds: Set<string>,
 ): NodeTransportEndpoint {
   return {
-    ...(endpoint.handleHttp === undefined
-      ? {}
-      : { handleHttp: endpoint.handleHttp.bind(endpoint) }),
-    ...(endpoint.handleUpgrade === undefined
-      ? {}
-      : {
-          handleUpgrade: async (context: NodeWebSocketEndpointContext, next): Promise<void> => {
-            await endpoint.handleUpgrade!(withTrackedConnection(context, connectionIds), next);
-          },
-        }),
+    register(router): void {
+      endpoint.register({
+        get: router.get.bind(router),
+        post: router.post.bind(router),
+        delete: router.delete.bind(router),
+        upgrade(path, handler): void {
+          router.upgrade(path, (context) => handler(withTrackedConnection(context, connectionIds)));
+        },
+      });
+    },
     ...(endpoint.dispose === undefined ? {} : { dispose: endpoint.dispose.bind(endpoint) }),
   };
 }
@@ -228,6 +228,8 @@ function withTrackedConnection(
   return {
     incomingMessage: context.incomingMessage,
     customData: context.customData,
+    params: context.params,
+    ...(context.route === undefined ? {} : { route: context.route }),
     reject: context.reject.bind(context),
     accept(handler: NodeWebSocketHandler): void {
       context.accept({

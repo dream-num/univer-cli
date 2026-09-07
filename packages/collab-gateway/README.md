@@ -15,6 +15,9 @@ Gateway 使用显式文件路径寻址。`/uf/<fileKey>` 中的 `fileKey` 是规
 lifecycle。打开 v0/v1 Univerfile 时，统一 open seam 委托 `@univer/univerfile-sqlite` 执行安全升级。Gateway
 不直接操作 SQLite schema，也不实现 browser content engine。
 
+Endpoint 通过 SDK `register(router)` 接入 HTTP 与 WebSocket 路由；连接跟踪包装保留路由参数，
+并在连接关闭或打开失败时释放跟踪记录。
+
 ```bash
 pnpm --filter @univer/collab-gateway typecheck
 pnpm --filter @univer/collab-gateway test
