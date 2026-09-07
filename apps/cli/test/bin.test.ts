@@ -140,6 +140,19 @@ describe("built univer executable", () => {
       path: join(projectRoot, "dist", "skills", "runtime", "core"),
     });
     await expect(access(join(located.path, "SKILL.md"))).resolves.toBeUndefined();
+
+    const board = parseJson((await invoke(["skills", "get", "board", "--json"])).stdout) as {
+      readonly skills: readonly { readonly content: string; readonly files?: unknown }[];
+    };
+    expect(board.skills[0]?.files).toBeUndefined();
+    const boardPath = parseJson((await invoke(["skills", "path", "board", "--json"])).stdout) as {
+      readonly path: string;
+    };
+    const links = [...board.skills[0]!.content.matchAll(/\]\((references\/[^)]+\.md)\)/g)];
+    expect(links.length).toBeGreaterThan(0);
+    for (const link of links) {
+      await expect(access(join(boardPath.path, link[1]!))).resolves.toBeUndefined();
+    }
   }, 20_000);
 
   it("completes the Local Univerfile, Gateway, Viewer, migration, and daemon read loop", async () => {
@@ -411,13 +424,49 @@ describe("built univer executable", () => {
               "--unit",
               board.unitId,
               "-e",
-              "const shape = board.insertShape({ shapeType: api.Enum.ShapeTypeEnum.Rect, transform: { left: 20, top: 20, width: 240, height: 120 } }); shape.getText().setText('Board'); return shape.getId();",
+              `const shapes = board.insertShapes([
+                { shapeType: api.Enum.ShapeTypeEnum.RoundRect, transform: { left: 20, top: 20, width: 180, height: 100 } },
+                { shapeType: api.Enum.ShapeTypeEnum.RoundRect, transform: { left: 420, top: 20, width: 180, height: 100 } },
+              ]);
+              if (!shapes || shapes.length !== 2) throw new Error("Cannot insert Board shapes");
+              const [source, target] = shapes;
+              source.getText().setText("Plan");
+              target.getText().setText("Ship");
+              if (!board.arrangeElementsInLayers([[source.getId()], [target.getId()]], { direction: "horizontal", start: { x: 80, y: 80 } })) throw new Error("Cannot arrange Board shapes");
+              const connectors = board.insertConnectors([{ fromElementId: source.getId(), toElementId: target.getId(), style: { endMarker: { type: "filledTriangle", size: "md" }, animation: { mode: "arrows" } } }]);
+              if (!connectors || connectors.length !== 1) throw new Error("Cannot insert Board connector");
+              const analysis = board.analyzeModelLayout(48);
+              if (!analysis) throw new Error("Cannot analyze Board layout");
+              return { shapeIds: shapes.map((shape) => shape.getId()), connectorIds: connectors.map((connector) => connector.id), analysis };`,
               "--json",
             ],
             env,
           )
         ).stdout,
-      ) as { readonly value: string };
+      ) as {
+        readonly value: {
+          readonly analysis: {
+            readonly issues: readonly unknown[];
+            readonly source: string;
+            readonly summary: {
+              readonly errorCount: number;
+              readonly unresolvedConnectorCount: number;
+              readonly warningCount: number;
+            };
+          };
+          readonly connectorIds: readonly string[];
+          readonly shapeIds: readonly string[];
+        };
+      };
+      expect(boardExecution.value).toMatchObject({
+        analysis: {
+          issues: [],
+          source: "model",
+          summary: { errorCount: 0, unresolvedConnectorCount: 1, warningCount: 0 },
+        },
+      });
+      expect(boardExecution.value.shapeIds).toHaveLength(2);
+      expect(boardExecution.value.connectorIds).toHaveLength(1);
       await invoke(
         [
           "execute",
@@ -490,10 +539,12 @@ describe("built univer executable", () => {
         readonly elements: readonly { readonly id: string; readonly text?: string }[];
         readonly kind: string;
       };
-      expect(inspectedBoard).toMatchObject({ elementCounts: { total: 1 }, kind: "board" });
+      expect(inspectedBoard).toMatchObject({ elementCounts: { total: 3 }, kind: "board" });
       expect(inspectedBoard.elements).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ id: boardExecution.value, text: "Board" }),
+          expect.objectContaining({ id: boardExecution.value.shapeIds[0], text: "Plan" }),
+          expect.objectContaining({ id: boardExecution.value.shapeIds[1], text: "Ship" }),
+          expect.objectContaining({ id: boardExecution.value.connectorIds[0] }),
         ]),
       );
 
@@ -503,7 +554,7 @@ describe("built univer executable", () => {
             [
               "inspect",
               "board-element",
-              `id:${boardExecution.value}`,
+              `id:${boardExecution.value.shapeIds[0]}`,
               importedFile,
               "--unit",
               board.unitId,
@@ -516,7 +567,7 @@ describe("built univer executable", () => {
         ).stdout,
       ) as { readonly elements: readonly { readonly id: string; readonly type: string }[] };
       expect(inspectedBoardElement.elements).toEqual([
-        expect.objectContaining({ id: boardExecution.value, type: "shape" }),
+        expect.objectContaining({ id: boardExecution.value.shapeIds[0], type: "shape" }),
       ]);
       const exportedBase = parseJson(
         (
@@ -669,11 +720,29 @@ describe("built univer executable", () => {
             env,
           )
         ).stdout,
-      ) as { readonly outputs: readonly { readonly location: string }[] };
+      ) as {
+        readonly outputs: readonly {
+          readonly layoutAnalysis: {
+            readonly issues: readonly unknown[];
+            readonly source: string;
+            readonly summary: {
+              readonly errorCount: number;
+              readonly unresolvedConnectorCount: number;
+              readonly warningCount: number;
+            };
+          };
+          readonly location: string;
+        }[];
+      };
       expect(boardScreenshot).toMatchObject({
         ok: true,
         unitId: board.unitId,
         unitKind: "board",
+      });
+      expect(boardScreenshot.outputs[0]?.layoutAnalysis).toMatchObject({
+        issues: [],
+        source: "rendered",
+        summary: { errorCount: 0, unresolvedConnectorCount: 0, warningCount: 0 },
       });
       await expectPng(boardScreenshot.outputs[0]!.location);
       const baseScreenshot = parseJson(

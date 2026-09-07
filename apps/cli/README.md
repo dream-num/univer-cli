@@ -107,7 +107,7 @@ The editable `univer open` Viewer can import and export through its Ribbon. Impo
 
 ## Rendering and authoring helpers
 
-`screenshot` uses CLI SDK screenshot and render capabilities with application-owned Univerfile, Worktree, browser-cache, and local-asset adapters. Sheet, Base, Doc, Slide, and Board can all be rendered. The default output directory is `./screenshots`.
+`screenshot` uses CLI SDK screenshot and render capabilities with application-owned Univerfile, Worktree, browser-cache, and local-asset adapters. Sheet, Base, Doc, Slide, and Board can all be rendered. Board connector animation is disabled only in the detached screenshot input so captures remain pixel-stable without changing stored content. The default output directory is `./screenshots`.
 
 `print-pdf` exports a Sheet, Doc, Slide, or Board Unit to PDF while preserving its page layout and pagination. Base Units are not printable. The command reads trunk by default; `--worktree` prints the selected Worktree without modifying it.
 
