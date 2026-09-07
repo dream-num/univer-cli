@@ -140,6 +140,19 @@ describe("built univer executable", () => {
       path: join(projectRoot, "dist", "skills", "runtime", "core"),
     });
     await expect(access(join(located.path, "SKILL.md"))).resolves.toBeUndefined();
+
+    const board = parseJson((await invoke(["skills", "get", "board", "--json"])).stdout) as {
+      readonly skills: readonly { readonly content: string; readonly files?: unknown }[];
+    };
+    expect(board.skills[0]?.files).toBeUndefined();
+    const boardPath = parseJson((await invoke(["skills", "path", "board", "--json"])).stdout) as {
+      readonly path: string;
+    };
+    const links = [...board.skills[0]!.content.matchAll(/\]\((references\/[^)]+\.md)\)/g)];
+    expect(links.length).toBeGreaterThan(0);
+    for (const link of links) {
+      await expect(access(join(boardPath.path, link[1]!))).resolves.toBeUndefined();
+    }
   }, 20_000);
 
   it("completes the Local Univerfile, Gateway, Viewer, migration, and daemon read loop", async () => {

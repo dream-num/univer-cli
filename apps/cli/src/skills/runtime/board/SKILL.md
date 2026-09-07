@@ -15,8 +15,9 @@ emphasis for the actual content; examples are not templates that every Board mus
   before choosing geometry. Translate it through Facade APIs; it is not an SDK input or another persisted model.
 - Direct edits, standalone charts, images, sticky notes, and freehand work can call their dedicated APIs without
   a spec. Do not invent graph relations just to use one.
-- Read only the relevant reference below. Use `univer skills get board` for this entrypoint and open selected
-  files relative to its returned directory; `--full` loads every reference and is unnecessary for ordinary tasks.
+- Read only the relevant reference below. Use `univer skills get board` for this entrypoint and
+  `univer skills path board --json` to locate selected files; `--full` loads every reference and is unnecessary
+  for ordinary tasks.
 
 | Task                                                            | Read when needed                                     |
 | --------------------------------------------------------------- | ---------------------------------------------------- |
