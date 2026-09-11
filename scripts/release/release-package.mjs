@@ -2,6 +2,13 @@ import { cp, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { EXTERNAL_DEPENDENCY_WHITELIST } from "../../apps/cli/scripts/release-dependencies.mjs";
 
+// Native bindings are never declared directly: the wrapper that requires them owns the version,
+// and the binding installs transitively from the wrapper's published dependency.
+export const TRANSITIVE_EXTERNAL_PROVIDERS = new Map([
+  ["@univerjs-pro/engine-formula-rust-binding", "@univerjs-pro/engine-formula-rust"],
+  ["@univerjs-pro/exchange-node-binding", "@univerjs-pro/exchange-node"],
+]);
+
 export function createReleaseManifest(
   sourceManifest,
   version,
@@ -20,14 +27,17 @@ export function createReleaseManifest(
         `Release dependency ${name} is not on the external dependency whitelist; only packages that cannot be inlined may ship.`,
       );
     }
-    const range = sourceDependencies[name];
+    const declaredName = TRANSITIVE_EXTERNAL_PROVIDERS.get(name) ?? name;
+    const range = sourceDependencies[declaredName];
     if (typeof range !== "string" || range.length === 0) {
-      throw new Error(`Built output imports undeclared runtime dependency ${name}`);
+      throw new Error(
+        `Built output imports undeclared runtime dependency ${declaredName} (transitively required by ${name})`,
+      );
     }
     if (range.startsWith("workspace:")) {
-      throw new Error(`Runtime dependency ${name} still uses the workspace protocol`);
+      throw new Error(`Runtime dependency ${declaredName} still uses the workspace protocol`);
     }
-    dependencies[name] = range;
+    dependencies[declaredName] = range;
   }
   const manifest = {
     name: "univer-cli",

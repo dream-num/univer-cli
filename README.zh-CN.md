@@ -166,16 +166,16 @@ pnpm unlink:cli
 
 ### SDK 升级
 
-Univer OSS 与 Pro SDK package 使用同一个精确版本基线。使用以下命令升级这个 cohort：
+`@univerjs`、`@univerjs-pro`、`@univer-cli` 的全部依赖使用同一个精确版本基线。使用以下命令升级：
 
 ```bash
-pnpm update:sdk --sdk_version <exact-sdk-version>
+pnpm update:univer-sdk --sdk_version <exact-sdk-version>
 ```
 
-Univer CLI SDK 与 Collaboration Server SDK 是独立发布的 cohort，会保留各自现有版本。为避免安装第二套
-Univer runtime graph，升级器也会同步对齐这些独立发布的 server package 所使用的共享 runtime override。
-native binding、icon 等独立发布 package 的版本保持不变。必须同时提交所有受影响的 manifest、
-`pnpm-workspace.yaml` 与 `pnpm-lock.yaml`，不得手工只更新部分 SDK dependency。
+升级器把所有匹配的依赖声明改写为目标版本，并移除这些 scope 的 workspace overrides。
+`@univerjs/icons`、`@univerjs-pro/cli-assets`、`@univerjs-pro/doc-typst-native-binding`
+遵循各自版本规则保持不变。native binding 不直接声明，始终通过其 wrapper 传递安装。
+必须同时提交所有受影响的 manifest 与 `pnpm-lock.yaml`，不得手工只更新部分 SDK dependency。
 
 ## 许可证
 

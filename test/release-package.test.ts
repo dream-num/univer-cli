@@ -2,7 +2,11 @@ import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promise
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { createReleaseManifest, stageReleasePackage } from "../scripts/release/release-package.mjs";
+import {
+  createReleaseManifest,
+  TRANSITIVE_EXTERNAL_PROVIDERS,
+  stageReleasePackage,
+} from "../scripts/release/release-package.mjs";
 import { RELEASE_REGISTRY } from "../scripts/release/policy.mjs";
 import { EXTERNAL_DEPENDENCY_WHITELIST } from "../apps/cli/scripts/release-dependencies.mjs";
 
@@ -67,7 +71,13 @@ describe("release package", () => {
     );
 
     expect(source).toMatchObject({ license: "Apache-2.0", private: true, version: "0.0.0" });
-    expect(Object.keys(manifest.dependencies)).toEqual(audit.required);
+    // Bindings ship through their wrappers: the published dependency set swaps each wrapper-
+    // provided binding for the wrapper itself, so no binding is ever declared directly.
+    const provided = [...TRANSITIVE_EXTERNAL_PROVIDERS.keys()];
+    const wrappers = [...TRANSITIVE_EXTERNAL_PROVIDERS.values()];
+    expect(Object.keys(manifest.dependencies)).toEqual(
+      [...audit.required.filter((name) => !provided.includes(name)), ...wrappers].sort(),
+    );
     // The published dependency set is exactly the whitelist: no bundled package may leak out,
     // and every whitelisted non-inlinable package must ship.
     expect(audit.required).toEqual([...EXTERNAL_DEPENDENCY_WHITELIST].sort());

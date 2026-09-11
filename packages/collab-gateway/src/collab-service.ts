@@ -257,7 +257,7 @@ export class CollabService {
     unitId: string,
     from: number,
     to: number,
-  ): Promise<{ changesets: IProtocolChangeset[]; latestRevision: number }> {
+  ): Promise<{ changesets: IProtocolChangeset[] }> {
     const unit = this._requireWorktreeUnit(worktreeId, unitId);
     const result = await this.runtime.worktreeService.getChangesets(
       {
@@ -271,7 +271,6 @@ export class CollabService {
     );
     return {
       changesets: [...result.changesets],
-      latestRevision: result.latestRevision,
     };
   }
 
@@ -1278,7 +1277,7 @@ class TrunkStorageCompatibility {
   ): Promise<{
     error: { code: number; message: string };
     changesets: readonly IProtocolChangeset[];
-    latestRevision: number;
+    latestRevision?: number;
   }> {
     try {
       const result = await this._runtime.trunkService.getChangesets(
@@ -1293,13 +1292,11 @@ class TrunkStorageCompatibility {
       return {
         error: { code: 1, message: "" },
         changesets: result.changesets,
-        latestRevision: result.latestRevision,
       };
     } catch (error) {
       return {
         error: { code: 0, message: asMessage(error) },
         changesets: [],
-        latestRevision: 0,
       };
     }
   }

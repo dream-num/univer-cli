@@ -1,7 +1,6 @@
 import type Database from "libsql";
 import {
   CollabError,
-  type ChangesetRange,
   type CommitChangesetInput,
   type CommitChangesetResult,
   type CreateUnitDatabaseInput,
@@ -13,6 +12,7 @@ import {
   type RecoverUnitsDatabaseInput,
   type RecoverUnitsDatabaseResult,
   type SaveSnapshotInput,
+  type SnapshotInfo,
   type UnitRecord,
 } from "@univerjs-pro/collaboration-service";
 import type { IChangeset, ISheetBlock, ISnapshot, UniverType } from "@univerjs/protocol";
@@ -55,11 +55,6 @@ interface PayloadRow {
 
 interface SchemaVersionRow {
   readonly version: number;
-}
-
-interface ChangesetReadRow {
-  readonly head_revision: number;
-  readonly payload_json: string | null;
 }
 
 interface ColumnRow {
@@ -216,40 +211,75 @@ export class UniverfileSQLiteDatabaseAdapter implements IDatabaseAdapter {
   async getChangesets(
     _context: DatabaseContext,
     unitID: string,
-    range: { readonly from: number; readonly to: number },
-  ): Promise<ChangesetRange> {
+    range: { readonly from: number; readonly to?: number },
+  ): Promise<readonly IChangeset[] | null> {
     this._assertOpen();
-    if (range.from < 0 || range.to < 0) {
+    const to = range.to ?? 0;
+    if (range.from < 0 || to < 0) {
       throw invalidRequest("Changeset range revisions cannot be negative");
     }
 
+    const unit = this._getActiveUnitRow(unitID);
+    if (!unit) {
+      return null;
+    }
     const rows = this._database
       .prepare(
-        `SELECT collaboration_units.head_revision,
-                collaboration_changesets.payload_json
-         FROM collaboration_units
-         LEFT JOIN collaboration_changesets
-           ON collaboration_changesets.unit_id = collaboration_units.unit_id
-          AND collaboration_changesets.revision > ?
-          AND collaboration_changesets.revision <= CASE
-            WHEN ? = 0 THEN collaboration_units.head_revision
-            ELSE MIN(?, collaboration_units.head_revision)
-          END
-         WHERE collaboration_units.unit_id = ?
-           AND collaboration_units.soft_deleted_at_ms IS NULL
-         ORDER BY collaboration_changesets.revision ASC`,
+        `SELECT payload_json
+         FROM collaboration_changesets
+         WHERE unit_id = ? AND revision > ? AND revision <= CASE
+           WHEN ? = 0 THEN ?
+           ELSE MIN(?, ?)
+         END
+         ORDER BY revision ASC`,
       )
-      .all(range.from, range.to, range.to, unitID) as unknown as ChangesetReadRow[];
-    const head = rows[0];
-    if (!head) {
-      return { changesets: [], latestRevision: 0 };
+      .all(
+        unitID,
+        range.from,
+        to,
+        unit.head_revision,
+        to,
+        unit.head_revision,
+      ) as unknown as PayloadRow[];
+    return rows.map((row) => decode<IChangeset>(row.payload_json));
+  }
+
+  async getSnapshotInfo(
+    _context: DatabaseContext,
+    unitID: string,
+    options?: { readonly revision?: number },
+  ): Promise<SnapshotInfo | null> {
+    this._assertOpen();
+    const requestedRevision = options?.revision;
+    if (requestedRevision !== undefined && requestedRevision < 0) {
+      throw invalidRequest("Snapshot revision cannot be negative");
     }
-    return {
-      changesets: rows.flatMap((row) =>
-        row.payload_json ? [decode<IChangeset>(row.payload_json)] : [],
-      ),
-      latestRevision: head.head_revision,
-    };
+
+    const unit = this._getActiveUnitRow(unitID);
+    if (!unit) {
+      return null;
+    }
+    const targetRevision =
+      requestedRevision === undefined || requestedRevision === 0
+        ? unit.head_revision
+        : Math.min(requestedRevision, unit.head_revision);
+    const row = this._database
+      .prepare(
+        `SELECT collaboration_snapshots.revision
+         FROM collaboration_snapshots
+         JOIN collaboration_units
+           ON collaboration_units.unit_id = collaboration_snapshots.unit_id
+         WHERE collaboration_snapshots.unit_id = ?
+           AND collaboration_snapshots.revision <= ?
+           AND collaboration_units.soft_deleted_at_ms IS NULL
+         ORDER BY collaboration_snapshots.revision DESC
+         LIMIT 1`,
+      )
+      .get(unitID, targetRevision) as { revision: number } | undefined;
+    if (!row) {
+      return null;
+    }
+    return { unitID, type: unit.type as UniverType, rev: row.revision };
   }
 
   async getSubmission(
