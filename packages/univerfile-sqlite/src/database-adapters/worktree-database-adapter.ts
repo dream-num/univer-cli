@@ -1,10 +1,6 @@
 import { isDeepStrictEqual } from "node:util";
 import type Database from "libsql";
-import {
-  CollabError,
-  type ChangesetRange,
-  type DatabaseContext,
-} from "@univerjs-pro/collaboration-service";
+import { CollabError, type DatabaseContext } from "@univerjs-pro/collaboration-service";
 import type {
   AddWorktreeUnitDatabaseInput,
   AddWorktreeUnitDatabaseResult,
@@ -254,13 +250,15 @@ export class UniverfileSQLiteWorktreeDatabaseAdapter implements IWorktreeDatabas
     worktreeID: string,
     unitID: string,
     range: WorktreeRevisionRange,
-  ): Promise<ChangesetRange> {
+  ): Promise<readonly IChangeset[] | null> {
     this._assertOpen();
     validateRange(range);
     const unit = this._getUnitRow(worktreeID, unitID);
-    if (!unit) return { changesets: [], latestRevision: 0 };
+    if (!unit) return null;
     const to =
-      range.to === 0 ? unit.draft_head_revision : Math.min(range.to, unit.draft_head_revision);
+      range.to === undefined || range.to === 0
+        ? unit.draft_head_revision
+        : Math.min(range.to, unit.draft_head_revision);
     const rows = this._database
       .prepare(
         `SELECT payload_json
@@ -270,10 +268,7 @@ export class UniverfileSQLiteWorktreeDatabaseAdapter implements IWorktreeDatabas
          ORDER BY revision ASC`,
       )
       .all(worktreeID, unitID, range.from, to) as unknown as PayloadRow[];
-    return {
-      changesets: rows.map(({ payload_json }) => decode<IChangeset>(payload_json)),
-      latestRevision: unit.draft_head_revision,
-    };
+    return rows.map(({ payload_json }) => decode<IChangeset>(payload_json));
   }
 
   async getDraftSubmission(
@@ -1398,12 +1393,10 @@ function validateChangesetCandidate(unit: WorktreeUnitRecord, changeset: IChange
 }
 
 function validateRange(range: WorktreeRevisionRange): void {
-  if (
-    !Number.isSafeInteger(range.from) ||
-    !Number.isSafeInteger(range.to) ||
-    range.from < 0 ||
-    range.to < 0
-  ) {
+  if (!Number.isSafeInteger(range.from) || range.from < 0) {
+    throw invalidRequest("Draft revision range cannot be negative");
+  }
+  if (range.to !== undefined && (!Number.isSafeInteger(range.to) || range.to < 0)) {
     throw invalidRequest("Draft revision range cannot be negative");
   }
 }

@@ -5,7 +5,6 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   DEPENDENCY_FIELDS,
   SDK_PREFIXES,
-  sdkCohort,
   validateSdkDependencyGraph,
 } from "./release/sdk-graph.mjs";
 
@@ -14,6 +13,13 @@ const LOCKFILE_PATH = join(REPO_ROOT, "pnpm-lock.yaml");
 const WORKSPACE_PATH = join(REPO_ROOT, "pnpm-workspace.yaml");
 const EXACT_SEMVER_PATTERN =
   /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/u;
+// Packages that publish on their own version rules and never follow the Univer SDK baseline.
+const SELF_VERSIONED_PACKAGES = new Set([
+  "@univerjs-pro/cli-assets",
+  "@univerjs-pro/doc-typst-native-binding",
+  "@univerjs/icons",
+]);
+const SDK_OVERRIDE_NAME = /^\s*"@(?:univerjs-pro|univerjs|univer-cli)\/[^"]+":\s*"/u;
 
 export function parseSdkUpdateVersion(argv) {
   const args = argv.filter((argument) => argument !== "--");
@@ -44,7 +50,7 @@ export function alignManifestSdkDependencies(manifest, version, workspaceNames =
       }
       if (!SDK_PREFIXES.some((prefix) => name.startsWith(prefix))) continue;
       assertExactDependency(manifest.name, field, name, specifier);
-      if (sdkCohort(name) !== "univer") continue;
+      if (SELF_VERSIONED_PACKAGES.has(name)) continue;
       if (specifier !== version) {
         manifest[field][name] = version;
         changed += 1;
@@ -54,22 +60,35 @@ export function alignManifestSdkDependencies(manifest, version, workspaceNames =
   return changed;
 }
 
-export function alignWorkspaceSdkOverrides(source, version) {
-  if (!EXACT_SEMVER_PATTERN.test(version)) {
-    throw new Error(`SDK version must be exact SemVer: ${String(version)}`);
+export function stripWorkspaceSdkOverrides(source) {
+  const lines = source.split("\n");
+  const kept = [];
+  let removed = 0;
+  let inOverrides = false;
+  let overridesHeader = -1;
+  let overridesEmpty = true;
+  for (const line of lines) {
+    if (inOverrides && !/^(\s|$)/u.test(line)) inOverrides = false;
+    if (/^overrides:\s*$/u.test(line)) {
+      inOverrides = true;
+      overridesHeader = kept.length;
+      overridesEmpty = true;
+      kept.push(line);
+      continue;
+    }
+    if (inOverrides && /^\s/u.test(line)) {
+      if (SDK_OVERRIDE_NAME.test(line)) {
+        removed += 1;
+      } else {
+        overridesEmpty = false;
+        kept.push(line);
+      }
+      continue;
+    }
+    kept.push(line);
   }
-  let changed = 0;
-  const updatedSource = source.replace(
-    /^(\s{2}"([^"]+)":\s*")([^"]+)(".*)$/gmu,
-    (line, prefix, name, specifier, suffix) => {
-      if (sdkCohort(name) !== "univer") return line;
-      assertExactDependency("pnpm-workspace.yaml", "overrides", name, specifier);
-      if (specifier === version) return line;
-      changed += 1;
-      return `${prefix}${version}${suffix}`;
-    },
-  );
-  return { changed, source: updatedSource };
+  if (overridesHeader !== -1 && overridesEmpty) kept.splice(overridesHeader, 1);
+  return { changed: removed, source: kept.join("\n") };
 }
 
 export function resolveWorkspaceSdkBaseline(packages) {
@@ -146,15 +165,16 @@ export async function main(argv) {
   const workspaceNames = new Set(packages.map(({ manifest }) => manifest.name));
   const originalLockfile = await readFile(LOCKFILE_PATH, "utf8");
   const originalWorkspace = await readFile(WORKSPACE_PATH, "utf8");
-  let changed = 0;
+  const stripped = stripWorkspaceSdkOverrides(originalWorkspace);
+  let changed = stripped.changed;
   try {
+    if (stripped.changed > 0) {
+      await writeFile(WORKSPACE_PATH, stripped.source, "utf8");
+    }
     for (const pkg of packages) {
       changed += alignManifestSdkDependencies(pkg.manifest, version, workspaceNames);
       await writeFile(pkg.packagePath, `${JSON.stringify(pkg.manifest, null, 2)}\n`, "utf8");
     }
-    const workspace = alignWorkspaceSdkOverrides(originalWorkspace, version);
-    changed += workspace.changed;
-    await writeFile(WORKSPACE_PATH, workspace.source, "utf8");
     run("pnpm", ["install", "--lockfile-only"]);
     const updated = await discoverWorkspacePackages();
     validateWorkspaceSdkDependencies(updated, version);

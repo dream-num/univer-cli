@@ -62,13 +62,12 @@ describe("Gateway v1 .univer upgrade", () => {
       expect(readJsonBytes(baseSeed?.snapshot.workbook?.originalMeta)).toMatchObject({
         schemaVersion: 2,
       });
-      const baseDraft = await univerfile.worktreeDatabaseAdapter.getDraftChangesets(
-        context(),
-        "wt-1",
-        "base-wt",
-        { from: 1, to: 0 },
-      );
-      expect(readMutationData(baseDraft.changesets[0], 2).op[2]).toEqual([
+      const baseDraft =
+        (await univerfile.worktreeDatabaseAdapter.getDraftChangesets(context(), "wt-1", "base-wt", {
+          from: 1,
+          to: 0,
+        })) ?? [];
+      expect(readMutationData(baseDraft[0], 2).op[2]).toEqual([
         "cellData",
         "0",
         "1",

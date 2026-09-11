@@ -173,17 +173,18 @@ pnpm unlink:cli
 
 ### SDK upgrades
 
-The Univer OSS and Pro SDK packages use one exact version baseline. Upgrade that cohort with:
+Every `@univerjs`, `@univerjs-pro`, and `@univer-cli` dependency shares one exact version baseline.
+Upgrade it with:
 
 ```bash
-pnpm update:sdk --sdk_version <exact-sdk-version>
+pnpm update:univer-sdk --sdk_version <exact-sdk-version>
 ```
 
-The Univer CLI SDK and Collaboration Server SDK are separate release cohorts and keep their existing
-versions. To prevent a second Univer runtime graph, the updater also aligns the shared runtime
-overrides used by those independently released server packages. Independently versioned packages
-such as native bindings and icons remain unchanged. Commit every affected manifest together with
-`pnpm-workspace.yaml` and `pnpm-lock.yaml`; partial manual SDK updates are not allowed.
+The updater rewrites every matching declaration to the target version and strips any workspace
+overrides for those scopes. `@univerjs/icons`, `@univerjs-pro/cli-assets`, and
+`@univerjs-pro/doc-typst-native-binding` keep their own version rules. Native bindings are never
+declared directly; they install transitively through their wrappers. Commit every affected manifest
+together with `pnpm-lock.yaml`; partial manual SDK updates are not allowed.
 
 ## License
 

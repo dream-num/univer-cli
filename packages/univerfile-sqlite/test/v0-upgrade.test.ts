@@ -63,12 +63,10 @@ describe("legacy v0 .univer upgrade", () => {
         new Uint8Array([1, 2, 3]),
       );
       expect(
-        (
-          await univerfile.databaseAdapter.getChangesets(context(), "trunk-sheet", {
-            from: 1,
-            to: 0,
-          })
-        ).changesets,
+        await univerfile.databaseAdapter.getChangesets(context(), "trunk-sheet", {
+          from: 1,
+          to: 0,
+        }),
       ).toEqual([
         expect.objectContaining({
           unitID: "trunk-sheet",
@@ -138,13 +136,13 @@ describe("legacy v0 .univer upgrade", () => {
       ).toMatchObject({ snapshot: { unitID: "created-sheet", rev: 1 } });
       expect(
         (
-          await univerfile.worktreeDatabaseAdapter.getDraftChangesets(
+          (await univerfile.worktreeDatabaseAdapter.getDraftChangesets(
             context(),
             "wt-draft",
             "created-sheet",
             { from: 1, to: 0 },
-          )
-        ).changesets.map(({ revision }) => revision),
+          )) ?? []
+        ).map(({ revision }) => revision),
       ).toEqual([2]);
 
       await univerfile.worktreeDatabaseAdapter.commitDraftChangeset(context(), {
