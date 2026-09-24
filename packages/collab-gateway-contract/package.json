@@ -18,7 +18,7 @@
     "typecheck": "tsc -p tsconfig.test.json --noEmit --pretty false"
   },
   "dependencies": {
-    "@univerjs-pro/edit-history": "1.0.0",
-    "@univerjs/core": "1.0.0"
+    "@univerjs-pro/edit-history": "1.0.2",
+    "@univerjs/core": "1.0.2"
   }
 }
