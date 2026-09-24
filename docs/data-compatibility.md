@@ -34,8 +34,8 @@ v3 与 v2 的差异来自 Collaboration SDK `1.0.0` 的 persistence contract，�
 
 - `collaboration_units` 与 `collaboration_worktree_units` 增加 `creator_id`；`created_at_ms` 表示 Unit 本身的
   创建时间。trunk 来源的 Worktree Unit 继承 trunk Unit 的创建者与创建时间。
-- trunk 与 Worktree changeset payload 的 `createTime` 是 adapter 在提交时写入的 Unix 秒；
-  `collaboration_changesets` 与 `collaboration_worktree_changesets` 增加 `created_at_ms`，以 Unix 毫秒保存同一时间。
+- trunk 与 Worktree changeset 的 `created_at_ms` 是 adapter 在提交时写入的 Unix 毫秒；payload 的
+  `createTime` 是这个时间的整秒。
 - History 只保存 segment 起点 `collaboration_history_records`，不再逐 revision 保存
   `collaboration_history_revisions`。revision 1 只属于创建记录。
 

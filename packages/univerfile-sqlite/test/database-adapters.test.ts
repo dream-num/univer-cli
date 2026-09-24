@@ -357,6 +357,42 @@ describe("Univerfile SQLite database adapters", () => {
     await trunk.dispose();
   });
 
+  it("stamps a trunk changeset with the millisecond commit time", async () => {
+    const filename = databasePath();
+    const adapter = new UniverfileSQLiteDatabaseAdapter({ filename });
+    await adapter.createUnit(context(), {
+      record: unitRecord("unit-1"),
+      snapshot: snapshot("unit-1"),
+    });
+    const now = 1_790_000_000_123;
+    vi.spyOn(Date, "now").mockReturnValue(now);
+
+    await adapter.commitChangeset(context(), {
+      changeset: {
+        unitID: "unit-1",
+        type: UniverType.UNIVER_SHEET,
+        baseRev: 1,
+        revision: 2,
+        mutations: [],
+        sid: "sid-1",
+        reqId: 1,
+        createTime: 1_786_708_210,
+      },
+    });
+
+    const [stored] = (await adapter.getChangesets(context(), "unit-1", { from: 1 })) ?? [];
+    expect(stored?.createTime).toBe(Math.floor(now / 1000));
+    const connection = new UniverfileSQLiteConnection({ filename });
+    try {
+      expect(
+        connection.database.prepare("SELECT created_at_ms FROM collaboration_changesets").get(),
+      ).toMatchObject({ created_at_ms: now });
+    } finally {
+      connection.dispose();
+    }
+    await adapter.dispose();
+  });
+
   it("commits an SDK draft changeset without application commit metadata", async () => {
     const filename = databasePath();
     const trunk = new UniverfileSQLiteDatabaseAdapter({ filename });
@@ -409,7 +445,7 @@ describe("Univerfile SQLite database adapters", () => {
         connection.database
           .prepare("SELECT created_at_ms FROM collaboration_worktree_changesets")
           .get(),
-      ).toMatchObject({ created_at_ms: Math.floor(now / 1000) * 1000 });
+      ).toMatchObject({ created_at_ms: now });
     } finally {
       connection.dispose();
     }

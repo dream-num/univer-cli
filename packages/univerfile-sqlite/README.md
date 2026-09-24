@@ -21,8 +21,8 @@ candidate。
 
 Base 内容升级只属于 v0/v1 的受控迁移。它不改变 SQLite schema，也不会把 v2 或 v3 文件当作 repair target。
 
-Core 与 Worktree adapter 在提交 changeset 时把 `createTime` 写为 Unix 秒，同一时间以毫秒写入 changeset 的
-`created_at_ms`，并从 Unit record 持久化
+Core 与 Worktree adapter 在提交 changeset 时把 `created_at_ms` 写为 Unix 毫秒，payload 的 `createTime` 写为它的
+整秒，并从 Unit record 持久化
 `creatorID` 与 `createdAt`。各版本差异和 v2 到 v3 的迁移规则见
 [`.univer` 数据兼容](../../docs/data-compatibility.md)。
 

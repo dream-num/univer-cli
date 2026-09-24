@@ -466,8 +466,11 @@ export class UniverfileSQLiteDatabaseAdapter implements IDatabaseAdapter {
   ): Promise<CommitChangesetResult> {
     this._assertOpen();
     validateSubmissionIdentity(input.changeset);
-    const createTime = currentUnixSeconds();
-    const changeset: IChangeset = { ...input.changeset, createTime };
+    const createdAt = Date.now();
+    const changeset: IChangeset = {
+      ...input.changeset,
+      createTime: Math.floor(createdAt / 1000),
+    };
     const payload = encode(changeset);
 
     return this._transaction(() => {
@@ -497,7 +500,7 @@ export class UniverfileSQLiteDatabaseAdapter implements IDatabaseAdapter {
           changeset.sid as string,
           changeset.reqId as number,
           payload,
-          createTime * 1000,
+          createdAt,
         );
       const update = this._database
         .prepare(
@@ -882,7 +885,7 @@ export function coreUnitsTableSql(tableName: string): string {
         );`;
 }
 
-/** `created_at_ms` repeats the payload `createTime` in Unix milliseconds, as the SDK schema does. */
+/** `created_at_ms` stores the commit time in Unix milliseconds; payload `createTime` is its whole seconds. */
 export function coreChangesetsTableSql(tableName: string): string {
   return `CREATE TABLE ${tableName} (
           unit_id TEXT NOT NULL,
@@ -897,10 +900,6 @@ export function coreChangesetsTableSql(tableName: string): string {
           FOREIGN KEY (unit_id)
             REFERENCES collaboration_units(unit_id) ON DELETE CASCADE
         );`;
-}
-
-export function currentUnixSeconds(): number {
-  return Math.floor(Date.now() / 1000);
 }
 
 function readUnitName(context: DatabaseContext, unitID: string): string {
