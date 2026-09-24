@@ -153,7 +153,7 @@ Read commands do not create a configuration file. `set` and `unset` preserve unk
 
 ## Data compatibility
 
-New Univerfiles use v2. Supported v0 and v1 files upgrade to v2 when the application first explicitly opens their path. Upgrade performs read-only identification, locking, a byte-for-byte backup, an independent candidate, storage and runtime verification, a source-hash recheck, and atomic replacement. A failure never replaces the source. Reopening v2 is side-effect free.
+New Univerfiles use v3. Supported v0, v1, and v2 files upgrade to v3 when the application first explicitly opens their path. Upgrade performs read-only identification, locking, a byte-for-byte backup, an independent candidate, storage and runtime verification, a source-hash recheck, and atomic replacement. A failure never replaces the source. Opening the same unchanged file again reuses that backup. On Windows, migration runs in a helper process and the original is replaced after that process exits. Reopening v3 is side-effect free.
 
 See the [data compatibility contract](https://github.com/dream-num/univer-cli/blob/main/docs/data-compatibility.md) for details.
 

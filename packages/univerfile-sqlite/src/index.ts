@@ -9,7 +9,7 @@ export { createUniverfileSQLite, openUniverfileSQLite } from "./open.js";
 export type { OpenUniverfileSQLiteOptions, UniverfileSQLite } from "./open.js";
 export { detectUniverfileSQLiteFormat } from "./schema/detect.js";
 export type { UniverfileSQLiteFormat } from "./schema/detect.js";
-export { upgradeUniverfileSQLite } from "./migration/upgrade.js";
+export { runUpgradeWorker, upgradeUniverfileSQLite } from "./migration/upgrade.js";
 export type {
   UniverfileUpgradeResult,
   UpgradeUniverfileSQLiteOptions,

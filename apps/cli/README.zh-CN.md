@@ -174,9 +174,10 @@ resource manifest，并将下载缓存写入 `${UNIVER_HOME}/cache/resources`。
 
 ## Data compatibility
 
-新 Univerfile 使用 v2。v0 与 v1 是受支持的输入格式，在 application 首次显式打开路径时升级到 v2。升级执行
+新 Univerfile 使用 v3。v0、v1 与 v2 是受支持的输入格式，在 application 首次显式打开路径时升级到 v3。升级执行
 只读识别、lock、byte-for-byte backup、独立 candidate、storage/runtime 验证、source hash 复查和 atomic
-replace；失败不会替换 source。v2 再次打开是无副作用 operation。
+replace；失败不会替换 source。再次打开同一份未变化的文件时复用这份 backup。Windows 上迁移在 helper
+进程中完成，原文件在该进程退出后才被替换。v3 再次打开是无副作用 operation。
 
 完整合同见 [data compatibility contract](https://github.com/dream-num/univer-cli/blob/main/docs/data-compatibility.md)。
 
