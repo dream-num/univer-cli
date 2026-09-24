@@ -13,7 +13,8 @@
 
 调用方通过 `openUniverfileSQLite()` 或 `createUniverfileSQLite()` 获得共享同一 connection 的 adapter。打开 v3
 是无升级副作用的 operation；打开受支持输入格式时，在替换 source 前保留 byte-for-byte backup 并验证
-candidate。
+candidate。再次打开同一份未变化的文件时复用已有的相同字节 backup。Windows 上迁移在 helper 进程中完成，
+持锁的父进程在 helper 退出后替换 source。
 
 存在 `collaboration_schema_versions` 时，component version 是格式识别的权威来源。格式检查只要求对应版本的
 必要表与列；额外 SQLite 对象不会使 current v3 无效。升级只把受支持内容写入 candidate，source-only

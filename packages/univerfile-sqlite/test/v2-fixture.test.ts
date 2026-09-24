@@ -1,6 +1,6 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import type { DatabaseContext } from "@univerjs-pro/collaboration-service";
 import Database from "libsql";
 import { afterEach, describe, expect, it } from "vitest";
@@ -296,6 +296,16 @@ describe("v2 .univer upgrade", () => {
     );
     expect(sha256(filename)).toBe(originalHash);
     expect(detectUniverfileSQLiteFormat(filename)).toBe("v2");
+    const backups = readdirSync(dirname(filename)).filter((entry) => entry.includes(".backup-v2-"));
+    expect(backups).toHaveLength(1);
+
+    expect(() => openUniverfileSQLite(filename)).toThrow(
+      /failed to upgrade .* from v2 to v3: .*foreign-key violation/,
+    );
+    expect(sha256(filename)).toBe(originalHash);
+    expect(readdirSync(dirname(filename)).filter((entry) => entry.includes(".backup-v2-"))).toEqual(
+      backups,
+    );
   });
 });
 

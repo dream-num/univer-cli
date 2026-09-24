@@ -141,7 +141,7 @@ Univer CLI 基于 [Univer SDK](https://docs.univer.ai/zh-CN/) 构建。本仓库
 
 ## 数据与安全
 
-`.univer` 是使用 SQLite 保存 Unit、revision、Worktree、本地资源与可重建 History index 的文件。受支持的早期格式只有在只读识别、byte-for-byte backup、独立 candidate 验证和原子替换后才会升级。升级失败不会覆盖源文件。
+`.univer` 是使用 SQLite 保存 Unit、revision、Worktree、本地资源与可重建 History index 的文件。受支持的早期格式只有在只读识别、byte-for-byte backup、独立 candidate 验证和原子替换后才会升级。升级失败不会覆盖源文件。再次打开同一份未变化的文件时复用这份 backup。Windows 上迁移在 helper 进程中完成，原文件在该进程退出后才被替换。
 
 内置 Univer runtime development license 是获准随本 application 再分发的 localhost application credential，按 90 天周期更新，与 repository software license 分离。
 

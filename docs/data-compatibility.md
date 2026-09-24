@@ -10,11 +10,11 @@ application 显式打开对应路径时安全升级到 v3。
 - 只处理调用方显式提供的 `.univer` 路径，不扫描或批量修改 Application home。
 - 升级顺序固定为
   `detect -> lock -> backup -> read -> canonical model -> write candidate -> verify -> atomic replace`。
-- backup 与升级前文件 byte-for-byte 一致，向调用方报告路径与 hash，且不自动删除。
+- backup 与升级前文件 byte-for-byte 一致，向调用方报告路径与 hash，且不自动删除。再次打开同一份未变化的文件时复用已有的相同字节 backup，不另写一份；文件内容变化后仍为那份新内容写一份 backup。
 - candidate 使用当前 SQLite schema 写入，并通过 storage 与 runtime 的公开读取能力验证。
 - 输入 source 中不属于受支持 schema 的额外表、索引、trigger 与 view 不写入 candidate；byte-for-byte backup
   保留完整 source。current v3 只要求必要 schema，额外 SQLite 对象不会触发升级或清理副作用。
-- replace 前的任何失败都不得改变源路径；失败的 candidate 会被清理，backup 保留。
+- replace 前的任何失败都不得改变源路径；失败的 candidate 会被清理，backup 保留。Windows 上 libsql 关闭连接后仍可能占着文件，同一进程内替换会失败，因此迁移放在 helper 进程里，等该进程退出后由持锁的父进程替换原文件。
 - v0/v1 candidate 会把 Base 内容 schema v1 同步升级为当前 schema v2，包括 checkpoint、sheet block、
   Worktree seed/merge artifact，以及依赖旧字段位置的 Base changeset。v2 source 的 Base 内容已经是当前
   schema，不作为 repair target。
