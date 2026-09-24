@@ -78,7 +78,7 @@ describe("legacy v0 .univer upgrade", () => {
         }),
       ]);
       expect(await univerfile.databaseAdapter.getUnit(context(), "trunk-sheet")).toMatchObject({
-        creatorID: "local",
+        creatorID: "anonymous",
       });
       const baseSnapshot = await univerfile.databaseAdapter.getSnapshot(context(), "legacy-base");
       expect(readJsonBytes(baseSnapshot?.workbook?.originalMeta)).toMatchObject({

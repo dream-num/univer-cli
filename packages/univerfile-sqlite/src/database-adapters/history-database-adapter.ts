@@ -140,7 +140,8 @@ export class UniverfileSQLiteHistoryDatabaseAdapter implements IHistoryDatabaseA
       filters.push("r.start_revision < ?");
       parameters.push(options.beforeRevision);
     }
-    if (options.origin !== undefined) {
+    // The SDK adapters treat origin 0 as "any origin".
+    if (options.origin) {
       filters.push("r.origin = ?");
       parameters.push(options.origin);
     }
@@ -297,7 +298,8 @@ function validateRecord(record: HistoryRecord): void {
     !Number.isSafeInteger(record.startRevision) ||
     record.startRevision < 1 ||
     !Number.isSafeInteger(record.createdAt) ||
-    record.createdAt < 0
+    record.createdAt < 0 ||
+    (record.origin !== 0 && record.origin !== 1 && record.origin !== 2)
   ) {
     throw new TypeError("History record is invalid");
   }

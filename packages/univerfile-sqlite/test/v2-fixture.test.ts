@@ -36,7 +36,9 @@ describe("v2 .univer upgrade", () => {
     writeV2Fixture(filename);
     const originalHash = sha256(filename);
 
+    const before = Date.now();
     const univerfile = openUniverfileSQLite(filename);
+    const after = Date.now();
     try {
       expect(univerfile.upgrade).toMatchObject({
         status: "upgraded",
@@ -74,7 +76,11 @@ describe("v2 .univer upgrade", () => {
           V2_FIXTURE.draftWorktreeId,
           V2_FIXTURE.slideUnitId,
         ),
-      ).toMatchObject({ source: "worktree", creatorID: "local", createdAt: 1_790_234_433_991 });
+      ).toMatchObject({
+        source: "worktree",
+        creatorID: "anonymous",
+        createdAt: 1_790_234_433_991,
+      });
       const drafts =
         (await worktrees.getDraftChangesets(
           context(),
@@ -82,9 +88,10 @@ describe("v2 .univer upgrade", () => {
           V2_FIXTURE.sheetUnitId,
           { from: 1 },
         )) ?? [];
-      expect(drafts.map(({ revision, createTime }) => ({ revision, createTime }))).toEqual([
-        { revision: 3, createTime: 1_790_234_433 },
-      ]);
+      // rc.0 wrote this draft without `createTime`, and legacy History covers trunk only.
+      expect(drafts.map(({ revision }) => revision)).toEqual([3]);
+      expect(drafts[0]!.createTime).toBeGreaterThanOrEqual(Math.floor(before / 1000));
+      expect(drafts[0]!.createTime).toBeLessThanOrEqual(Math.floor(after / 1000));
 
       const history = univerfile.historyDatabaseAdapter;
       expect(
@@ -129,6 +136,17 @@ describe("v2 .univer upgrade", () => {
     }
 
     expect(detectUniverfileSQLiteFormat(filename)).toBe("v3");
+    expect(
+      changesetCreatedAt(filename, "collaboration_changesets", V2_FIXTURE.sheetUnitId, 2),
+    ).toBe(1_790_234_433_050);
+    const draftCreatedAt = changesetCreatedAt(
+      filename,
+      "collaboration_worktree_changesets",
+      V2_FIXTURE.sheetUnitId,
+      3,
+    );
+    expect(draftCreatedAt).toBeGreaterThanOrEqual(before);
+    expect(draftCreatedAt).toBeLessThanOrEqual(after);
     expect(schemaObjects(filename)).not.toContain("collaboration_history_revisions");
     expect(schemaObjects(filename)).not.toContain("collaboration_history_record_lookup");
     const reopened = openUniverfileSQLite(filename);
@@ -163,6 +181,54 @@ describe("v2 .univer upgrade", () => {
     }
   });
 
+  it("fills a missing change time from legacy History, then from the migration time", async () => {
+    const filename = databasePath();
+    writeV2Fixture(filename);
+    const database = new Database(filename);
+    let committedAt: number;
+    try {
+      database.exec(`
+        UPDATE collaboration_changesets
+        SET payload_json = json_remove(payload_json, '$.createTime');
+        UPDATE collaboration_worktree_changesets
+        SET payload_json = json_remove(payload_json, '$.createTime');
+      `);
+      committedAt = (
+        database
+          .prepare(
+            `SELECT committed_at FROM collaboration_history_revisions
+             WHERE unit_id = ? AND revision = 2`,
+          )
+          .get(V2_FIXTURE.sheetUnitId) as { committed_at: number }
+      ).committed_at;
+    } finally {
+      database.close();
+    }
+
+    const before = Date.now();
+    const univerfile = openUniverfileSQLite(filename);
+    const after = Date.now();
+    try {
+      expect(univerfile.databaseAdapter.getChangeset(V2_FIXTURE.sheetUnitId, 2)?.createTime).toBe(
+        Math.floor(committedAt / 1000),
+      );
+      const [draft] =
+        (await univerfile.worktreeDatabaseAdapter.getDraftChangesets(
+          context(),
+          V2_FIXTURE.draftWorktreeId,
+          V2_FIXTURE.sheetUnitId,
+          { from: 1 },
+        )) ?? [];
+      expect(draft?.createTime).toBeGreaterThanOrEqual(Math.floor(before / 1000));
+      expect(draft?.createTime).toBeLessThanOrEqual(Math.floor(after / 1000));
+    } finally {
+      await univerfile.dispose();
+    }
+    expect(
+      changesetCreatedAt(filename, "collaboration_changesets", V2_FIXTURE.sheetUnitId, 2),
+    ).toBe(committedAt);
+  });
+
   it("leaves History empty for lazy initialization when the v2 fixture has none", async () => {
     const filename = databasePath();
     writeV2Fixture(filename, "without-history");
@@ -172,7 +238,7 @@ describe("v2 .univer upgrade", () => {
       expect(univerfile.upgrade).toMatchObject({ status: "upgraded", sourceFormat: "v2" });
       expect(
         await univerfile.databaseAdapter.getUnit(context(), V2_FIXTURE.sheetUnitId),
-      ).toMatchObject({ creatorID: "local", createdAt: SHEET_CREATED_AT });
+      ).toMatchObject({ creatorID: "anonymous", createdAt: SHEET_CREATED_AT });
       await expect(
         univerfile.historyDatabaseAdapter.getLatestRecord(context(), V2_FIXTURE.sheetUnitId),
       ).resolves.toBeNull();
@@ -232,6 +298,23 @@ describe("v2 .univer upgrade", () => {
     expect(detectUniverfileSQLiteFormat(filename)).toBe("v2");
   });
 });
+
+function changesetCreatedAt(
+  filename: string,
+  table: "collaboration_changesets" | "collaboration_worktree_changesets",
+  unitID: string,
+  revision: number,
+): number | undefined {
+  const database = new Database(filename, { readonly: true });
+  try {
+    const row = database
+      .prepare(`SELECT created_at_ms FROM ${table} WHERE unit_id = ? AND revision = ?`)
+      .get(unitID, revision) as { created_at_ms: number } | undefined;
+    return row?.created_at_ms;
+  } finally {
+    database.close();
+  }
+}
 
 function schemaObjects(filename: string): readonly string[] {
   const database = new Database(filename, { readonly: true });

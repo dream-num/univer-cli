@@ -10,6 +10,8 @@ export function downgradeToRcV2Layout(filename: string): void {
     database.exec(`
       ALTER TABLE collaboration_units DROP COLUMN creator_id;
       ALTER TABLE collaboration_worktree_units DROP COLUMN creator_id;
+      ALTER TABLE collaboration_changesets DROP COLUMN created_at_ms;
+      ALTER TABLE collaboration_worktree_changesets DROP COLUMN created_at_ms;
       DROP TABLE IF EXISTS collaboration_history_records;
       DELETE FROM collaboration_schema_versions WHERE component = 'history';
       UPDATE collaboration_schema_versions SET version = 1 WHERE component = 'core';

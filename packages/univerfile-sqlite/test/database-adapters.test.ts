@@ -180,6 +180,15 @@ describe("Univerfile SQLite database adapters", () => {
       }),
     ).toEqual({ records: [{ record: creation, endRevision: 1 }], hasMore: false });
     expect(
+      (
+        await history.listRecords(context(), "unit-1", {
+          throughRevision: 6,
+          length: 10,
+          origin: 0,
+        })
+      ).records.map(({ record }) => record.startRevision),
+    ).toEqual([5, 2, 1]);
+    expect(
       await history.listRecords(context(), "unit-1", {
         throughRevision: 3,
         beforeRevision: 3,
@@ -394,6 +403,16 @@ describe("Univerfile SQLite database adapters", () => {
     const [stored] =
       (await adapter.getDraftChangesets(context(), worktreeID, "unit-1", { from: 1 })) ?? [];
     expect(stored?.createTime).toBe(Math.floor(now / 1000));
+    const connection = new UniverfileSQLiteConnection({ filename });
+    try {
+      expect(
+        connection.database
+          .prepare("SELECT created_at_ms FROM collaboration_worktree_changesets")
+          .get(),
+      ).toMatchObject({ created_at_ms: Math.floor(now / 1000) * 1000 });
+    } finally {
+      connection.dispose();
+    }
     expect(await adapter.getWorktreeUnit(context(), worktreeID, "unit-1")).toMatchObject({
       creatorID: "user-1",
       createdAt: 1_000,

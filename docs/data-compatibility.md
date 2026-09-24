@@ -28,22 +28,23 @@ application 显式打开对应路径时安全升级到 v3。
 | v0        | 无 component version table |          |          |          | 早期 CLI                         |
 | v1        | 1                          | 1        | 1 或缺失 | 1 或缺失 | Collaboration SDK 之前的 Gateway |
 | v2        | 1                          | 2        | 1        | 1 或缺失 | Collaboration SDK `1.0.0-rc.0`   |
-| v3        | 2                          | 3        | 1        | 2 或缺失 | Collaboration SDK `1.0.0`        |
+| v3        | 2                          | 3        | 1        | 2        | Collaboration SDK `1.0.0`        |
 
-v3 与 v2 的差异来自 Collaboration SDK `1.0.0` 的 persistence contract：
+v3 与 v2 的差异来自 Collaboration SDK `1.0.0` 的 persistence contract，表结构与 SDK 自带 SQLite adapter 一致：
 
 - `collaboration_units` 与 `collaboration_worktree_units` 增加 `creator_id`；`created_at_ms` 表示 Unit 本身的
   创建时间。trunk 来源的 Worktree Unit 继承 trunk Unit 的创建者与创建时间。
-- trunk 与 Worktree changeset payload 的 `createTime` 是 adapter 在提交时写入的 Unix 秒。
+- trunk 与 Worktree changeset payload 的 `createTime` 是 adapter 在提交时写入的 Unix 秒；
+  `collaboration_changesets` 与 `collaboration_worktree_changesets` 增加 `created_at_ms`，以 Unix 毫秒保存同一时间。
 - History 只保存 segment 起点 `collaboration_history_records`，不再逐 revision 保存
   `collaboration_history_revisions`。revision 1 只属于创建记录。
 
 ## v2 到 v3
 
-- Unit 创建者依次取 rc History revision 1 的 `user_id`、trunk revision 2 changeset 的 `userID`，否则为
-  `local`。Worktree 中新建 Unit 的创建者取 Worktree `agent_id`，否则为 `local`。
-- `createTime` 大于等于 `1e11` 时按毫秒换算为秒；缺失时依次取同一 revision 的 rc History 时间、同一 Unit 上一
-  revision 的时间、Unit 或 Worktree 的创建时间。v0 source 同样执行该规范化。
+- 与 SDK 迁移一致，Unit 创建者取 rc History revision 1 的 `user_id`，否则为 `anonymous`。Worktree 中新建的
+  Unit 没有记录作者，创建者为 `anonymous`。v0 source 没有 History，所有 Unit 的创建者为 `anonymous`。
+- `createTime` 大于等于 `1e11` 时按毫秒换算为秒。与 SDK 迁移一致，缺失时 trunk changeset 取同一 revision 的
+  rc History 时间，其余取升级开始时间。v0 source 同样执行该规范化。
 - rc History 中 `history_revision = revision` 的行转换为 segment 起点，另为 revision 2 补一个起点，并丢弃超过
   core head 的起点。某个 Unit 的 rc History 不连续或引用不存在的起点时，只清空该 Unit 的 History。
 - 升级结果的 `omitted` 为空；v0/v1 升级仍报告 `logical-commit-history`。
@@ -52,8 +53,8 @@ v3 与 v2 的差异来自 Collaboration SDK `1.0.0` 的 persistence contract：
 
 `@univer/univerfile-sqlite` 拥有 v3 schema、格式识别、v0/v1/v2 reader、升级协调和验证逻辑。调用方通过统一的
 `openUniverfileSQLite()` seam 获得共享 connection 的 Collaboration SDK database adapters、History adapter
-与 Asset store。`history@2` 是可选输入组件，也是可重建的派生索引：History Service 在 Unit 没有记录时从权威
-trunk Unit/changeset 初始化，在下一次提交时补齐落后的 Unit；Gateway 启动时按 Unit 删除超过 core head 的
+与 Asset store。`history@2` 是可重建的派生索引：History Service 在 Unit 没有记录时从权威 trunk
+Unit/changeset 初始化，在下一次提交时补齐落后的 Unit。升级和 optimizer 保证不留下超过 core head 的
 记录。这些操作都不改变 core revision。
 
 升级结果包含 source/target format、backup path/hash、Unit/Worktree/Asset verification count、无法带入当前

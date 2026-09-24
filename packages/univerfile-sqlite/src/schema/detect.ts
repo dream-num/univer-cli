@@ -110,7 +110,18 @@ export function detectUniverfileSQLiteFormat(filename: string): UniverfileSQLite
   }
 }
 
-/** Core v2, worktree v3, assets v1, and history v2 when History has been opened. */
+const V3_REQUIRED_COLUMNS: readonly (readonly [string, readonly string[]])[] = [
+  ["collaboration_units", ["creator_id", "created_at_ms"]],
+  ["collaboration_changesets", ["created_at_ms"]],
+  ["collaboration_worktree_units", ["creator_id", "created_at_ms"]],
+  ["collaboration_worktree_changesets", ["created_at_ms"]],
+  [
+    "collaboration_history_records",
+    ["unit_id", "start_revision", "user_id", "created_at_ms", "origin", "additional_fields"],
+  ],
+];
+
+/** Core v2, worktree v3, assets v1, and history v2. */
 function detectV3(
   database: Database.Database,
   tables: ReadonlySet<string>,
@@ -121,27 +132,25 @@ function detectV3(
     throw unsupported(`worktree schema version ${String(worktreeVersion)} requires core v1`);
   }
   if (versions.get("assets") !== 1) throw unsupported("assets schema version must be v1");
-  const historyVersion = versions.get("history");
-  const presentHistoryTables = [...HISTORY_V1_TABLES, ...HISTORY_V2_TABLES].filter((table) =>
-    tables.has(table),
-  );
-  const hasCompleteHistorySchema =
-    historyVersion === 2 &&
-    presentHistoryTables.length === HISTORY_V2_TABLES.length &&
-    HISTORY_V2_TABLES.every((table) => tables.has(table));
-  const hasNoHistorySchema = historyVersion === undefined && presentHistoryTables.length === 0;
-  if (!hasCompleteHistorySchema && !hasNoHistorySchema) {
-    throw unsupported("history schema must be a complete v2 or absent");
+  if (versions.get("history") !== 2) throw unsupported("history schema version must be v2");
+  if (HISTORY_V1_TABLES.some((table) => tables.has(table))) {
+    throw unsupported("v3 contains retired History tables");
   }
-  const required: string[] = [...CORE_V1_TABLES, ...WORKTREE_COMMON_TABLES, ...ASSET_V1_TABLES];
-  if (hasCompleteHistorySchema) required.push(...HISTORY_V2_TABLES);
+  const required = [
+    ...CORE_V1_TABLES,
+    ...WORKTREE_COMMON_TABLES,
+    ...ASSET_V1_TABLES,
+    ...HISTORY_V2_TABLES,
+  ];
   const missing = required.filter((table) => !tables.has(table));
   if (missing.length > 0) {
     throw unsupported(`schema is incomplete: missing ${missing.join(", ")}`);
   }
-  for (const table of ["collaboration_units", "collaboration_worktree_units"]) {
-    if (!columns(database, table).has("creator_id")) {
-      throw unsupported(`${table} is missing creator_id`);
+  for (const [table, requiredColumns] of V3_REQUIRED_COLUMNS) {
+    const present = columns(database, table);
+    const absent = requiredColumns.filter((column) => !present.has(column));
+    if (absent.length > 0) {
+      throw unsupported(`${table} is missing ${absent.join(", ")}`);
     }
   }
   return "v3";

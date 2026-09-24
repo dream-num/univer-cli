@@ -564,7 +564,8 @@ export class UniverfileSQLiteWorktreeDatabaseAdapter implements IWorktreeDatabas
     validateSubmissionIdentity(input.changeset);
     return this._transaction(() => {
       const { worktreeID } = input;
-      const changeset: IChangeset = { ...input.changeset, createTime: currentUnixSeconds() };
+      const createTime = currentUnixSeconds();
+      const changeset: IChangeset = { ...input.changeset, createTime };
       const worktree = this._getWorktreeRow(worktreeID);
       const unit = this._getUnitRow(worktreeID, changeset.unitID);
       if (!worktree || !unit) return { status: "not-found" };
@@ -587,8 +588,8 @@ export class UniverfileSQLiteWorktreeDatabaseAdapter implements IWorktreeDatabas
         .prepare(
           `INSERT INTO collaboration_worktree_changesets
              (worktree_id, unit_id, revision, base_revision,
-              sid, req_id, payload_json)
-           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+              sid, req_id, payload_json, created_at_ms)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           worktreeID,
@@ -598,6 +599,7 @@ export class UniverfileSQLiteWorktreeDatabaseAdapter implements IWorktreeDatabas
           changeset.sid as string,
           changeset.reqId as number,
           encode(changeset),
+          createTime * 1000,
         );
       const update = this._database
         .prepare(
@@ -959,20 +961,7 @@ export class UniverfileSQLiteWorktreeDatabaseAdapter implements IWorktreeDatabas
 
         ${worktreeUnitsTableSql("collaboration_worktree_units")}
 
-        CREATE TABLE collaboration_worktree_changesets (
-          worktree_id TEXT NOT NULL,
-          unit_id TEXT NOT NULL,
-          revision INTEGER NOT NULL CHECK (revision >= 2),
-          base_revision INTEGER NOT NULL CHECK (base_revision >= 1),
-          sid TEXT NOT NULL,
-          req_id INTEGER NOT NULL CHECK (req_id >= 1),
-          payload_json TEXT NOT NULL,
-          PRIMARY KEY (worktree_id, unit_id, revision),
-          UNIQUE (worktree_id, unit_id, sid, req_id),
-          FOREIGN KEY (worktree_id, unit_id)
-            REFERENCES collaboration_worktree_units(worktree_id, unit_id)
-            ON DELETE CASCADE
-        );
+        ${worktreeChangesetsTableSql("collaboration_worktree_changesets")}
 
         CREATE INDEX collaboration_worktree_changesets_revision
           ON collaboration_worktree_changesets(
@@ -1044,6 +1033,7 @@ export class UniverfileSQLiteWorktreeDatabaseAdapter implements IWorktreeDatabas
   private _assertGatewayColumns(): void {
     const worktreeColumns = this._tableColumns("collaboration_worktrees");
     const unitColumns = this._tableColumns("collaboration_worktree_units");
+    const changesetColumns = this._tableColumns("collaboration_worktree_changesets");
     const missingWorktree = ["agent_id", "name", "created_at_ms", "merged_at_ms"].filter(
       (column) => !worktreeColumns.has(column),
     );
@@ -1053,6 +1043,9 @@ export class UniverfileSQLiteWorktreeDatabaseAdapter implements IWorktreeDatabas
     const missing = [
       ...missingWorktree.map((column) => `collaboration_worktrees.${column}`),
       ...missingUnit.map((column) => `collaboration_worktree_units.${column}`),
+      ...(changesetColumns.has("created_at_ms")
+        ? []
+        : ["collaboration_worktree_changesets.created_at_ms"]),
     ];
     if (missing.length > 0) {
       throw incompatibleSchema(
@@ -1377,6 +1370,25 @@ function validateUnitIdentity(unit: WorktreeUnitRecord): void {
   ) {
     throw invalidRequest("Worktree Unit requires creatorID and createdAt in Unix milliseconds");
   }
+}
+
+/** `created_at_ms` repeats the payload `createTime` in Unix milliseconds, as the SDK schema does. */
+export function worktreeChangesetsTableSql(tableName: string): string {
+  return `CREATE TABLE ${tableName} (
+          worktree_id TEXT NOT NULL,
+          unit_id TEXT NOT NULL,
+          revision INTEGER NOT NULL CHECK (revision >= 2),
+          base_revision INTEGER NOT NULL CHECK (base_revision >= 1),
+          sid TEXT NOT NULL,
+          req_id INTEGER NOT NULL CHECK (req_id >= 1),
+          payload_json TEXT NOT NULL,
+          created_at_ms INTEGER NOT NULL,
+          PRIMARY KEY (worktree_id, unit_id, revision),
+          UNIQUE (worktree_id, unit_id, sid, req_id),
+          FOREIGN KEY (worktree_id, unit_id)
+            REFERENCES collaboration_worktree_units(worktree_id, unit_id)
+            ON DELETE CASCADE
+        );`;
 }
 
 /** Column layout shared by schema creation and the v2-to-v3 `.univer` upgrade. */

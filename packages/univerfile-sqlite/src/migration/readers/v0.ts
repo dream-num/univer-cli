@@ -7,6 +7,7 @@ import {
 } from "../../connection.js";
 import { UniverfileSQLiteDatabaseAdapter } from "../../database-adapters/collaboration-database-adapter.js";
 import { UniverfileSQLiteWorktreeDatabaseAdapter } from "../../database-adapters/worktree-database-adapter.js";
+import { ANONYMOUS_CREATOR_ID } from "./v2.js";
 
 const LEGACY_PREFIX = "__collaboration_migration_v0_";
 const BINARY_TAG = "__univerCollaborationBinary";
@@ -282,7 +283,8 @@ function migrateTrunk(database: Database.Database): void {
       unit.type,
       unit.name,
       unit.head_rev,
-      legacyUnitCreator(database, unit.unit_id),
+      // v0 recorded no creation author.
+      ANONYMOUS_CREATOR_ID,
       parseTimestamp(unit.created_at, `legacy Unit ${unit.unit_id} created_at`),
       unit.deleted_at === null
         ? null
@@ -525,7 +527,7 @@ function migrateWorktree(
         name: unit.name,
         source: "trunk" as const,
         baselineRevision: baseline[unitId]!,
-        creatorId: legacyUnitCreator(database, unitId),
+        creatorId: ANONYMOUS_CREATOR_ID,
         createdAt: parseTimestamp(unit.created_at, `legacy Unit ${unitId} created_at`),
       };
     }),
@@ -533,7 +535,7 @@ function migrateWorktree(
       ...unit,
       source: "worktree" as const,
       baselineRevision: 1,
-      creatorId: worktree.agent_id || "local",
+      creatorId: ANONYMOUS_CREATOR_ID,
     })),
   ].filter((unit) => !deleted.has(unit.unitId));
 
@@ -628,8 +630,8 @@ function migrateActiveWorktreeChangesets(
 ): void {
   const insert = database.prepare(
     `INSERT INTO collaboration_worktree_changesets
-       (worktree_id, unit_id, revision, base_revision, sid, req_id, payload_json)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+       (worktree_id, unit_id, revision, base_revision, sid, req_id, payload_json, created_at_ms)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 0)`,
   );
   for (const unit of activeUnits) {
     const usedIdentities = new Set<string>();
@@ -696,8 +698,8 @@ function migrateChangesets(
 ): void {
   const insert = database.prepare(
     `INSERT INTO ${targetTable}
-       (unit_id, revision, base_revision, sid, req_id, payload_json)
-     VALUES (?, ?, ?, ?, ?, ?)`,
+       (unit_id, revision, base_revision, sid, req_id, payload_json, created_at_ms)
+     VALUES (?, ?, ?, ?, ?, ?, 0)`,
   );
   const usedByUnit = new Map<string, Set<string>>();
   for (const row of rows) {
@@ -994,18 +996,6 @@ function countMergingWorktrees(database: Database.Database, table: string): numb
     .prepare(`SELECT COUNT(*) AS count FROM ${table} WHERE status = 'merging'`)
     .get() as { readonly count: number };
   return Number(row.count);
-}
-
-/** v0 kept no creation author, so the first trunk change is the closest recorded one. */
-function legacyUnitCreator(database: Database.Database, unitId: string): string {
-  const row = database
-    .prepare(
-      `SELECT user_id
-       FROM ${legacyTable("changesets")}
-       WHERE unit_id = ? AND revision = 2`,
-    )
-    .get(unitId) as { readonly user_id: string | null } | undefined;
-  return row?.user_id || "local";
 }
 
 function validateCurrentDatabase(filename: string, connection: UniverfileSQLiteConnection): void {

@@ -1,16 +1,24 @@
 import type Database from "libsql";
 import type { UniverfileSQLiteConnection } from "../../connection.js";
 import { runUniverfileSQLiteTransaction } from "../../connection.js";
-import { coreUnitsTableSql } from "../../database-adapters/collaboration-database-adapter.js";
+import {
+  coreChangesetsTableSql,
+  coreUnitsTableSql,
+} from "../../database-adapters/collaboration-database-adapter.js";
 import {
   HISTORY_RECORDS_SCHEMA_SQL,
   HISTORY_SCHEMA_VERSION,
 } from "../../database-adapters/history-database-adapter.js";
-import { worktreeUnitsTableSql } from "../../database-adapters/worktree-database-adapter.js";
+import {
+  worktreeChangesetsTableSql,
+  worktreeUnitsTableSql,
+} from "../../database-adapters/worktree-database-adapter.js";
 
 const LEGACY_HISTORY_TABLE = "collaboration_history_revisions";
 /** Values at or above this are Unix milliseconds; Unix seconds stay below it until year 5138. */
 const MILLISECOND_THRESHOLD = 100_000_000_000;
+/** Creator the SDK migrations record when no legacy History names one. */
+export const ANONYMOUS_CREATOR_ID = "anonymous";
 
 interface UnitRow {
   readonly unit_id: string;
@@ -24,7 +32,6 @@ interface ChangesetTimeRow {
   readonly unit_id: string;
   readonly revision: number;
   readonly create_time: unknown;
-  readonly fallback_ms: number;
   readonly legacy_committed_at: number | null;
 }
 
@@ -47,8 +54,9 @@ interface HistoryStart {
 /**
  * Converts a Collaboration SDK rc `.univer` layout (core v1, worktree v2, history v1) in place.
  *
- * Unit records gain their creator. Changeset `createTime` becomes Unix seconds. History keeps the
- * segment starts it can prove and leaves any other Unit to History Service's lazy initialization.
+ * Unit records gain their creator, and changesets gain `created_at_ms` with `createTime` in Unix
+ * seconds. History keeps the segment starts it can prove and leaves any other Unit to History
+ * Service's lazy initialization.
  */
 export function migrateV2CandidateToV3(connection: UniverfileSQLiteConnection): void {
   const { database } = connection;
@@ -58,7 +66,8 @@ export function migrateV2CandidateToV3(connection: UniverfileSQLiteConnection): 
     runUniverfileSQLiteTransaction(database, () => {
       rebuildCoreUnits(database, hasLegacyHistory);
       rebuildWorktreeUnits(database);
-      normalizeChangesetCreateTimes(database);
+      rebuildChangesetTables(database);
+      normalizeAllChangesetCreateTimes(database);
       if (hasLegacyHistory) migrateHistory(database);
       database.exec(`
         UPDATE collaboration_schema_versions SET version = 2
@@ -75,25 +84,20 @@ export function migrateV2CandidateToV3(connection: UniverfileSQLiteConnection): 
   }
 }
 
+/** Matches the SDK Core migration: the creator is the legacy History author of revision 1. */
 function rebuildCoreUnits(database: Database.Database, hasLegacyHistory: boolean): void {
-  const historyCreator = hasLegacyHistory
-    ? `NULLIF((SELECT history.user_id FROM ${LEGACY_HISTORY_TABLE} AS history
-               WHERE history.unit_id = units.unit_id AND history.revision = 1), ''),`
-    : "";
+  const creator = hasLegacyHistory
+    ? `COALESCE(NULLIF((SELECT history.user_id FROM ${LEGACY_HISTORY_TABLE} AS history
+                        WHERE history.unit_id = units.unit_id AND history.revision = 1), ''),
+                '${ANONYMOUS_CREATOR_ID}')`
+    : `'${ANONYMOUS_CREATOR_ID}'`;
   database.exec(`
     ${coreUnitsTableSql("collaboration_units_v3")}
 
     INSERT INTO collaboration_units_v3
       (unit_id, type, name, head_revision, creator_id, created_at_ms, soft_deleted_at_ms)
     SELECT units.unit_id, units.type, units.name, units.head_revision,
-           COALESCE(
-             ${historyCreator}
-             NULLIF(json_extract((SELECT changesets.payload_json
-                                  FROM collaboration_changesets AS changesets
-                                  WHERE changesets.unit_id = units.unit_id
-                                    AND changesets.revision = 2), '$.userID'), ''),
-             'local'
-           ),
+           ${creator},
            units.created_at_ms, units.soft_deleted_at_ms
     FROM collaboration_units AS units;
 
@@ -103,8 +107,8 @@ function rebuildCoreUnits(database: Database.Database, hasLegacyHistory: boolean
 }
 
 /**
- * Trunk-sourced Units take their trunk creation identity. Worktree-created Units were created by
- * the Worktree's agent at the time recorded on the row.
+ * Matches the SDK Worktree migration: trunk-sourced Units take the trunk creation identity, and
+ * Worktree-created Units have no recorded author.
  */
 function rebuildWorktreeUnits(database: Database.Database): void {
   database.exec(`
@@ -115,8 +119,9 @@ function rebuildWorktreeUnits(database: Database.Database): void {
        baseline_trunk_revision, draft_head_revision, ready_draft_head_revision, merge_result_json)
     SELECT units.worktree_id, units.unit_id, units.unit_order, units.type, units.name,
            CASE
-             WHEN units.source = 'trunk' THEN COALESCE(trunk.creator_id, 'local')
-             ELSE COALESCE(NULLIF(worktrees.agent_id, ''), 'local')
+             WHEN units.source = 'trunk'
+               THEN COALESCE(trunk.creator_id, '${ANONYMOUS_CREATOR_ID}')
+             ELSE '${ANONYMOUS_CREATOR_ID}'
            END,
            CASE
              WHEN units.source = 'trunk' THEN COALESCE(trunk.created_at_ms, units.created_at_ms)
@@ -125,7 +130,6 @@ function rebuildWorktreeUnits(database: Database.Database): void {
            units.source, units.baseline_trunk_revision, units.draft_head_revision,
            units.ready_draft_head_revision, units.merge_result_json
     FROM collaboration_worktree_units AS units
-    LEFT JOIN collaboration_worktrees AS worktrees ON worktrees.worktree_id = units.worktree_id
     LEFT JOIN collaboration_units AS trunk ON trunk.unit_id = units.unit_id;
 
     DROP TABLE collaboration_worktree_units;
@@ -133,89 +137,101 @@ function rebuildWorktreeUnits(database: Database.Database): void {
   `);
 }
 
+/** `created_at_ms` starts at 0 here; `normalizeAllChangesetCreateTimes` fills it. */
+function rebuildChangesetTables(database: Database.Database): void {
+  database.exec(`
+    ${coreChangesetsTableSql("collaboration_changesets_v3")}
+
+    INSERT INTO collaboration_changesets_v3
+      (unit_id, revision, base_revision, sid, req_id, payload_json, created_at_ms)
+    SELECT unit_id, revision, base_revision, sid, req_id, payload_json, 0
+    FROM collaboration_changesets;
+
+    DROP TABLE collaboration_changesets;
+    ALTER TABLE collaboration_changesets_v3 RENAME TO collaboration_changesets;
+    CREATE INDEX collaboration_changesets_revision_range
+      ON collaboration_changesets(unit_id, revision ASC);
+
+    ${worktreeChangesetsTableSql("collaboration_worktree_changesets_v3")}
+
+    INSERT INTO collaboration_worktree_changesets_v3
+      (worktree_id, unit_id, revision, base_revision, sid, req_id, payload_json, created_at_ms)
+    SELECT worktree_id, unit_id, revision, base_revision, sid, req_id, payload_json, 0
+    FROM collaboration_worktree_changesets;
+
+    DROP TABLE collaboration_worktree_changesets;
+    ALTER TABLE collaboration_worktree_changesets_v3 RENAME TO collaboration_worktree_changesets;
+    CREATE INDEX collaboration_worktree_changesets_revision
+      ON collaboration_worktree_changesets(worktree_id, unit_id, revision ASC);
+  `);
+}
+
 /**
  * History grouping reads `createTime` as Unix seconds. Earlier CLI builds wrote milliseconds or
- * nothing; missing values inherit the closest earlier time on the same Unit.
+ * nothing. Like the SDK migrations, a missing value takes the legacy History commit time for trunk
+ * changesets and otherwise the migration start time.
  */
 export function normalizeChangesetCreateTimes(database: Database.Database): void {
   runUniverfileSQLiteTransaction(database, () => normalizeAllChangesetCreateTimes(database));
 }
 
 function normalizeAllChangesetCreateTimes(database: Database.Database): void {
-  const hasLegacyHistory = hasTable(database, LEGACY_HISTORY_TABLE);
-  const legacyCommittedAt = hasLegacyHistory
+  const migrationStartedAtMs = Date.now();
+  const legacyCommittedAt = hasTable(database, LEGACY_HISTORY_TABLE)
     ? `(SELECT history.committed_at FROM ${LEGACY_HISTORY_TABLE} AS history
         WHERE history.unit_id = changesets.unit_id AND history.revision = changesets.revision)`
     : "NULL";
-  normalizeScope(
-    database,
-    "collaboration_changesets",
-    database
-      .prepare(
-        `SELECT '' AS scope_id, changesets.unit_id, changesets.revision,
-                json_extract(changesets.payload_json, '$.createTime') AS create_time,
-                units.created_at_ms AS fallback_ms,
-                ${legacyCommittedAt} AS legacy_committed_at
-         FROM collaboration_changesets AS changesets
-         JOIN collaboration_units AS units ON units.unit_id = changesets.unit_id
-         ORDER BY changesets.unit_id ASC, changesets.revision ASC`,
-      )
-      .all() as unknown as ChangesetTimeRow[],
+  const updateCore = database.prepare(
     `UPDATE collaboration_changesets
-     SET payload_json = json_set(payload_json, '$.createTime', ?)
+     SET payload_json = json_set(payload_json, '$.createTime', ?), created_at_ms = ?
      WHERE unit_id = ? AND revision = ?`,
   );
-  normalizeScope(
-    database,
-    "collaboration_worktree_changesets",
-    database
-      .prepare(
-        `SELECT changesets.worktree_id AS scope_id, changesets.unit_id, changesets.revision,
-                json_extract(changesets.payload_json, '$.createTime') AS create_time,
-                worktrees.created_at_ms AS fallback_ms,
-                NULL AS legacy_committed_at
-         FROM collaboration_worktree_changesets AS changesets
-         JOIN collaboration_worktrees AS worktrees
-           ON worktrees.worktree_id = changesets.worktree_id
-         ORDER BY changesets.worktree_id ASC, changesets.unit_id ASC, changesets.revision ASC`,
-      )
-      .all() as unknown as ChangesetTimeRow[],
+  const coreRows = database
+    .prepare(
+      `SELECT '' AS scope_id, unit_id, revision,
+              json_extract(payload_json, '$.createTime') AS create_time,
+              ${legacyCommittedAt} AS legacy_committed_at
+       FROM collaboration_changesets AS changesets`,
+    )
+    .all() as unknown as ChangesetTimeRow[];
+  for (const row of coreRows) {
+    const milliseconds = changesetMilliseconds(row, migrationStartedAtMs);
+    updateCore.run(Math.floor(milliseconds / 1000), milliseconds, row.unit_id, row.revision);
+  }
+
+  const updateWorktree = database.prepare(
     `UPDATE collaboration_worktree_changesets
-     SET payload_json = json_set(payload_json, '$.createTime', ?)
+     SET payload_json = json_set(payload_json, '$.createTime', ?), created_at_ms = ?
      WHERE worktree_id = ? AND unit_id = ? AND revision = ?`,
   );
-}
-
-function normalizeScope(
-  database: Database.Database,
-  table: "collaboration_changesets" | "collaboration_worktree_changesets",
-  rows: readonly ChangesetTimeRow[],
-  updateSql: string,
-): void {
-  const update = database.prepare(updateSql);
-  let scope: string | undefined;
-  let previousSeconds = 0;
-  for (const row of rows) {
-    const key = `${row.scope_id}\u0000${row.unit_id}`;
-    if (key !== scope) {
-      scope = key;
-      previousSeconds = toSeconds(row.fallback_ms) ?? 0;
-    }
-    const seconds =
-      toSeconds(row.create_time) ?? toSeconds(row.legacy_committed_at) ?? previousSeconds;
-    previousSeconds = seconds;
-    if (seconds === row.create_time) continue;
-    if (table === "collaboration_changesets") {
-      update.run(seconds, row.unit_id, row.revision);
-    } else {
-      update.run(seconds, row.scope_id, row.unit_id, row.revision);
-    }
+  const worktreeRows = database
+    .prepare(
+      `SELECT worktree_id AS scope_id, unit_id, revision,
+              json_extract(payload_json, '$.createTime') AS create_time,
+              NULL AS legacy_committed_at
+       FROM collaboration_worktree_changesets`,
+    )
+    .all() as unknown as ChangesetTimeRow[];
+  for (const row of worktreeRows) {
+    const milliseconds = changesetMilliseconds(row, migrationStartedAtMs);
+    updateWorktree.run(
+      Math.floor(milliseconds / 1000),
+      milliseconds,
+      row.scope_id,
+      row.unit_id,
+      row.revision,
+    );
   }
 }
 
-function toSeconds(value: unknown): number | undefined {
+function changesetMilliseconds(row: ChangesetTimeRow, fallbackMs: number): number {
+  return toMilliseconds(row.create_time) ?? toMilliseconds(row.legacy_committed_at) ?? fallbackMs;
+}
+
+function toMilliseconds(value: unknown): number | undefined {
   if (typeof value !== "number" || !Number.isFinite(value) || value < 0) return undefined;
-  return Math.floor(value >= MILLISECOND_THRESHOLD ? value / 1000 : value);
+  const milliseconds = Math.floor(value >= MILLISECOND_THRESHOLD ? value : value * 1000);
+  return Number.isSafeInteger(milliseconds) ? milliseconds : undefined;
 }
 
 /**
@@ -267,17 +283,16 @@ function migrateHistory(database: Database.Database): void {
     insert.run(unit.unit_id, 1, unit.creator_id, unit.created_at_ms, 1, null);
     for (const start of starts) {
       const row = createTime.get(unit.unit_id, start.startRevision) as
-        | { readonly create_time: unknown }
+        | { readonly create_time: number }
         | undefined;
-      const seconds = toSeconds(row?.create_time);
-      if (seconds === undefined) {
-        throw new Error(`trunk changeset ${unit.unit_id}@${start.startRevision} has no createTime`);
+      if (row === undefined) {
+        throw new Error(`trunk changeset ${unit.unit_id}@${start.startRevision} is missing`);
       }
       insert.run(
         unit.unit_id,
         start.startRevision,
         start.userID,
-        seconds * 1000,
+        row.create_time * 1000,
         start.origin,
         start.additionalFields,
       );

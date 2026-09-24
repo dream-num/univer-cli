@@ -52,13 +52,13 @@ describe("Gateway v1 .univer upgrade", () => {
           units: expect.arrayContaining([
             expect.objectContaining({
               unitID: "unit-1",
-              creatorID: "local",
+              creatorID: "anonymous",
               createdAt: 1_000,
               readyDraftHeadRevision: 1,
             }),
             expect.objectContaining({
               unitID: "base-wt",
-              creatorID: "local",
+              creatorID: "anonymous",
               createdAt: 2_000,
               readyDraftHeadRevision: 2,
             }),

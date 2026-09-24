@@ -466,7 +466,8 @@ export class UniverfileSQLiteDatabaseAdapter implements IDatabaseAdapter {
   ): Promise<CommitChangesetResult> {
     this._assertOpen();
     validateSubmissionIdentity(input.changeset);
-    const changeset: IChangeset = { ...input.changeset, createTime: currentUnixSeconds() };
+    const createTime = currentUnixSeconds();
+    const changeset: IChangeset = { ...input.changeset, createTime };
     const payload = encode(changeset);
 
     return this._transaction(() => {
@@ -486,8 +487,8 @@ export class UniverfileSQLiteDatabaseAdapter implements IDatabaseAdapter {
       this._database
         .prepare(
           `INSERT INTO collaboration_changesets
-             (unit_id, revision, base_revision, sid, req_id, payload_json)
-           VALUES (?, ?, ?, ?, ?, ?)`,
+             (unit_id, revision, base_revision, sid, req_id, payload_json, created_at_ms)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           changeset.unitID,
@@ -496,6 +497,7 @@ export class UniverfileSQLiteDatabaseAdapter implements IDatabaseAdapter {
           changeset.sid as string,
           changeset.reqId as number,
           payload,
+          createTime * 1000,
         );
       const update = this._database
         .prepare(
@@ -654,18 +656,7 @@ export class UniverfileSQLiteDatabaseAdapter implements IDatabaseAdapter {
             REFERENCES collaboration_units(unit_id) ON DELETE CASCADE
         );
 
-        CREATE TABLE collaboration_changesets (
-          unit_id TEXT NOT NULL,
-          revision INTEGER NOT NULL CHECK (revision >= 2),
-          base_revision INTEGER NOT NULL CHECK (base_revision >= 1),
-          sid TEXT NOT NULL,
-          req_id INTEGER NOT NULL CHECK (req_id >= 1),
-          payload_json TEXT NOT NULL,
-          PRIMARY KEY (unit_id, revision),
-          UNIQUE (unit_id, sid, req_id),
-          FOREIGN KEY (unit_id)
-            REFERENCES collaboration_units(unit_id) ON DELETE CASCADE
-        );
+        ${coreChangesetsTableSql("collaboration_changesets")}
 
         CREATE TABLE collaboration_sheet_blocks (
           unit_id TEXT NOT NULL,
@@ -761,9 +752,19 @@ export class UniverfileSQLiteDatabaseAdapter implements IDatabaseAdapter {
           .all() as unknown as ColumnRow[]
       ).map(({ name }) => name),
     );
-    const missing = ["name", "creator_id", "created_at_ms"].filter(
-      (column) => !columns.has(column),
+    const changesetColumns = new Set(
+      (
+        this._database
+          .prepare("PRAGMA table_info(collaboration_changesets)")
+          .all() as unknown as ColumnRow[]
+      ).map(({ name }) => name),
     );
+    const missing = [
+      ...["name", "creator_id", "created_at_ms"]
+        .filter((column) => !columns.has(column))
+        .map((column) => `collaboration_units.${column}`),
+      ...(changesetColumns.has("created_at_ms") ? [] : ["collaboration_changesets.created_at_ms"]),
+    ];
     if (missing.length > 0) {
       throw incompatibleSchema(
         `SQLite collaboration core schema v${CORE_SCHEMA_VERSION} is missing CLI columns: ${missing.join(", ")}`,
@@ -878,6 +879,23 @@ export function coreUnitsTableSql(tableName: string): string {
           creator_id TEXT NOT NULL,
           created_at_ms INTEGER NOT NULL,
           soft_deleted_at_ms INTEGER
+        );`;
+}
+
+/** `created_at_ms` repeats the payload `createTime` in Unix milliseconds, as the SDK schema does. */
+export function coreChangesetsTableSql(tableName: string): string {
+  return `CREATE TABLE ${tableName} (
+          unit_id TEXT NOT NULL,
+          revision INTEGER NOT NULL CHECK (revision >= 2),
+          base_revision INTEGER NOT NULL CHECK (base_revision >= 1),
+          sid TEXT NOT NULL,
+          req_id INTEGER NOT NULL CHECK (req_id >= 1),
+          payload_json TEXT NOT NULL,
+          created_at_ms INTEGER NOT NULL,
+          PRIMARY KEY (unit_id, revision),
+          UNIQUE (unit_id, sid, req_id),
+          FOREIGN KEY (unit_id)
+            REFERENCES collaboration_units(unit_id) ON DELETE CASCADE
         );`;
 }
 
