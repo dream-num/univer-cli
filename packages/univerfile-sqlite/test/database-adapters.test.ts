@@ -25,6 +25,7 @@ import {
 const directories: string[] = [];
 
 afterEach(() => {
+  vi.restoreAllMocks();
   for (const directory of directories.splice(0)) {
     rmSync(directory, { recursive: true, force: true });
   }
@@ -48,8 +49,8 @@ function snapshot(unitID: string, type = UniverType.UNIVER_SHEET): ISnapshot {
   return { unitID, type, rev: 1 } as ISnapshot;
 }
 
-function unitRecord(unitID: string, type = UniverType.UNIVER_SHEET): UnitRecord {
-  return { unitID, type, headRevision: 1 };
+function unitRecord(unitID: string, type = UniverType.UNIVER_SHEET, createdAt = 1_000): UnitRecord {
+  return { unitID, type, headRevision: 1, creatorID: "user-1", createdAt };
 }
 
 function worktreeRecord(worktreeID: string): WorktreeRecord {
@@ -66,6 +67,8 @@ function trunkWorktreeUnit(
     unitID,
     type,
     source: "trunk",
+    creatorID: "user-1",
+    createdAt: 1_000,
     baselineTrunkRevision: 1,
     draftHeadRevision: 1,
   };
@@ -113,64 +116,101 @@ describe("Univerfile SQLite database adapters", () => {
     expect(disposeConnection).toHaveBeenCalledOnce();
   });
 
-  it("persists a rebuildable History index on the shared file connection", async () => {
+  it("persists rebuildable History boundaries on the shared file connection", async () => {
     const filename = databasePath();
     const connection = new UniverfileSQLiteConnection({ filename });
     const disposeConnection = vi.spyOn(connection, "dispose");
     new UniverfileSQLiteDatabaseAdapter({ filename, connection });
     const history = new UniverfileSQLiteHistoryDatabaseAdapter({ connection });
+    const creation = {
+      unitID: "unit-1",
+      startRevision: 1,
+      userID: "user-1",
+      createdAt: 1_000,
+      origin: 1,
+    } as const;
+    const edit = {
+      unitID: "unit-1",
+      startRevision: 2,
+      userID: "user-2",
+      createdAt: 2_000,
+      origin: 1,
+    } as const;
+    const restore = {
+      unitID: "unit-1",
+      startRevision: 5,
+      userID: "user-1",
+      createdAt: 5_000,
+      origin: 2,
+      additionalFields: '{"origin":2}',
+    } as const;
 
     expect(
-      await history.appendRevision(
-        {
-          unitID: "unit-1",
-          type: UniverType.UNIVER_SHEET,
-          revision: 1,
-          userID: "user-1",
-          commands: ["univer.mutation.create-unit"],
-          committedAt: 1_000,
-          origin: 1,
-          historyRevision: 1,
-          forceNextHistory: false,
-        },
-        { expectedLatestRevision: 0 },
-      ),
+      await history.appendRecord(context(), creation, { expectedLatestStartRevision: null }),
     ).toEqual({ status: "appended" });
     expect(
-      await history.appendRevision(
-        {
-          unitID: "unit-1",
-          type: UniverType.UNIVER_SHEET,
-          revision: 2,
-          userID: "user-2",
-          commands: ["sheet.mutation.set-range-values"],
-          committedAt: 1_500,
-          origin: 1,
-          historyRevision: 1,
-          forceNextHistory: false,
-        },
-        { expectedLatestRevision: 1 },
-      ),
+      await history.appendRecord(context(), creation, { expectedLatestStartRevision: null }),
+    ).toEqual({ status: "already-exists" });
+    expect(
+      await history.appendRecord(context(), edit, { expectedLatestStartRevision: null }),
+    ).toEqual({ status: "conflict" });
+    expect(await history.appendRecord(context(), edit, { expectedLatestStartRevision: 1 })).toEqual(
+      { status: "appended" },
+    );
+    expect(
+      await history.appendRecord(context(), restore, { expectedLatestStartRevision: 2 }),
     ).toEqual({ status: "appended" });
 
-    expect(await history.getIndexState("unit-1")).toMatchObject({
-      latestRevision: 2,
-      currentHistoryRevision: 1,
+    expect(await history.getLatestRecord(context(), "unit-1")).toEqual(restore);
+    expect(
+      await history.listRecords(context(), "unit-1", { throughRevision: 6, length: 2 }),
+    ).toEqual({
+      records: [
+        { record: restore, endRevision: 6 },
+        { record: edit, endRevision: 4 },
+      ],
+      hasMore: true,
     });
-    expect((await history.listRecords("unit-1", { length: 10 })).records).toEqual([
-      expect.objectContaining({
-        startRevision: 1,
-        endRevision: 2,
-        userIDs: ["user-1", "user-2"],
+    expect(
+      await history.listRecords(context(), "unit-1", {
+        throughRevision: 6,
+        length: 10,
+        userIDs: ["user-1"],
+        origin: 1,
       }),
+    ).toEqual({ records: [{ record: creation, endRevision: 1 }], hasMore: false });
+    expect(
+      (
+        await history.listRecords(context(), "unit-1", {
+          throughRevision: 6,
+          length: 10,
+          origin: 0,
+        })
+      ).records.map(({ record }) => record.startRevision),
+    ).toEqual([5, 2, 1]);
+    expect(
+      await history.listRecords(context(), "unit-1", {
+        throughRevision: 3,
+        beforeRevision: 3,
+        length: 10,
+      }),
+    ).toEqual({
+      records: [
+        { record: edit, endRevision: 3 },
+        { record: creation, endRevision: 1 },
+      ],
+      hasMore: false,
+    });
+    expect(await history.listCreators(context(), "unit-1", { throughRevision: 6 })).toEqual([
+      { userID: "user-1", origins: [1, 2] },
+      { userID: "user-2", origins: [1] },
     ]);
-    expect(await history.listCreators("unit-1")).toEqual([
+    expect(await history.listCreators(context(), "unit-1", { throughRevision: 4 })).toEqual([
       { userID: "user-1", origins: [1] },
       { userID: "user-2", origins: [1] },
     ]);
 
-    history.resetUnit("unit-1");
-    expect(await history.getIndexState("unit-1")).toBeNull();
+    expect(history.latestStartRevision("unit-1")).toBe(5);
     await history.dispose();
     expect(disposeConnection).not.toHaveBeenCalled();
     connection.dispose();
@@ -180,17 +220,23 @@ describe("Univerfile SQLite database adapters", () => {
     const filename = databasePath();
     const adapter = new UniverfileSQLiteDatabaseAdapter({ filename });
     const customData = {
-      [UNIVERFILE_UNIT_METADATA_KEY]: {
-        name: "Budget",
-        createdAtMs: 1_234,
-      },
+      [UNIVERFILE_UNIT_METADATA_KEY]: { name: "Budget" },
     };
 
     await adapter.createUnit(context(customData), {
-      record: unitRecord("unit-1"),
+      record: unitRecord("unit-1", UniverType.UNIVER_SHEET, 1_234),
       snapshot: snapshot("unit-1"),
     });
 
+    expect(await adapter.getUnit(context(), "unit-1")).toEqual(
+      unitRecord("unit-1", UniverType.UNIVER_SHEET, 1_234),
+    );
+    await expect(
+      adapter.createUnit(context(), {
+        record: { unitID: "unit-2", type: UniverType.UNIVER_SHEET, headRevision: 1 } as UnitRecord,
+        snapshot: snapshot("unit-2"),
+      }),
+    ).rejects.toMatchObject({ code: "INVALID_REQUEST" });
     expect(adapter.listUnits()).toEqual([
       {
         unitId: "unit-1",
@@ -240,6 +286,8 @@ describe("Univerfile SQLite database adapters", () => {
         unitID: "new-unit",
         type: UniverType.UNIVER_DOC,
         source: "worktree",
+        creatorID: "agent-1",
+        createdAt: 3_000,
         draftHeadRevision: 1,
       },
       seed: { snapshot: snapshot("new-unit", UniverType.UNIVER_DOC) },
@@ -309,6 +357,42 @@ describe("Univerfile SQLite database adapters", () => {
     await trunk.dispose();
   });
 
+  it("stamps a trunk changeset with the millisecond commit time", async () => {
+    const filename = databasePath();
+    const adapter = new UniverfileSQLiteDatabaseAdapter({ filename });
+    await adapter.createUnit(context(), {
+      record: unitRecord("unit-1"),
+      snapshot: snapshot("unit-1"),
+    });
+    const now = 1_790_000_000_123;
+    vi.spyOn(Date, "now").mockReturnValue(now);
+
+    await adapter.commitChangeset(context(), {
+      changeset: {
+        unitID: "unit-1",
+        type: UniverType.UNIVER_SHEET,
+        baseRev: 1,
+        revision: 2,
+        mutations: [],
+        sid: "sid-1",
+        reqId: 1,
+        createTime: 1_786_708_210,
+      },
+    });
+
+    const [stored] = (await adapter.getChangesets(context(), "unit-1", { from: 1 })) ?? [];
+    expect(stored?.createTime).toBe(Math.floor(now / 1000));
+    const connection = new UniverfileSQLiteConnection({ filename });
+    try {
+      expect(
+        connection.database.prepare("SELECT created_at_ms FROM collaboration_changesets").get(),
+      ).toMatchObject({ created_at_ms: now });
+    } finally {
+      connection.dispose();
+    }
+    await adapter.dispose();
+  });
+
   it("commits an SDK draft changeset without application commit metadata", async () => {
     const filename = databasePath();
     const trunk = new UniverfileSQLiteDatabaseAdapter({ filename });
@@ -326,7 +410,10 @@ describe("Univerfile SQLite database adapters", () => {
       mutations: [],
       sid: "sid-1",
       reqId: 1,
+      createTime: 1_786_708_210_407,
     };
+    const now = 1_790_000_000_123;
+    vi.spyOn(Date, "now").mockReturnValue(now);
 
     const before = await adapter.getWorktree(context(), worktreeID);
     for (const removed of [true, false]) {
@@ -349,6 +436,24 @@ describe("Univerfile SQLite database adapters", () => {
     );
 
     expect(adapter.listWorktreeUnits(worktreeID)[0]?.headRev).toBe(2);
+    const [stored] =
+      (await adapter.getDraftChangesets(context(), worktreeID, "unit-1", { from: 1 })) ?? [];
+    expect(stored?.createTime).toBe(Math.floor(now / 1000));
+    const connection = new UniverfileSQLiteConnection({ filename });
+    try {
+      expect(
+        connection.database
+          .prepare("SELECT created_at_ms FROM collaboration_worktree_changesets")
+          .get(),
+      ).toMatchObject({ created_at_ms: now });
+    } finally {
+      connection.dispose();
+    }
+    expect(await adapter.getWorktreeUnit(context(), worktreeID, "unit-1")).toMatchObject({
+      creatorID: "user-1",
+      createdAt: 1_000,
+      draftHeadRevision: 2,
+    });
     await adapter.dispose();
     await trunk.dispose();
   });

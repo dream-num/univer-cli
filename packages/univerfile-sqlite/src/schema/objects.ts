@@ -9,6 +9,7 @@ export const V0_TABLES = [
   "worktree_snapshots",
 ] as const;
 
+/** Core v1 and v2 own the same tables; v2 adds `collaboration_units.creator_id`. */
 export const CORE_V1_TABLES = [
   "collaboration_units",
   "collaboration_unit_tombstones",
@@ -33,19 +34,21 @@ export const ASSET_V1_TABLES = ["collaboration_asset_blobs", "collaboration_asse
 
 export const HISTORY_V1_TABLES = ["collaboration_history_revisions"] as const;
 
-export const CURRENT_V2_TABLES = [
+export const HISTORY_V2_TABLES = ["collaboration_history_records"] as const;
+
+export const CURRENT_V3_TABLES = [
   "collaboration_schema_versions",
   ...CORE_V1_TABLES,
   ...WORKTREE_COMMON_TABLES,
   ...ASSET_V1_TABLES,
-  ...HISTORY_V1_TABLES,
+  ...HISTORY_V2_TABLES,
 ] as const;
 
-export const CURRENT_V2_INDEXES = [
+export const CURRENT_V3_INDEXES = [
   "collaboration_snapshots_nearest_revision",
   "collaboration_changesets_revision_range",
   "collaboration_worktree_changesets_revision",
   "collaboration_assets_scope",
-  "collaboration_history_record_lookup",
+  "collaboration_history_origin_lookup",
   "collaboration_history_creator_lookup",
 ] as const;

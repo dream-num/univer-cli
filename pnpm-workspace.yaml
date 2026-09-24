@@ -10,3 +10,7 @@ minimumReleaseAgeExclude:
   - "@univer-cli/*"
   - "@univerjs/*"
   - "@univerjs-pro/*"
+
+overrides:
+  react: 19.3.0
+  react-dom: 19.3.0

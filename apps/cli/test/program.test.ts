@@ -282,7 +282,7 @@ describe("univer local CLI composition", () => {
               filePath: input.path,
               scope: "trunk",
               units: [],
-              upgrade: { status: "unchanged", format: "v2" },
+              upgrade: { status: "unchanged", format: "v3" },
             };
           },
         }),
@@ -354,7 +354,7 @@ function fakeApplication(
       return {
         filePath: path,
         openUrl: "http://127.0.0.1/",
-        upgrade: { status: "unchanged", format: "v2" },
+        upgrade: { status: "unchanged", format: "v3" },
       };
     },
     async status({ path }) {
@@ -362,7 +362,7 @@ function fakeApplication(
         filePath: path,
         scope: "trunk",
         units: [],
-        upgrade: { status: "unchanged", format: "v2" },
+        upgrade: { status: "unchanged", format: "v3" },
       };
     },
     ...overrides,

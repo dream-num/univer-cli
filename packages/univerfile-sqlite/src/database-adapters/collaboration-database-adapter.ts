@@ -20,7 +20,7 @@ import { UniverfileSQLiteConnection, runUniverfileSQLiteTransaction } from "../c
 
 const BINARY_TAG = "__univerCollaborationBinary";
 const CORE_SCHEMA_COMPONENT = "core";
-const CORE_SCHEMA_VERSION = 1;
+const CORE_SCHEMA_VERSION = 2;
 const CORE_TABLE_NAMES = [
   "collaboration_units",
   "collaboration_unit_tombstones",
@@ -45,6 +45,7 @@ interface UnitRow {
   readonly type: number;
   readonly name: string;
   readonly head_revision: number;
+  readonly creator_id: string;
   readonly created_at_ms: number;
   readonly soft_deleted_at_ms: number | null;
 }
@@ -80,7 +81,6 @@ export interface UniverfileUnitMetadata {
   readonly name?: string;
   /** Merge may create several Worktree Units in trunk under one SDK call. */
   readonly unitNames?: Readonly<Record<string, string>>;
-  readonly createdAtMs?: number;
 }
 
 export interface UniverfileUnitSummary {
@@ -128,7 +128,7 @@ export class UniverfileSQLiteDatabaseAdapter implements IDatabaseAdapter {
     this._assertOpen();
     const row = this._database
       .prepare(
-        `SELECT unit_id, type, name, head_revision, created_at_ms, soft_deleted_at_ms
+        `SELECT unit_id, type, name, head_revision, creator_id, created_at_ms, soft_deleted_at_ms
          FROM collaboration_units
          WHERE unit_id = ? AND soft_deleted_at_ms IS NULL`,
       )
@@ -140,13 +140,27 @@ export class UniverfileSQLiteDatabaseAdapter implements IDatabaseAdapter {
     this._assertOpen();
     const rows = this._database
       .prepare(
-        `SELECT unit_id, type, name, head_revision, created_at_ms, soft_deleted_at_ms
+        `SELECT unit_id, type, name, head_revision, creator_id, created_at_ms, soft_deleted_at_ms
          FROM collaboration_units
          WHERE soft_deleted_at_ms IS NULL
          ORDER BY created_at_ms ASC, unit_id ASC`,
       )
       .all() as unknown as UnitRow[];
     return rows.map(rowToUnitSummary);
+  }
+
+  /** Active Unit records in catalog order, for synchronous Gateway compatibility entries. */
+  public listUnitRecords(): readonly UnitRecord[] {
+    this._assertOpen();
+    const rows = this._database
+      .prepare(
+        `SELECT unit_id, type, name, head_revision, creator_id, created_at_ms, soft_deleted_at_ms
+         FROM collaboration_units
+         WHERE soft_deleted_at_ms IS NULL
+         ORDER BY created_at_ms ASC, unit_id ASC`,
+      )
+      .all() as unknown as UnitRow[];
+    return rows.map(rowToUnitRecord);
   }
 
   public getChangeset(unitID: string, revision: number): IChangeset | undefined {
@@ -328,14 +342,19 @@ export class UniverfileSQLiteDatabaseAdapter implements IDatabaseAdapter {
         return { status: "already-exists", record: rowToUnitRecord(existing) };
       }
 
-      const metadata = readUnitMetadata(context, input.record.unitID);
       this._database
         .prepare(
           `INSERT INTO collaboration_units
-             (unit_id, type, name, head_revision, created_at_ms, soft_deleted_at_ms)
-           VALUES (?, ?, ?, 1, ?, NULL)`,
+             (unit_id, type, name, head_revision, creator_id, created_at_ms, soft_deleted_at_ms)
+           VALUES (?, ?, ?, 1, ?, ?, NULL)`,
         )
-        .run(input.record.unitID, input.record.type, metadata.name, metadata.createdAtMs);
+        .run(
+          input.record.unitID,
+          input.record.type,
+          readUnitName(context, input.record.unitID),
+          input.record.creatorID,
+          input.record.createdAt,
+        );
       this._writeSheetBlocks(input.record.unitID, blocks);
       this._database
         .prepare(
@@ -447,10 +466,14 @@ export class UniverfileSQLiteDatabaseAdapter implements IDatabaseAdapter {
   ): Promise<CommitChangesetResult> {
     this._assertOpen();
     validateSubmissionIdentity(input.changeset);
-    const payload = encode(input.changeset);
+    const createdAt = Date.now();
+    const changeset: IChangeset = {
+      ...input.changeset,
+      createTime: Math.floor(createdAt / 1000),
+    };
+    const payload = encode(changeset);
 
     return this._transaction(() => {
-      const { changeset } = input;
       const unit = this._getActiveUnitRow(changeset.unitID);
       if (!unit) {
         throw new CollabError("UNIT_NOT_FOUND", "Cannot commit to a missing unit");
@@ -467,8 +490,8 @@ export class UniverfileSQLiteDatabaseAdapter implements IDatabaseAdapter {
       this._database
         .prepare(
           `INSERT INTO collaboration_changesets
-             (unit_id, revision, base_revision, sid, req_id, payload_json)
-           VALUES (?, ?, ?, ?, ?, ?)`,
+             (unit_id, revision, base_revision, sid, req_id, payload_json, created_at_ms)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           changeset.unitID,
@@ -477,6 +500,7 @@ export class UniverfileSQLiteDatabaseAdapter implements IDatabaseAdapter {
           changeset.sid as string,
           changeset.reqId as number,
           payload,
+          createdAt,
         );
       const update = this._database
         .prepare(
@@ -605,7 +629,7 @@ export class UniverfileSQLiteDatabaseAdapter implements IDatabaseAdapter {
         const missingTables = CORE_TABLE_NAMES.filter((tableName) => !this._hasTable(tableName));
         if (missingTables.length > 0) {
           throw incompatibleSchema(
-            `SQLite collaboration core schema v1 is incomplete: missing ${missingTables.join(", ")}`,
+            `SQLite collaboration core schema v${CORE_SCHEMA_VERSION} is incomplete: missing ${missingTables.join(", ")}`,
           );
         }
         this._assertGatewayColumns();
@@ -618,14 +642,7 @@ export class UniverfileSQLiteDatabaseAdapter implements IDatabaseAdapter {
       }
 
       this._database.exec(`
-        CREATE TABLE collaboration_units (
-          unit_id TEXT PRIMARY KEY,
-          type INTEGER NOT NULL,
-          name TEXT NOT NULL,
-          head_revision INTEGER NOT NULL CHECK (head_revision >= 1),
-          created_at_ms INTEGER NOT NULL,
-          soft_deleted_at_ms INTEGER
-        );
+        ${coreUnitsTableSql("collaboration_units")}
 
         CREATE TABLE collaboration_unit_tombstones (
           unit_id TEXT PRIMARY KEY,
@@ -642,18 +659,7 @@ export class UniverfileSQLiteDatabaseAdapter implements IDatabaseAdapter {
             REFERENCES collaboration_units(unit_id) ON DELETE CASCADE
         );
 
-        CREATE TABLE collaboration_changesets (
-          unit_id TEXT NOT NULL,
-          revision INTEGER NOT NULL CHECK (revision >= 2),
-          base_revision INTEGER NOT NULL CHECK (base_revision >= 1),
-          sid TEXT NOT NULL,
-          req_id INTEGER NOT NULL CHECK (req_id >= 1),
-          payload_json TEXT NOT NULL,
-          PRIMARY KEY (unit_id, revision),
-          UNIQUE (unit_id, sid, req_id),
-          FOREIGN KEY (unit_id)
-            REFERENCES collaboration_units(unit_id) ON DELETE CASCADE
-        );
+        ${coreChangesetsTableSql("collaboration_changesets")}
 
         CREATE TABLE collaboration_sheet_blocks (
           unit_id TEXT NOT NULL,
@@ -679,7 +685,7 @@ export class UniverfileSQLiteDatabaseAdapter implements IDatabaseAdapter {
           ON collaboration_changesets(unit_id, revision ASC);
 
         INSERT INTO collaboration_schema_versions (component, version)
-        VALUES ('core', 1);
+        VALUES ('core', ${CORE_SCHEMA_VERSION});
       `);
     });
   }
@@ -687,7 +693,7 @@ export class UniverfileSQLiteDatabaseAdapter implements IDatabaseAdapter {
   private _getActiveUnitRow(unitID: string): UnitRow | null {
     const row = this._database
       .prepare(
-        `SELECT unit_id, type, name, head_revision, created_at_ms, soft_deleted_at_ms
+        `SELECT unit_id, type, name, head_revision, creator_id, created_at_ms, soft_deleted_at_ms
          FROM collaboration_units
          WHERE unit_id = ? AND soft_deleted_at_ms IS NULL`,
       )
@@ -698,7 +704,7 @@ export class UniverfileSQLiteDatabaseAdapter implements IDatabaseAdapter {
   private _getStoredUnitRow(unitID: string): UnitRow | null {
     const row = this._database
       .prepare(
-        `SELECT unit_id, type, name, head_revision, created_at_ms, soft_deleted_at_ms
+        `SELECT unit_id, type, name, head_revision, creator_id, created_at_ms, soft_deleted_at_ms
          FROM collaboration_units
          WHERE unit_id = ?`,
       )
@@ -749,10 +755,22 @@ export class UniverfileSQLiteDatabaseAdapter implements IDatabaseAdapter {
           .all() as unknown as ColumnRow[]
       ).map(({ name }) => name),
     );
-    const missing = ["name", "created_at_ms"].filter((column) => !columns.has(column));
+    const changesetColumns = new Set(
+      (
+        this._database
+          .prepare("PRAGMA table_info(collaboration_changesets)")
+          .all() as unknown as ColumnRow[]
+      ).map(({ name }) => name),
+    );
+    const missing = [
+      ...["name", "creator_id", "created_at_ms"]
+        .filter((column) => !columns.has(column))
+        .map((column) => `collaboration_units.${column}`),
+      ...(changesetColumns.has("created_at_ms") ? [] : ["collaboration_changesets.created_at_ms"]),
+    ];
     if (missing.length > 0) {
       throw incompatibleSchema(
-        `SQLite collaboration core database v1 is missing CLI columns: ${missing.join(", ")}`,
+        `SQLite collaboration core schema v${CORE_SCHEMA_VERSION} is missing CLI columns: ${missing.join(", ")}`,
       );
     }
   }
@@ -812,6 +830,14 @@ function validateInitialUnit(input: CreateUnitDatabaseInput): void {
   ) {
     throw invalidRequest("Initial unit record and snapshot must match at revision 1");
   }
+  if (
+    typeof record.creatorID !== "string" ||
+    record.creatorID.length === 0 ||
+    !Number.isSafeInteger(record.createdAt) ||
+    record.createdAt < 0
+  ) {
+    throw invalidRequest("Unit creation requires creatorID and createdAt in Unix milliseconds");
+  }
 }
 
 function validateSubmissionIdentity(changeset: IChangeset): void {
@@ -831,6 +857,8 @@ function rowToUnitRecord(row: UnitRow): UnitRecord {
     unitID: row.unit_id,
     type: row.type as UniverType,
     headRevision: row.head_revision,
+    creatorID: row.creator_id,
+    createdAt: row.created_at_ms,
   };
 }
 
@@ -844,26 +872,45 @@ function rowToUnitSummary(row: UnitRow): UniverfileUnitSummary {
   };
 }
 
-function readUnitMetadata(
-  context: DatabaseContext,
-  unitID: string,
-): { readonly name: string; readonly createdAtMs: number } {
+/** Column layout shared by schema creation and the v2-to-v3 `.univer` upgrade. */
+export function coreUnitsTableSql(tableName: string): string {
+  return `CREATE TABLE ${tableName} (
+          unit_id TEXT PRIMARY KEY,
+          type INTEGER NOT NULL,
+          name TEXT NOT NULL,
+          head_revision INTEGER NOT NULL CHECK (head_revision >= 1),
+          creator_id TEXT NOT NULL,
+          created_at_ms INTEGER NOT NULL,
+          soft_deleted_at_ms INTEGER
+        );`;
+}
+
+/** `created_at_ms` stores the commit time in Unix milliseconds; payload `createTime` is its whole seconds. */
+export function coreChangesetsTableSql(tableName: string): string {
+  return `CREATE TABLE ${tableName} (
+          unit_id TEXT NOT NULL,
+          revision INTEGER NOT NULL CHECK (revision >= 2),
+          base_revision INTEGER NOT NULL CHECK (base_revision >= 1),
+          sid TEXT NOT NULL,
+          req_id INTEGER NOT NULL CHECK (req_id >= 1),
+          payload_json TEXT NOT NULL,
+          created_at_ms INTEGER NOT NULL,
+          PRIMARY KEY (unit_id, revision),
+          UNIQUE (unit_id, sid, req_id),
+          FOREIGN KEY (unit_id)
+            REFERENCES collaboration_units(unit_id) ON DELETE CASCADE
+        );`;
+}
+
+function readUnitName(context: DatabaseContext, unitID: string): string {
   const value = context.customData[UNIVERFILE_UNIT_METADATA_KEY] as
     | UniverfileUnitMetadata
     | undefined;
-  const name =
-    typeof value?.unitNames?.[unitID] === "string" && value.unitNames[unitID]!.length > 0
-      ? value.unitNames[unitID]!
-      : typeof value?.name === "string" && value.name.length > 0
-        ? value.name
-        : unitID;
-  const createdAtMs =
-    value?.createdAtMs !== undefined &&
-    Number.isSafeInteger(value.createdAtMs) &&
-    value.createdAtMs >= 0
-      ? value.createdAtMs
-      : Date.now();
-  return { name, createdAtMs };
+  return typeof value?.unitNames?.[unitID] === "string" && value.unitNames[unitID]!.length > 0
+    ? value.unitNames[unitID]!
+    : typeof value?.name === "string" && value.name.length > 0
+      ? value.name
+      : unitID;
 }
 
 function readOptionalUnitName(context: DatabaseContext, unitID: string): string | undefined {

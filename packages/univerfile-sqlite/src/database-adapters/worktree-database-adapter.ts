@@ -27,9 +27,8 @@ import type {
 } from "@univerjs-pro/collaboration-worktree-service";
 import { UniverType, type IChangeset } from "@univerjs/protocol";
 import { UniverfileSQLiteConnection, runUniverfileSQLiteTransaction } from "../connection.js";
-
 const SCHEMA_COMPONENT = "worktree";
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 const TABLE_NAMES = [
   "collaboration_worktrees",
   "collaboration_worktree_units",
@@ -62,6 +61,7 @@ interface WorktreeUnitRow {
   readonly worktree_id: string;
   readonly unit_id: string;
   readonly name: string;
+  readonly creator_id: string;
   readonly created_at_ms: number;
   readonly type: number;
   readonly source: string;
@@ -347,9 +347,9 @@ export class UniverfileSQLiteWorktreeDatabaseAdapter implements IWorktreeDatabas
         );
       const insertUnit = this._database.prepare(
         `INSERT INTO collaboration_worktree_units
-           (worktree_id, unit_id, unit_order, type, name, created_at_ms, source,
+           (worktree_id, unit_id, unit_order, type, name, creator_id, created_at_ms, source,
             baseline_trunk_revision, draft_head_revision)
-         VALUES (?, ?, ?, ?, ?, ?, 'trunk', ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'trunk', ?, ?)`,
       );
       input.units.forEach((unit, index) => {
         insertUnit.run(
@@ -358,7 +358,8 @@ export class UniverfileSQLiteWorktreeDatabaseAdapter implements IWorktreeDatabas
           index,
           unit.type,
           metadata.unitNames[unit.unitID] ?? unit.unitID,
-          metadata.createdAtMs,
+          unit.creatorID,
+          unit.createdAt,
           unit.baselineTrunkRevision as number,
           unit.draftHeadRevision,
         );
@@ -404,9 +405,9 @@ export class UniverfileSQLiteWorktreeDatabaseAdapter implements IWorktreeDatabas
       this._database
         .prepare(
           `INSERT INTO collaboration_worktree_units
-             (worktree_id, unit_id, unit_order, type, name, created_at_ms, source,
+             (worktree_id, unit_id, unit_order, type, name, creator_id, created_at_ms, source,
               baseline_trunk_revision, draft_head_revision)
-           VALUES (?, ?, ?, ?, ?, ?, 'trunk', ?, ?)`,
+           VALUES (?, ?, ?, ?, ?, ?, ?, 'trunk', ?, ?)`,
         )
         .run(
           unit.worktreeID,
@@ -414,7 +415,8 @@ export class UniverfileSQLiteWorktreeDatabaseAdapter implements IWorktreeDatabas
           orderRow.next_order,
           unit.type,
           metadata.unitNames[unit.unitID] ?? unit.unitID,
-          metadata.createdAtMs,
+          unit.creatorID,
+          unit.createdAt,
           unit.baselineTrunkRevision as number,
           unit.draftHeadRevision,
         );
@@ -465,9 +467,9 @@ export class UniverfileSQLiteWorktreeDatabaseAdapter implements IWorktreeDatabas
       this._database
         .prepare(
           `INSERT INTO collaboration_worktree_units
-             (worktree_id, unit_id, unit_order, type, name, created_at_ms, source,
+             (worktree_id, unit_id, unit_order, type, name, creator_id, created_at_ms, source,
               baseline_trunk_revision, draft_head_revision)
-           VALUES (?, ?, ?, ?, ?, ?, 'worktree', 1, 1)`,
+           VALUES (?, ?, ?, ?, ?, ?, ?, 'worktree', 1, 1)`,
         )
         .run(
           unit.worktreeID,
@@ -475,7 +477,8 @@ export class UniverfileSQLiteWorktreeDatabaseAdapter implements IWorktreeDatabas
           orderRow.next_order,
           unit.type,
           metadata.unitNames[unit.unitID] ?? unit.unitID,
-          metadata.createdAtMs,
+          unit.creatorID,
+          unit.createdAt,
         );
       this._database
         .prepare(
@@ -558,7 +561,12 @@ export class UniverfileSQLiteWorktreeDatabaseAdapter implements IWorktreeDatabas
     this._assertOpen();
     validateSubmissionIdentity(input.changeset);
     return this._transaction(() => {
-      const { worktreeID, changeset } = input;
+      const { worktreeID } = input;
+      const createdAt = Date.now();
+      const changeset: IChangeset = {
+        ...input.changeset,
+        createTime: Math.floor(createdAt / 1000),
+      };
       const worktree = this._getWorktreeRow(worktreeID);
       const unit = this._getUnitRow(worktreeID, changeset.unitID);
       if (!worktree || !unit) return { status: "not-found" };
@@ -581,8 +589,8 @@ export class UniverfileSQLiteWorktreeDatabaseAdapter implements IWorktreeDatabas
         .prepare(
           `INSERT INTO collaboration_worktree_changesets
              (worktree_id, unit_id, revision, base_revision,
-              sid, req_id, payload_json)
-           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+              sid, req_id, payload_json, created_at_ms)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           worktreeID,
@@ -592,6 +600,7 @@ export class UniverfileSQLiteWorktreeDatabaseAdapter implements IWorktreeDatabas
           changeset.sid as string,
           changeset.reqId as number,
           encode(changeset),
+          createdAt,
         );
       const update = this._database
         .prepare(
@@ -928,7 +937,7 @@ export class UniverfileSQLiteWorktreeDatabaseAdapter implements IWorktreeDatabas
         const missingTables = TABLE_NAMES.filter((tableName) => !this._hasTable(tableName));
         if (missingTables.length > 0) {
           throw incompatibleSchema(
-            `SQLite Worktree schema v2 is incomplete: missing ${missingTables.join(", ")}`,
+            `SQLite Worktree schema v${SCHEMA_VERSION} is incomplete: missing ${missingTables.join(", ")}`,
           );
         }
         this._assertGatewayColumns();
@@ -951,41 +960,9 @@ export class UniverfileSQLiteWorktreeDatabaseAdapter implements IWorktreeDatabas
           merged_at_ms INTEGER
         );
 
-        CREATE TABLE collaboration_worktree_units (
-          worktree_id TEXT NOT NULL,
-          unit_id TEXT NOT NULL,
-          unit_order INTEGER NOT NULL CHECK (unit_order >= 0),
-          type INTEGER NOT NULL,
-          name TEXT NOT NULL,
-          created_at_ms INTEGER NOT NULL,
-          source TEXT NOT NULL
-            CHECK (source IN ('trunk', 'worktree')),
-          baseline_trunk_revision INTEGER NOT NULL
-            CHECK (baseline_trunk_revision >= 1),
-          draft_head_revision INTEGER NOT NULL
-            CHECK (draft_head_revision >= baseline_trunk_revision),
-          ready_draft_head_revision INTEGER,
-          merge_result_json TEXT,
-          PRIMARY KEY (worktree_id, unit_id),
-          UNIQUE (worktree_id, unit_order),
-          FOREIGN KEY (worktree_id)
-            REFERENCES collaboration_worktrees(worktree_id) ON DELETE CASCADE
-        );
+        ${worktreeUnitsTableSql("collaboration_worktree_units")}
 
-        CREATE TABLE collaboration_worktree_changesets (
-          worktree_id TEXT NOT NULL,
-          unit_id TEXT NOT NULL,
-          revision INTEGER NOT NULL CHECK (revision >= 2),
-          base_revision INTEGER NOT NULL CHECK (base_revision >= 1),
-          sid TEXT NOT NULL,
-          req_id INTEGER NOT NULL CHECK (req_id >= 1),
-          payload_json TEXT NOT NULL,
-          PRIMARY KEY (worktree_id, unit_id, revision),
-          UNIQUE (worktree_id, unit_id, sid, req_id),
-          FOREIGN KEY (worktree_id, unit_id)
-            REFERENCES collaboration_worktree_units(worktree_id, unit_id)
-            ON DELETE CASCADE
-        );
+        ${worktreeChangesetsTableSql("collaboration_worktree_changesets")}
 
         CREATE INDEX collaboration_worktree_changesets_revision
           ON collaboration_worktree_changesets(
@@ -1033,7 +1010,7 @@ export class UniverfileSQLiteWorktreeDatabaseAdapter implements IWorktreeDatabas
         );
 
         INSERT INTO collaboration_schema_versions (component, version)
-        VALUES ('worktree', 2);
+        VALUES ('worktree', ${SCHEMA_VERSION});
       `);
     });
   }
@@ -1057,17 +1034,23 @@ export class UniverfileSQLiteWorktreeDatabaseAdapter implements IWorktreeDatabas
   private _assertGatewayColumns(): void {
     const worktreeColumns = this._tableColumns("collaboration_worktrees");
     const unitColumns = this._tableColumns("collaboration_worktree_units");
+    const changesetColumns = this._tableColumns("collaboration_worktree_changesets");
     const missingWorktree = ["agent_id", "name", "created_at_ms", "merged_at_ms"].filter(
       (column) => !worktreeColumns.has(column),
     );
-    const missingUnit = ["name", "created_at_ms"].filter((column) => !unitColumns.has(column));
+    const missingUnit = ["name", "creator_id", "created_at_ms"].filter(
+      (column) => !unitColumns.has(column),
+    );
     const missing = [
       ...missingWorktree.map((column) => `collaboration_worktrees.${column}`),
       ...missingUnit.map((column) => `collaboration_worktree_units.${column}`),
+      ...(changesetColumns.has("created_at_ms")
+        ? []
+        : ["collaboration_worktree_changesets.created_at_ms"]),
     ];
     if (missing.length > 0) {
       throw incompatibleSchema(
-        `SQLite Worktree database v2 is missing application columns: ${missing.join(", ")}`,
+        `SQLite Worktree schema v${SCHEMA_VERSION} is missing application columns: ${missing.join(", ")}`,
       );
     }
   }
@@ -1095,7 +1078,7 @@ export class UniverfileSQLiteWorktreeDatabaseAdapter implements IWorktreeDatabas
   private _getUnitRow(worktreeID: string, unitID: string): WorktreeUnitRow | null {
     const row = this._database
       .prepare(
-        `SELECT worktree_id, unit_id, type, name, created_at_ms, source,
+        `SELECT worktree_id, unit_id, type, name, creator_id, created_at_ms, source,
                 baseline_trunk_revision, draft_head_revision, ready_draft_head_revision,
                 merge_result_json
          FROM collaboration_worktree_units
@@ -1108,7 +1091,7 @@ export class UniverfileSQLiteWorktreeDatabaseAdapter implements IWorktreeDatabas
   private _getUnitRows(worktreeID: string): readonly WorktreeUnitRow[] {
     return this._database
       .prepare(
-        `SELECT worktree_id, unit_id, type, name, created_at_ms, source,
+        `SELECT worktree_id, unit_id, type, name, creator_id, created_at_ms, source,
                 baseline_trunk_revision, draft_head_revision, ready_draft_head_revision,
                 merge_result_json
          FROM collaboration_worktree_units
@@ -1264,6 +1247,8 @@ function rowToUnitRecord(row: WorktreeUnitRow): WorktreeUnitRecord {
     unitID: row.unit_id,
     type: row.type as UniverType,
     source,
+    creatorID: row.creator_id,
+    createdAt: row.created_at_ms,
     ...(source === "trunk" ? { baselineTrunkRevision: row.baseline_trunk_revision } : {}),
     draftHeadRevision: row.draft_head_revision,
     ...(row.ready_draft_head_revision === null
@@ -1378,6 +1363,58 @@ function validateUnitIdentity(unit: WorktreeUnitRecord): void {
   if (!unit.worktreeID || !unit.unitID) {
     throw invalidRequest("Worktree and Unit identity are required");
   }
+  if (
+    typeof unit.creatorID !== "string" ||
+    unit.creatorID.length === 0 ||
+    !Number.isSafeInteger(unit.createdAt) ||
+    unit.createdAt < 0
+  ) {
+    throw invalidRequest("Worktree Unit requires creatorID and createdAt in Unix milliseconds");
+  }
+}
+
+/** `created_at_ms` stores the commit time in Unix milliseconds; payload `createTime` is its whole seconds. */
+export function worktreeChangesetsTableSql(tableName: string): string {
+  return `CREATE TABLE ${tableName} (
+          worktree_id TEXT NOT NULL,
+          unit_id TEXT NOT NULL,
+          revision INTEGER NOT NULL CHECK (revision >= 2),
+          base_revision INTEGER NOT NULL CHECK (base_revision >= 1),
+          sid TEXT NOT NULL,
+          req_id INTEGER NOT NULL CHECK (req_id >= 1),
+          payload_json TEXT NOT NULL,
+          created_at_ms INTEGER NOT NULL,
+          PRIMARY KEY (worktree_id, unit_id, revision),
+          UNIQUE (worktree_id, unit_id, sid, req_id),
+          FOREIGN KEY (worktree_id, unit_id)
+            REFERENCES collaboration_worktree_units(worktree_id, unit_id)
+            ON DELETE CASCADE
+        );`;
+}
+
+/** Column layout shared by schema creation and the v2-to-v3 `.univer` upgrade. */
+export function worktreeUnitsTableSql(tableName: string): string {
+  return `CREATE TABLE ${tableName} (
+          worktree_id TEXT NOT NULL,
+          unit_id TEXT NOT NULL,
+          unit_order INTEGER NOT NULL CHECK (unit_order >= 0),
+          type INTEGER NOT NULL,
+          name TEXT NOT NULL,
+          creator_id TEXT NOT NULL,
+          created_at_ms INTEGER NOT NULL,
+          source TEXT NOT NULL
+            CHECK (source IN ('trunk', 'worktree')),
+          baseline_trunk_revision INTEGER NOT NULL
+            CHECK (baseline_trunk_revision >= 1),
+          draft_head_revision INTEGER NOT NULL
+            CHECK (draft_head_revision >= baseline_trunk_revision),
+          ready_draft_head_revision INTEGER,
+          merge_result_json TEXT,
+          PRIMARY KEY (worktree_id, unit_id),
+          UNIQUE (worktree_id, unit_order),
+          FOREIGN KEY (worktree_id)
+            REFERENCES collaboration_worktrees(worktree_id) ON DELETE CASCADE
+        );`;
 }
 
 function validateSubmissionIdentity(changeset: IChangeset): void {

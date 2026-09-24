@@ -100,7 +100,7 @@ describe("Univerfile copy optimization", () => {
 
     expect(fileHash(source)).toBe(sourceHash);
     expect(detectUniverfileSQLiteFormat(source)).toBe("v1");
-    expect(detectUniverfileSQLiteFormat(output)).toBe("v2");
+    expect(detectUniverfileSQLiteFormat(output)).toBe("v3");
   });
 
   it("reuses one scoped Asset ID for the same image in a snapshot and its changeset", async () => {
@@ -288,6 +288,7 @@ describe("Univerfile copy optimization", () => {
       expect(countRows(outputDatabase, "collaboration_snapshots")).toBe(1);
       expect(unitHead(outputDatabase, unit.unitId)).toBe(1);
       expect(JSON.parse(snapshotPayload(outputDatabase, unit.unitId))).toMatchObject({ rev: 1 });
+      expect(countRows(outputDatabase, "collaboration_history_records")).toBe(0);
       expect(outputDatabase.database.prepare("PRAGMA quick_check").get()).toMatchObject({
         quick_check: "ok"
       });
@@ -308,6 +309,11 @@ describe("Univerfile copy optimization", () => {
       expect(reopened.listUnits()).toEqual([
         expect.objectContaining({ unitId: unit.unitId, headRev: 2 })
       ]);
+      const history = await reopened.runtime.historyService.getHistoryList(
+        { unitID: unit.unitId, length: 20 },
+        { userID: "local", customData: {} }
+      );
+      expect(history.historyIds).toEqual([`${unit.unitId}:2`, `${unit.unitId}:1`]);
     } finally {
       await reopened.dispose();
     }
@@ -432,6 +438,11 @@ function markAsGatewayV1(path: string): void {
   const connection = new UniverfileSQLiteConnection({ filename: path });
   try {
     connection.database.exec(`
+      ALTER TABLE collaboration_units DROP COLUMN creator_id;
+      ALTER TABLE collaboration_worktree_units DROP COLUMN creator_id;
+      DROP TABLE collaboration_history_records;
+      DELETE FROM collaboration_schema_versions WHERE component = 'history';
+      UPDATE collaboration_schema_versions SET version = 1 WHERE component = 'core';
       ALTER TABLE collaboration_worktrees
       ADD COLUMN head_commit INTEGER NOT NULL DEFAULT 0 CHECK (head_commit >= 0);
       CREATE TABLE collaboration_worktree_commits (

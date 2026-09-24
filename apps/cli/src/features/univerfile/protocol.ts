@@ -128,13 +128,15 @@ function parseWorktree(value: JsonValue): UniverfileWorktreeResult {
 
 function requireUpgrade(value: JsonValue | undefined): UniverfileUpgradeResult {
   const record = requireRecord(value, "univerfile upgrade result");
-  if (record["status"] === "unchanged" && record["format"] === "v2") {
-    return { status: "unchanged", format: "v2" };
+  if (record["status"] === "unchanged" && record["format"] === "v3") {
+    return { status: "unchanged", format: "v3" };
   }
   if (
     record["status"] !== "upgraded" ||
-    (record["sourceFormat"] !== "v0" && record["sourceFormat"] !== "v1") ||
-    record["targetFormat"] !== "v2"
+    (record["sourceFormat"] !== "v0" &&
+      record["sourceFormat"] !== "v1" &&
+      record["sourceFormat"] !== "v2") ||
+    record["targetFormat"] !== "v3"
   ) {
     throw codedError("DAEMON_RESULT_INVALID", "univerfile upgrade result is invalid");
   }

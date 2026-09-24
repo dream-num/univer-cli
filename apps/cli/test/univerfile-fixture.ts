@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { transformWorkbookDataToSnapshot } from "@univerjs-pro/collaboration";
 import {
   createUniverfileSQLite,
@@ -9,7 +11,7 @@ import type { IWorkbookData } from "@univerjs/core";
 import { ErrorCode, UniverType, type ISheetBlock, type ISnapshot } from "@univerjs/protocol";
 import Database from "libsql";
 
-export async function createV2Fixture(filename: string): Promise<void> {
+export async function createCurrentFixture(filename: string): Promise<void> {
   const blocks: ISheetBlock[] = [];
   const snapshots: ISnapshot[] = [];
   const { snapshot } = await transformWorkbookDataToSnapshot(
@@ -31,7 +33,13 @@ export async function createV2Fixture(filename: string): Promise<void> {
         request: {},
       },
       {
-        record: { unitID: "unit-1", type: UniverType.UNIVER_SHEET, headRevision: 1 },
+        record: {
+          unitID: "unit-1",
+          type: UniverType.UNIVER_SHEET,
+          headRevision: 1,
+          creatorID: "local",
+          createdAt: 1,
+        },
         sheetBlocks: blocks,
         snapshot,
       },
@@ -41,8 +49,33 @@ export async function createV2Fixture(filename: string): Promise<void> {
   }
 }
 
+/** A `.univer` v2 file written by the Collaboration SDK rc CLI, with a draft Worktree on Plan. */
+export const V2_AUTHORING_FIXTURE = {
+  sheetUnitId: "u-muf7cuin-elnecc",
+  draftWorktreeId: "wt-muf7cxbv-whq02h",
+} as const;
+
+export function writeV2AuthoringFixture(filename: string): void {
+  const database = new Database(filename);
+  try {
+    database.exec(
+      readFileSync(
+        fileURLToPath(
+          new URL(
+            "../../../packages/univerfile-sqlite/test/fixtures/v2-authoring.sql",
+            import.meta.url,
+          ),
+        ),
+        "utf8",
+      ),
+    );
+  } finally {
+    database.close();
+  }
+}
+
 export async function createV1Fixture(filename: string): Promise<void> {
-  await createV2Fixture(filename);
+  await createCurrentFixture(filename);
   makeV1(filename);
 }
 
@@ -50,7 +83,7 @@ export async function createV1ActiveWorktreeFixture(filename: string): Promise<{
   readonly unitId: string;
   readonly worktreeId: string;
 }> {
-  await createV2Fixture(filename);
+  await createCurrentFixture(filename);
   const univerfile = openUniverfileSQLite(filename);
   const worktreeId = "legacy-active-worktree";
   try {
@@ -76,6 +109,8 @@ export async function createV1ActiveWorktreeFixture(filename: string): Promise<{
             unitID: "unit-1",
             type: UniverType.UNIVER_SHEET,
             source: "trunk",
+            creatorID: "local",
+            createdAt: 1,
             baselineTrunkRevision: 1,
             draftHeadRevision: 1,
           },
@@ -114,6 +149,12 @@ function makeV1(filename: string): void {
   const database = new Database(filename);
   try {
     database.exec(`
+      ALTER TABLE collaboration_units DROP COLUMN creator_id;
+      ALTER TABLE collaboration_worktree_units DROP COLUMN creator_id;
+      DROP TABLE collaboration_history_records;
+      DELETE FROM collaboration_schema_versions WHERE component = 'history';
+      UPDATE collaboration_schema_versions SET version = 1 WHERE component = 'core';
+
       ALTER TABLE collaboration_worktrees
       ADD COLUMN head_commit INTEGER NOT NULL DEFAULT 0 CHECK (head_commit >= 0);
 

@@ -2,12 +2,16 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { UniverInstanceType } from "@univerjs/core";
+import type { IMutation } from "@univerjs/protocol";
+import { UniverfileSQLiteConnection } from "@univer/univerfile-sqlite";
 import { afterEach, describe, expect, it } from "vitest";
 import { CollabService } from "../src/collab-service.js";
 import { startServer, type StartedServer } from "../src/server.js";
+import { changeWorktree } from "./change-worktree.js";
 
 const directories: string[] = [];
 const servers: StartedServer[] = [];
+const LOCAL = { userID: "local", customData: {} };
 
 afterEach(async () => {
   await Promise.all(servers.splice(0).map((server) => server.close()));
@@ -21,26 +25,56 @@ describe("trunk History", () => {
     const filename = databasePath();
     const created = new CollabService({ dbPath: filename, create: true });
     const unit = await created.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "Budget" });
-    await waitForRevision(created, unit.unitId, 1);
-    created.runtime.historyAdapter.resetUnit(unit.unitId);
+    await waitForLatestStart(created, unit.unitId, 1);
     await created.dispose();
+    const connection = new UniverfileSQLiteConnection({ filename });
+    try {
+      connection.database.prepare("DELETE FROM collaboration_history_records").run();
+    } finally {
+      connection.dispose();
+    }
 
     const reopened = new CollabService({ dbPath: filename });
     try {
-      await reopened.runtime.historyReady;
-      expect(await reopened.runtime.historyAdapter.getIndexState(unit.unitId)).toMatchObject({
-        latestRevision: 1,
-        currentHistoryRevision: 1,
-      });
+      expect(reopened.runtime.historyAdapter.latestStartRevision(unit.unitId)).toBeNull();
       expect(
         (await reopened.runtime.historyService.getHistoryList(
           { unitID: unit.unitId, length: 20 },
-          { userID: "local", customData: {} },
+          LOCAL,
         )).historyIds,
-      ).toHaveLength(1);
+      ).toEqual([`${unit.unitId}:1`]);
+      await waitForLatestStart(reopened, unit.unitId, 1);
     } finally {
       await reopened.dispose();
     }
+  });
+
+  it("indexes merged trunk changesets", async () => {
+    const filename = databasePath();
+    const created = new CollabService({ dbPath: filename, create: true });
+    const unit = await created.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "Budget" });
+    const worktree = created.createWorktree("agent-1", "edit");
+    await changeWorktree(created, worktree.worktreeId, "edit", {
+      modify: { [unit.unitId]: [cellMutation(unit.unitId)] },
+    });
+    expect((await created.merge(worktree.worktreeId)).ok).toBe(true);
+    await waitForLatestStart(created, unit.unitId, 2);
+    const [latest] = (
+      await created.runtime.historyAdapter.listRecords(
+        { userID: "local", customData: {}, request: {} },
+        unit.unitId,
+        { throughRevision: 2, length: 20 },
+      )
+    ).records;
+    expect(latest).toMatchObject({ record: { startRevision: 2 }, endRevision: 2 });
+    expect(latest!.record.createdAt % 1000).toBe(0);
+    expect(
+      (await created.runtime.historyService.getHistoryList(
+        { unitID: unit.unitId, length: 20 },
+        LOCAL,
+      )).historyIds,
+    ).toEqual([`${unit.unitId}:2`, `${unit.unitId}:1`]);
+    await created.dispose();
   });
 
   it("serves the History protocol from the file-addressed Gateway route", async () => {
@@ -53,7 +87,7 @@ describe("trunk History", () => {
     const unit = await univerfile.collab.createUnit(UniverInstanceType.UNIVER_SHEET, {
       name: "History",
     });
-    await waitForRevision(univerfile.collab, unit.unitId, 1);
+    await waitForLatestStart(univerfile.collab, unit.unitId, 1);
 
     const response = await fetch(
       `http://127.0.0.1:${server.port}/uf/${key}/universer-api/history/${unit.unitId}/list?length=20`,
@@ -70,17 +104,27 @@ describe("trunk History", () => {
   });
 });
 
-async function waitForRevision(
+async function waitForLatestStart(
   service: CollabService,
   unitID: string,
-  revision: number,
+  startRevision: number,
 ): Promise<void> {
   for (let attempt = 0; attempt < 50; attempt += 1) {
-    const state = await service.runtime.historyAdapter.getIndexState(unitID);
-    if (state?.latestRevision === revision) return;
+    if (service.runtime.historyAdapter.latestStartRevision(unitID) === startRevision) return;
     await new Promise<void>((resolve) => setTimeout(resolve, 5));
   }
-  throw new Error(`History did not reach ${unitID}@${revision}`);
+  throw new Error(`History did not reach ${unitID}@${startRevision}`);
+}
+
+function cellMutation(unitId: string): IMutation {
+  return {
+    id: "sheet.mutation.set-range-values",
+    data: JSON.stringify({
+      unitId,
+      subUnitId: "sheet-1",
+      cellValue: { 0: { 0: { v: 42 } } },
+    }),
+  } as IMutation;
 }
 
 function databasePath(): string {

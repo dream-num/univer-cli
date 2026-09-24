@@ -1,13 +1,14 @@
 import { mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import type { DatabaseContext } from "@univerjs-pro/collaboration-service";
+import type { DatabaseContext, UnitRecord } from "@univerjs-pro/collaboration-service";
 import { UniverType, type IChangeset, type ISnapshot } from "@univerjs/protocol";
 import Database from "libsql";
 import { afterEach, describe, expect, it } from "vitest";
 import { sha256 } from "../src/migration/backup.js";
 import { createUniverfileSQLite, openUniverfileSQLite } from "../src/open.js";
 import { detectUniverfileSQLiteFormat } from "../src/schema/detect.js";
+import { downgradeToRcV2Layout } from "./rc-layout.js";
 
 const directories: string[] = [];
 
@@ -28,7 +29,7 @@ describe("Gateway v1 .univer upgrade", () => {
       expect(univerfile.upgrade).toMatchObject({
         status: "upgraded",
         sourceFormat: "v1",
-        targetFormat: "v2",
+        targetFormat: "v3",
         backupSha256: originalHash,
         omitted: ["logical-commit-history"],
         preserved: { mergingWorktrees: 1 },
@@ -49,8 +50,18 @@ describe("Gateway v1 .univer upgrade", () => {
         expect.objectContaining({
           worktree: expect.objectContaining({ status: "merging" }),
           units: expect.arrayContaining([
-            expect.objectContaining({ unitID: "unit-1", readyDraftHeadRevision: 1 }),
-            expect.objectContaining({ unitID: "base-wt", readyDraftHeadRevision: 2 }),
+            expect.objectContaining({
+              unitID: "unit-1",
+              creatorID: "anonymous",
+              createdAt: 1_000,
+              readyDraftHeadRevision: 1,
+            }),
+            expect.objectContaining({
+              unitID: "base-wt",
+              creatorID: "anonymous",
+              createdAt: 2_000,
+              readyDraftHeadRevision: 2,
+            }),
           ]),
         }),
       );
@@ -136,7 +147,7 @@ describe("Gateway v1 .univer upgrade", () => {
         database
           .prepare("SELECT version FROM collaboration_schema_versions WHERE component = 'worktree'")
           .get(),
-      ).toEqual(expect.objectContaining({ version: 2 }));
+      ).toEqual(expect.objectContaining({ version: 3 }));
       expect(
         database
           .prepare(
@@ -156,20 +167,20 @@ describe("Gateway v1 .univer upgrade", () => {
     }
   });
 
-  it("opens v2 without creating a backup", async () => {
+  it("opens the current format without creating a backup", async () => {
     const filename = databasePath();
     const created = createUniverfileSQLite(filename);
     await created.dispose();
 
     const opened = openUniverfileSQLite(filename);
-    expect(opened.upgrade).toEqual({ status: "unchanged", format: "v2" });
+    expect(opened.upgrade).toEqual({ status: "unchanged", format: "v3" });
     await opened.dispose();
     expect(readdirSync(dirname(filename)).filter((entry) => entry.includes(".backup-"))).toEqual(
       [],
     );
   });
 
-  it("opens v2 with retired tables and v1 logical commit storage as ignored extras", async () => {
+  it("opens v3 with retired tables and v1 logical commit storage as ignored extras", async () => {
     const filename = databasePath();
     const created = createUniverfileSQLite(filename);
     await created.dispose();
@@ -198,9 +209,9 @@ describe("Gateway v1 .univer upgrade", () => {
     }
     const originalHash = sha256(filename);
 
-    expect(detectUniverfileSQLiteFormat(filename)).toBe("v2");
+    expect(detectUniverfileSQLiteFormat(filename)).toBe("v3");
     const opened = openUniverfileSQLite(filename);
-    expect(opened.upgrade).toEqual({ status: "unchanged", format: "v2" });
+    expect(opened.upgrade).toEqual({ status: "unchanged", format: "v3" });
     await opened.dispose();
 
     expect(sha256(filename)).toBe(originalHash);
@@ -213,22 +224,20 @@ describe("Gateway v1 .univer upgrade", () => {
     const filename = databasePath();
     const created = createUniverfileSQLite(filename);
     await created.databaseAdapter.createUnit(context(), {
-      record: { unitID: "base-v2", type: UniverType.UNIVER_BASE, headRevision: 1 },
+      record: unitRecord("base-v2", UniverType.UNIVER_BASE),
       snapshot: legacyBaseSnapshot("base-v2"),
     });
     await created.dispose();
+    downgradeToRcV2Layout(filename);
 
     const opened = openUniverfileSQLite(filename);
     try {
-      expect(opened.upgrade).toEqual({ status: "unchanged", format: "v2" });
+      expect(opened.upgrade).toMatchObject({ status: "upgraded", sourceFormat: "v2" });
       const snapshot = await opened.databaseAdapter.getSnapshot(context(), "base-v2");
       expect(readJsonBytes(snapshot?.workbook?.originalMeta)).toMatchObject({ schemaVersion: 1 });
     } finally {
       await opened.dispose();
     }
-    expect(readdirSync(dirname(filename)).filter((entry) => entry.includes(".backup-"))).toEqual(
-      [],
-    );
   });
 
   it("upgrades an early Gateway v1 file that predates the Asset component", async () => {
@@ -247,7 +256,7 @@ describe("Gateway v1 .univer upgrade", () => {
       expect(opened.upgrade).toMatchObject({
         status: "upgraded",
         sourceFormat: "v1",
-        targetFormat: "v2",
+        targetFormat: "v3",
         verification: { assets: 0 },
       });
       expect(opened.databaseAdapter.listUnits()).toHaveLength(2);
@@ -257,9 +266,9 @@ describe("Gateway v1 .univer upgrade", () => {
     }
     expect(detectFormat(filename)).toEqual([
       { component: "assets", version: 1 },
-      { component: "core", version: 1 },
-      { component: "history", version: 1 },
-      { component: "worktree", version: 2 },
+      { component: "core", version: 2 },
+      { component: "history", version: 2 },
+      { component: "worktree", version: 3 },
     ]);
   });
 
@@ -294,7 +303,7 @@ describe("Gateway v1 .univer upgrade", () => {
     expect(opened.upgrade).toMatchObject({
       status: "upgraded",
       sourceFormat: "v1",
-      targetFormat: "v2",
+      targetFormat: "v3",
       backupSha256: originalHash,
       verification: { units: 2, worktrees: 1, assets: 0 },
     });
@@ -408,14 +417,14 @@ async function createV1Fixture(filename: string): Promise<void> {
     await univerfile.databaseAdapter.createUnit(
       context({ "@univer/univerfile-sqlite/unit-metadata": { name: "Budget" } }),
       {
-        record: { unitID: "unit-1", type: UniverType.UNIVER_SHEET, headRevision: 1 },
+        record: unitRecord("unit-1", UniverType.UNIVER_SHEET),
         snapshot: { unitID: "unit-1", type: UniverType.UNIVER_SHEET, rev: 1 } as ISnapshot,
       },
     );
     await univerfile.databaseAdapter.createUnit(
       context({ "@univer/univerfile-sqlite/unit-metadata": { name: "Legacy Base" } }),
       {
-        record: { unitID: "base-1", type: UniverType.UNIVER_BASE, headRevision: 1 },
+        record: unitRecord("base-1", UniverType.UNIVER_BASE),
         snapshot: legacyBaseSnapshot("base-1"),
         sheetBlocks: [
           {
@@ -445,6 +454,8 @@ async function createV1Fixture(filename: string): Promise<void> {
             unitID: "unit-1",
             type: UniverType.UNIVER_SHEET,
             source: "trunk",
+            creatorID: "local",
+            createdAt: 1_000,
             baselineTrunkRevision: 1,
             draftHeadRevision: 1,
           },
@@ -457,6 +468,8 @@ async function createV1Fixture(filename: string): Promise<void> {
         unitID: "base-wt",
         type: UniverType.UNIVER_BASE,
         source: "worktree",
+        creatorID: "agent-1",
+        createdAt: 2_000,
         draftHeadRevision: 1,
       },
       seed: { snapshot: legacyBaseSnapshot("base-wt") },
@@ -468,6 +481,7 @@ async function createV1Fixture(filename: string): Promise<void> {
   } finally {
     await univerfile.dispose();
   }
+  downgradeToRcV2Layout(filename);
 
   const database = new Database(filename);
   try {
@@ -649,6 +663,10 @@ function databasePath(): string {
   const directory = mkdtempSync(join(tmpdir(), "univerfile-v1-"));
   directories.push(directory);
   return join(directory, "file.univer");
+}
+
+function unitRecord(unitID: string, type: UniverType): UnitRecord {
+  return { unitID, type, headRevision: 1, creatorID: "local", createdAt: 1_000 };
 }
 
 function context(customData: Record<string, unknown> = {}): DatabaseContext {

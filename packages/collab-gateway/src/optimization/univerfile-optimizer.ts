@@ -143,7 +143,7 @@ export async function optimizeUniverfilePath(
   validateInput(input);
   const sourceFormat = detectUniverfileSQLiteFormat(input.sourcePath);
   const workingDirectory =
-    sourceFormat === "v2" ? undefined : mkdtempSync(join(tmpdir(), "univer-optimize-source-"));
+    sourceFormat === "v3" ? undefined : mkdtempSync(join(tmpdir(), "univer-optimize-source-"));
   const workingPath =
     workingDirectory === undefined ? input.sourcePath : join(workingDirectory, "source.univer");
   let sourceConnection: UniverfileSQLiteConnection | undefined;
@@ -274,7 +274,7 @@ async function materializeCurrentHeads(connection: UniverfileSQLiteConnection): 
     filename: connection.filename,
     connection,
   });
-  const runtime = new UniverUnitRuntime({ dbAdapter: adapter });
+  const runtime = new UniverUnitRuntime({ reader: adapter });
   const context = optimizationDatabaseContext();
   const units = connection.database
     .prepare(
@@ -356,8 +356,8 @@ function resetCurrentHistory(database: Database.Database): void {
   });
 
   runUniverfileSQLiteTransaction(database, () => {
-    if (tableExists(database, "collaboration_history_revisions")) {
-      database.exec("DELETE FROM collaboration_history_revisions;");
+    if (tableExists(database, "collaboration_history_records")) {
+      database.exec("DELETE FROM collaboration_history_records;");
     }
     database.exec(`
       DELETE FROM collaboration_changesets;
