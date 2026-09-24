@@ -6,7 +6,7 @@ import { startServer } from "@univer/collab-gateway";
 import { UniverInstanceType } from "@univerjs/core";
 import { describe, expect, it } from "vitest";
 import { createLocalCollaborationRuntimePool } from "../src/daemon/collaboration-runtime-pool.js";
-import { createV2Fixture } from "./univerfile-fixture.js";
+import { createCurrentFixture } from "./univerfile-fixture.js";
 
 const projectRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 
@@ -14,7 +14,7 @@ describe("Local collaboration runtime worker", () => {
   it("loads a Local .univer Unit through the Gateway-backed SDK runtime pool", async () => {
     const root = await realpath(await mkdtemp(join(tmpdir(), "univer-cli-runtime-")));
     const filename = join(root, "runtime.univer");
-    await createV2Fixture(filename);
+    await createCurrentFixture(filename);
     const gateway = await startServer({
       port: 0,
       viewAssetsRoot: join(projectRoot, "dist", "browser"),
@@ -45,7 +45,7 @@ describe("Local collaboration runtime worker", () => {
   it("loads a same-Worktree Sheet as a DocBlock embed child", async () => {
     const root = await realpath(await mkdtemp(join(tmpdir(), "univer-cli-runtime-embed-")));
     const filename = join(root, "runtime-embed.univer");
-    await createV2Fixture(filename);
+    await createCurrentFixture(filename);
     const gateway = await startServer({
       port: 0,
       viewAssetsRoot: join(projectRoot, "dist", "browser"),
@@ -111,7 +111,7 @@ describe("Local collaboration runtime worker", () => {
   it("persists Facade renames in the Worktree catalog for every supported Unit type", async () => {
     const root = await realpath(await mkdtemp(join(tmpdir(), "univer-cli-runtime-rename-")));
     const filename = join(root, "runtime-rename.univer");
-    await createV2Fixture(filename);
+    await createCurrentFixture(filename);
     const gateway = await startServer({
       port: 0,
       viewAssetsRoot: join(projectRoot, "dist", "browser"),

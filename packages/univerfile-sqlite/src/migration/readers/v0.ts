@@ -167,7 +167,7 @@ export type V0CandidateMigrationResult =
  * copying, deleting or replacing the database file. This also avoids libsql's nondeterministic
  * same-process file-handle release on Windows.
  */
-export function migrateV0CandidateToV2(
+export function migrateV0CandidateToV3(
   connection: UniverfileSQLiteConnection,
 ): V0CandidateMigrationResult {
   const { database, filename } = connection;
@@ -188,10 +188,10 @@ export function migrateV0CandidateToV2(
 
     runUniverfileSQLiteTransaction(database, () => {
       renameLegacyTables(database);
-      initializeDatabaseV2(filename, connection);
+      initializeCurrentDatabase(filename, connection);
       migrateTrunk(database);
       migrateWorktrees(database);
-      validateDatabaseV2(filename, connection);
+      validateCurrentDatabase(filename, connection);
       for (const tableName of [...legacyTableNames()].reverse()) {
         database.exec(`DROP TABLE ${legacyTable(tableName)};`);
       }
@@ -246,7 +246,7 @@ function renameLegacyTables(database: Database.Database): void {
   }
 }
 
-function initializeDatabaseV2(filename: string, connection: UniverfileSQLiteConnection): void {
+function initializeCurrentDatabase(filename: string, connection: UniverfileSQLiteConnection): void {
   const trunk = new UniverfileSQLiteDatabaseAdapter({ filename, connection });
   let worktree: UniverfileSQLiteWorktreeDatabaseAdapter | undefined;
   try {
@@ -270,8 +270,8 @@ function migrateTrunk(database: Database.Database): void {
   const unitById = new Map(units.map((unit) => [unit.unit_id, unit]));
   const insertUnit = database.prepare(
     `INSERT INTO collaboration_units
-       (unit_id, type, name, head_revision, created_at_ms, soft_deleted_at_ms)
-     VALUES (?, ?, ?, ?, ?, ?)`,
+       (unit_id, type, name, head_revision, creator_id, created_at_ms, soft_deleted_at_ms)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
   );
   for (const unit of units) {
     requireText(unit.unit_id, "legacy Unit id");
@@ -282,6 +282,7 @@ function migrateTrunk(database: Database.Database): void {
       unit.type,
       unit.name,
       unit.head_rev,
+      legacyUnitCreator(database, unit.unit_id),
       parseTimestamp(unit.created_at, `legacy Unit ${unit.unit_id} created_at`),
       unit.deleted_at === null
         ? null
@@ -524,22 +525,24 @@ function migrateWorktree(
         name: unit.name,
         source: "trunk" as const,
         baselineRevision: baseline[unitId]!,
-        createdAt,
+        creatorId: legacyUnitCreator(database, unitId),
+        createdAt: parseTimestamp(unit.created_at, `legacy Unit ${unitId} created_at`),
       };
     }),
     ...[...created.values()].map((unit) => ({
       ...unit,
       source: "worktree" as const,
       baselineRevision: 1,
+      creatorId: worktree.agent_id || "local",
     })),
   ].filter((unit) => !deleted.has(unit.unitId));
 
   const insertUnit = database.prepare(
     `INSERT INTO collaboration_worktree_units
-       (worktree_id, unit_id, unit_order, type, name, created_at_ms, source,
+       (worktree_id, unit_id, unit_order, type, name, creator_id, created_at_ms, source,
         baseline_trunk_revision, draft_head_revision, ready_draft_head_revision,
         merge_result_json)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   );
   activeUnits.forEach((unit, order) => {
     const unitChangesets = changesetsByUnit.get(unit.unitId) ?? [];
@@ -553,6 +556,7 @@ function migrateWorktree(
       order,
       unit.type,
       unit.name,
+      unit.creatorId,
       unit.createdAt,
       unit.source,
       unit.baselineRevision,
@@ -992,7 +996,19 @@ function countMergingWorktrees(database: Database.Database, table: string): numb
   return Number(row.count);
 }
 
-function validateDatabaseV2(filename: string, connection: UniverfileSQLiteConnection): void {
+/** v0 kept no creation author, so the first trunk change is the closest recorded one. */
+function legacyUnitCreator(database: Database.Database, unitId: string): string {
+  const row = database
+    .prepare(
+      `SELECT user_id
+       FROM ${legacyTable("changesets")}
+       WHERE unit_id = ? AND revision = 2`,
+    )
+    .get(unitId) as { readonly user_id: string | null } | undefined;
+  return row?.user_id || "local";
+}
+
+function validateCurrentDatabase(filename: string, connection: UniverfileSQLiteConnection): void {
   let trunk: UniverfileSQLiteDatabaseAdapter | undefined;
   let worktree: UniverfileSQLiteWorktreeDatabaseAdapter | undefined;
   try {

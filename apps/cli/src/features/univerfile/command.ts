@@ -108,7 +108,7 @@ function writeUpgradeNotice(
   command
     .configureOutput()
     .writeErr?.(
-      `Upgraded ${result.upgrade.sourceFormat} -> v2; backup: ${result.upgrade.backupPath}\n`,
+      `Upgraded ${result.upgrade.sourceFormat} -> ${result.upgrade.targetFormat}; backup: ${result.upgrade.backupPath}\n`,
     );
 }
 

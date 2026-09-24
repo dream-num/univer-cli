@@ -27,7 +27,7 @@ afterEach(() => {
 });
 
 describe("legacy v0 .univer upgrade", () => {
-  it("backs up v0, upgrades directly to v2 and remains writable", async () => {
+  it("backs up v0, upgrades directly to v3 and remains writable", async () => {
     const filename = legacyDatabasePath();
     await createLegacyFixture(filename);
     const originalHash = sha256(filename);
@@ -37,7 +37,7 @@ describe("legacy v0 .univer upgrade", () => {
       expect(univerfile.upgrade).toMatchObject({
         status: "upgraded",
         sourceFormat: "v0",
-        targetFormat: "v2",
+        targetFormat: "v3",
         backupSha256: originalHash,
         omitted: ["logical-commit-history"],
       });
@@ -74,8 +74,12 @@ describe("legacy v0 .univer upgrade", () => {
           revision: 2,
           sid: "legacy-migration:core:trunk-sheet:2",
           reqId: 1,
+          createTime: Date.UTC(2026, 6, 1, 0, 1) / 1000,
         }),
       ]);
+      expect(await univerfile.databaseAdapter.getUnit(context(), "trunk-sheet")).toMatchObject({
+        creatorID: "local",
+      });
       const baseSnapshot = await univerfile.databaseAdapter.getSnapshot(context(), "legacy-base");
       expect(readJsonBytes(baseSnapshot?.workbook?.originalMeta)).toMatchObject({
         schemaVersion: 2,
@@ -174,7 +178,7 @@ describe("legacy v0 .univer upgrade", () => {
     );
 
     const reopened = openUniverfileSQLite(filename);
-    expect(reopened.upgrade).toEqual({ status: "unchanged", format: "v2" });
+    expect(reopened.upgrade).toEqual({ status: "unchanged", format: "v3" });
     await reopened.dispose();
 
     const database = new Database(filename, { readonly: true });
@@ -192,11 +196,11 @@ describe("legacy v0 .univer upgrade", () => {
         database
           .prepare(
             `SELECT version FROM collaboration_schema_versions
-             WHERE component IN ('assets', 'core', 'worktree')
+             WHERE component IN ('assets', 'core', 'history', 'worktree')
              ORDER BY component`,
           )
           .all(),
-      ).toEqual([{ version: 1 }, { version: 1 }, { version: 2 }]);
+      ).toEqual([{ version: 1 }, { version: 2 }, { version: 2 }, { version: 3 }]);
       expect(
         database
           .prepare(
@@ -216,7 +220,7 @@ describe("legacy v0 .univer upgrade", () => {
     database.prepare("DELETE FROM snapshots WHERE unit_id = ?").run("trunk-sheet");
     database.close();
 
-    expect(() => openUniverfileSQLite(filename)).toThrow(/failed to upgrade .* from v0 to v2/);
+    expect(() => openUniverfileSQLite(filename)).toThrow(/failed to upgrade .* from v0 to v3/);
 
     expect(
       readdirSync(dirname(filename)).filter((entry) => entry.includes(".backup-v0-")),

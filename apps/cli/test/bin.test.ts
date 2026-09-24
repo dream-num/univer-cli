@@ -9,7 +9,12 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { GATEWAY_DESCRIPTOR_MEDIA_TYPE } from "@univer/collab-gateway-contract";
 import { describe, expect, it } from "vitest";
-import { createV1ActiveWorktreeFixture, createV1Fixture } from "./univerfile-fixture.js";
+import {
+  V2_AUTHORING_FIXTURE,
+  createV1ActiveWorktreeFixture,
+  createV1Fixture,
+  writeV2AuthoringFixture,
+} from "./univerfile-fixture.js";
 
 const execFileAsync = promisify(execFile);
 const projectRoot = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -181,6 +186,7 @@ describe("built univer executable", () => {
     const typstBundle = join(root, "paper");
     const legacyFile = join(root, "legacy.univer");
     const legacyActiveFile = join(root, "legacy-active.univer");
+    const legacyV2File = join(root, "legacy-v2.univer");
 
     try {
       const configuredPort = parseJson(
@@ -212,7 +218,7 @@ describe("built univer executable", () => {
         filePath: currentFile,
         scope: "trunk",
         units: [],
-        upgrade: { status: "unchanged", format: "v2" },
+        upgrade: { status: "unchanged", format: "v3" },
       });
 
       await writeFile(sourceCsv, "item,quantity\nWidget,7\n", "utf8");
@@ -1106,7 +1112,7 @@ describe("built univer executable", () => {
       expect(migrated.upgrade).toMatchObject({
         status: "upgraded",
         sourceFormat: "v1",
-        targetFormat: "v2",
+        targetFormat: "v3",
         backupSha256: sourceHash,
         omitted: ["logical-commit-history"],
       });
@@ -1116,7 +1122,7 @@ describe("built univer executable", () => {
       const reopened = parseJson(
         (await invoke(["status", legacyFile, "--json"], env)).stdout,
       ) as Record<string, unknown>;
-      expect(reopened).toMatchObject({ upgrade: { status: "unchanged", format: "v2" } });
+      expect(reopened).toMatchObject({ upgrade: { status: "unchanged", format: "v3" } });
 
       const legacyActive = await createV1ActiveWorktreeFixture(legacyActiveFile);
       const activeStatus = parseJson(
@@ -1128,7 +1134,7 @@ describe("built univer executable", () => {
         ).stdout,
       ) as Record<string, unknown>;
       expect(activeStatus).toMatchObject({
-        upgrade: { sourceFormat: "v1", status: "upgraded", targetFormat: "v2" },
+        upgrade: { sourceFormat: "v1", status: "upgraded", targetFormat: "v3" },
         worktree: { status: "draft", worktreeId: legacyActive.worktreeId },
       });
       const continued = parseJson(
@@ -1178,6 +1184,79 @@ describe("built univer executable", () => {
         ).stdout,
       ) as { readonly ranges: readonly { readonly displayValues: readonly string[][] }[] };
       expect(continuedInTrunk.ranges[0]?.displayValues).toEqual([["continued"]]);
+
+      writeV2AuthoringFixture(legacyV2File);
+      const v2SourceHash = await sha256(legacyV2File);
+      const v2Status = parseJson(
+        (
+          await invoke(
+            ["status", legacyV2File, "--worktree", V2_AUTHORING_FIXTURE.draftWorktreeId, "--json"],
+            env,
+          )
+        ).stdout,
+      ) as Record<string, unknown>;
+      expect(v2Status).toMatchObject({
+        upgrade: {
+          status: "upgraded",
+          sourceFormat: "v2",
+          targetFormat: "v3",
+          backupSha256: v2SourceHash,
+          omitted: [],
+        },
+        worktree: { status: "draft", worktreeId: V2_AUTHORING_FIXTURE.draftWorktreeId },
+      });
+      const v2Continued = parseJson(
+        (
+          await invoke(
+            [
+              "execute",
+              legacyV2File,
+              "--worktree",
+              V2_AUTHORING_FIXTURE.draftWorktreeId,
+              "--unit",
+              V2_AUTHORING_FIXTURE.sheetUnitId,
+              "-e",
+              'workbook.getActiveSheet().getRange("D4").setValue("after v3"); return "ok";',
+              "--json",
+            ],
+            env,
+          )
+        ).stdout,
+      ) as Record<string, unknown>;
+      expect(v2Continued).toMatchObject({ committed: true, revision: 4, value: "ok" });
+      for (const action of ["ready", "merge"]) {
+        await invoke(
+          [
+            "worktree",
+            action,
+            legacyV2File,
+            "--worktree",
+            V2_AUTHORING_FIXTURE.draftWorktreeId,
+            "--json",
+          ],
+          env,
+        );
+      }
+      const v2Merged = parseJson(
+        (
+          await invoke(
+            [
+              "inspect",
+              "range",
+              "D4",
+              legacyV2File,
+              "--worksheet",
+              "index:1",
+              "--unit",
+              V2_AUTHORING_FIXTURE.sheetUnitId,
+              "--trunk",
+              "--json",
+            ],
+            env,
+          )
+        ).stdout,
+      ) as { readonly ranges: readonly { readonly displayValues: readonly string[][] }[] };
+      expect(v2Merged.ranges[0]?.displayValues).toEqual([["after v3"]]);
 
       const remoteSource = await serveRemoteCsv();
       try {

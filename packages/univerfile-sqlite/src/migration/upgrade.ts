@@ -9,20 +9,24 @@ import { detectUniverfileSQLiteFormat } from "../schema/detect.js";
 import { createUniverfileBackup, sha256 } from "./backup.js";
 import { migrateLegacyBaseContentToV2 } from "./base-content.js";
 import { withUniverfileUpgradeLock } from "./lock.js";
-import { pruneCandidateToCurrentV2Schema } from "./prune.js";
-import { migrateV0CandidateToV2 } from "./readers/v0.js";
+import { pruneCandidateToCurrentSchema } from "./prune.js";
+import { migrateV0CandidateToV3 } from "./readers/v0.js";
 import { migrateV1CandidateToV2 } from "./readers/v1.js";
-import { verifyV2Candidate, type UniverfileVerification } from "./verify.js";
+import { migrateV2CandidateToV3, normalizeChangesetCreateTimes } from "./readers/v2.js";
+import { verifyV3Candidate, type UniverfileVerification } from "./verify.js";
+
+export type UniverfileUpgradeSourceFormat = "v0" | "v1" | "v2";
 
 export type UniverfileUpgradeResult =
-  | { readonly status: "unchanged"; readonly format: "v2" }
+  | { readonly status: "unchanged"; readonly format: "v3" }
   | {
       readonly status: "upgraded";
-      readonly sourceFormat: "v0" | "v1";
-      readonly targetFormat: "v2";
+      readonly sourceFormat: UniverfileUpgradeSourceFormat;
+      readonly targetFormat: "v3";
       readonly backupPath: string;
       readonly backupSha256: string;
-      readonly omitted: readonly ["logical-commit-history"];
+      /** v0 and v1 logical Worktree commits have no Collaboration SDK equivalent. */
+      readonly omitted: readonly "logical-commit-history"[];
       readonly preserved: { readonly mergingWorktrees: number };
       readonly warnings: readonly string[];
       readonly verification: UniverfileVerification;
@@ -37,11 +41,11 @@ export function upgradeUniverfileSQLite(
   options: UpgradeUniverfileSQLiteOptions = {},
 ): UniverfileUpgradeResult {
   const initial = detectUniverfileSQLiteFormat(filename);
-  if (initial === "v2") return { status: "unchanged", format: "v2" };
+  if (initial === "v3") return { status: "unchanged", format: "v3" };
 
   return withUniverfileUpgradeLock(filename, options.lockTimeoutMs ?? 5_000, () => {
     const sourceFormat = detectUniverfileSQLiteFormat(filename);
-    if (sourceFormat === "v2") return { status: "unchanged", format: "v2" };
+    if (sourceFormat === "v3") return { status: "unchanged", format: "v3" };
 
     const backup = createUniverfileBackup(filename, sourceFormat);
     const candidatePath = join(
@@ -50,9 +54,8 @@ export function upgradeUniverfileSQLite(
     );
     try {
       copyFileSync(backup.path, candidatePath);
-      const preservedMergingWorktrees =
-        sourceFormat === "v0" ? migrateV0(candidatePath) : migrateV1(candidatePath);
-      const verification = verifyV2Candidate(candidatePath);
+      const preservedMergingWorktrees = migrateCandidate(candidatePath, sourceFormat);
+      const verification = verifyV3Candidate(candidatePath);
       if (sha256(filename) !== backup.sha256) {
         throw new Error("source file changed while its upgrade candidate was prepared");
       }
@@ -60,10 +63,10 @@ export function upgradeUniverfileSQLite(
       return {
         status: "upgraded",
         sourceFormat,
-        targetFormat: "v2",
+        targetFormat: "v3",
         backupPath: backup.path,
         backupSha256: backup.sha256,
-        omitted: ["logical-commit-history"],
+        omitted: sourceFormat === "v2" ? [] : ["logical-commit-history"],
         preserved: { mergingWorktrees: preservedMergingWorktrees },
         warnings: [],
         verification,
@@ -73,36 +76,33 @@ export function upgradeUniverfileSQLite(
       if (error instanceof UniverfileSQLiteError) throw error;
       throw new UniverfileSQLiteError(
         "UPGRADE_FAILED",
-        `failed to upgrade ${filename} from ${sourceFormat} to v2: ${error instanceof Error ? error.message : String(error)}`,
+        `failed to upgrade ${filename} from ${sourceFormat} to v3: ${error instanceof Error ? error.message : String(error)}`,
         { cause: error },
       );
     }
   });
 }
 
-function migrateV0(candidatePath: string): number {
+/** Returns the number of merging Worktrees normalized back to ready. */
+function migrateCandidate(
+  candidatePath: string,
+  sourceFormat: UniverfileUpgradeSourceFormat,
+): number {
   const connection = new UniverfileSQLiteConnection({ filename: candidatePath });
   try {
-    const result = migrateV0CandidateToV2(connection);
-    if (result.status !== "migrated") throw new Error("v0 reader did not migrate the candidate");
+    let normalizedMergingWorktrees = 0;
+    if (sourceFormat === "v0") {
+      const result = migrateV0CandidateToV3(connection);
+      if (result.status !== "migrated") throw new Error("v0 reader did not migrate the candidate");
+      normalizeChangesetCreateTimes(connection.database);
+    } else {
+      if (sourceFormat === "v1") normalizedMergingWorktrees = migrateV1CandidateToV2(connection);
+      migrateV2CandidateToV3(connection);
+    }
     new UniverfileSQLiteAssetStore({ connection });
     new UniverfileSQLiteHistoryDatabaseAdapter({ connection });
-    migrateLegacyBaseContentToV2(connection.database);
-    pruneCandidateToCurrentV2Schema(connection.database);
-    return 0;
-  } finally {
-    connection.dispose();
-  }
-}
-
-function migrateV1(candidatePath: string): number {
-  const connection = new UniverfileSQLiteConnection({ filename: candidatePath });
-  try {
-    const normalizedMergingWorktrees = migrateV1CandidateToV2(connection);
-    new UniverfileSQLiteAssetStore({ connection });
-    new UniverfileSQLiteHistoryDatabaseAdapter({ connection });
-    migrateLegacyBaseContentToV2(connection.database);
-    pruneCandidateToCurrentV2Schema(connection.database);
+    if (sourceFormat !== "v2") migrateLegacyBaseContentToV2(connection.database);
+    pruneCandidateToCurrentSchema(connection.database);
     return normalizedMergingWorktrees;
   } finally {
     connection.dispose();

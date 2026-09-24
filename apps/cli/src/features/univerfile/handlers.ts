@@ -82,7 +82,7 @@ export function registerUniverfileHandlers(input: {
 
   function readUpgrade(path: string, upgrade: UniverfileUpgradeResult): UniverfileUpgradeResult {
     if (upgrade.status !== "upgraded" || reportedUpgrades.has(path)) {
-      return { status: "unchanged", format: "v2" };
+      return { status: "unchanged", format: "v3" };
     }
     reportedUpgrades.add(path);
     return upgrade;
