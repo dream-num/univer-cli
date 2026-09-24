@@ -20,6 +20,7 @@ afterEach(() => {
 });
 
 describe("v2 .univer upgrade helper", () => {
+  // Bundling the helper and migrating in subprocesses exceeds Vitest's 5s default on CI.
   it("replaces the original after the helper exits and reuses one backup", async () => {
     const { build } = cliRequire("esbuild") as typeof import("esbuild");
     const cacheRoot = join(packageRoot, "node_modules/.cache");
@@ -101,5 +102,5 @@ describe("v2 .univer upgrade helper", () => {
     expect(
       readdirSync(workspace).filter((entry) => entry.startsWith("failed.univer.backup-")),
     ).toEqual(failedBackups);
-  });
+  }, 60_000);
 });
