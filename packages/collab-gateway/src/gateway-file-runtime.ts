@@ -26,7 +26,6 @@ import {
   type UniverfileUpgradeResult,
   type UniverfileSQLiteWorktreeDatabaseAdapter,
 } from "@univer/univerfile-sqlite";
-import { reconcileUniverfileHistory } from "./history/reconcile-history.js";
 import {
   createTrunkUnitNameCommitMiddleware,
   createWorktreeUnitNameCommitMiddleware,
@@ -53,14 +52,11 @@ export class GatewayFileRuntime {
   public readonly trunkService: UniverCollabService;
   public readonly worktreeService: UniverCollabWorktreeService;
   public readonly historyService: UniverHistoryService;
-  public readonly historyReady: Promise<void>;
-
   private readonly _univerfile: UniverfileSQLite;
   private readonly _ticketStore: MemorySessionTicketStore;
   private readonly _trunkEndpoint: UniverCollabEndpoint;
   private readonly _worktreeEndpoint: UniverCollabWorktreeEndpoint;
   private readonly _historyEndpoint: UniverHistoryEndpoint;
-  private readonly _historySettlement: Promise<void>;
   private readonly _transport: INodeTransport;
   private readonly _connectionIds = new Set<string>();
   private _disposed = false;
@@ -92,13 +88,6 @@ export class GatewayFileRuntime {
         collabService: this.trunkService,
         dbAdapter: this.historyAdapter,
       });
-      this.historyReady = reconcileUniverfileHistory({
-        trunkAdapter: this.trunkAdapter,
-        historyAdapter: this.historyAdapter,
-      });
-      // Own the async reconciliation immediately so a startup failure cannot become an unhandled
-      // rejection before the first request observes `historyReady`.
-      this._historySettlement = this.historyReady.catch(() => undefined);
       this.trunkService.use("commitChangeset", createTrunkUnitNameCommitMiddleware());
       this.worktreeService.use("commitChangeset", createWorktreeUnitNameCommitMiddleware());
       this._ticketStore = new MemorySessionTicketStore();
@@ -114,10 +103,6 @@ export class GatewayFileRuntime {
       this._transport.use(async (context, next) => {
         context.userID = headerValue(context.incomingMessage.headers["x-user-id"]);
         context.customData.gateway = { userId: context.userID };
-        await next();
-      });
-      this._transport.use(async (_context, next) => {
-        await this.historyReady;
         await next();
       });
       this._transport.register(this._historyEndpoint);
@@ -176,8 +161,6 @@ export class GatewayFileRuntime {
   public async dispose(): Promise<void> {
     if (this._disposed) return;
     this._disposed = true;
-    // A failed derived-index rebuild must not prevent the runtime from releasing its resources.
-    await this._historySettlement;
     await this._transport.dispose();
     await this.historyService.dispose();
     await this.worktreeService.dispose();

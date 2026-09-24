@@ -209,16 +209,6 @@ export class UniverfileSQLiteHistoryDatabaseAdapter implements IHistoryDatabaseA
     return this._latest(unitID)?.start_revision ?? null;
   }
 
-  /** Remove one Unit's derived boundaries so History Service rebuilds them from trunk. */
-  public resetUnit(unitID: string): void {
-    this._assertOpen();
-    runUniverfileSQLiteTransaction(this._database, () => {
-      this._database
-        .prepare("DELETE FROM collaboration_history_records WHERE unit_id = ?")
-        .run(unitID);
-    });
-  }
-
   public async dispose(): Promise<void> {
     this._disposed = true;
   }

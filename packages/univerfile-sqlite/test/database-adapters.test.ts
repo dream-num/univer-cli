@@ -202,8 +202,6 @@ describe("Univerfile SQLite database adapters", () => {
     ]);
 
     expect(history.latestStartRevision("unit-1")).toBe(5);
-    history.resetUnit("unit-1");
-    expect(await history.getLatestRecord(context(), "unit-1")).toBeNull();
     await history.dispose();
     expect(disposeConnection).not.toHaveBeenCalled();
     connection.dispose();

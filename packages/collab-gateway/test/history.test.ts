@@ -26,12 +26,16 @@ describe("trunk History", () => {
     const created = new CollabService({ dbPath: filename, create: true });
     const unit = await created.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "Budget" });
     await waitForLatestStart(created, unit.unitId, 1);
-    created.runtime.historyAdapter.resetUnit(unit.unitId);
     await created.dispose();
+    const connection = new UniverfileSQLiteConnection({ filename });
+    try {
+      connection.database.prepare("DELETE FROM collaboration_history_records").run();
+    } finally {
+      connection.dispose();
+    }
 
     const reopened = new CollabService({ dbPath: filename });
     try {
-      await reopened.runtime.historyReady;
       expect(reopened.runtime.historyAdapter.latestStartRevision(unit.unitId)).toBeNull();
       expect(
         (await reopened.runtime.historyService.getHistoryList(
@@ -45,7 +49,7 @@ describe("trunk History", () => {
     }
   });
 
-  it("indexes merged trunk changesets and drops boundaries beyond the trunk head", async () => {
+  it("indexes merged trunk changesets", async () => {
     const filename = databasePath();
     const created = new CollabService({ dbPath: filename, create: true });
     const unit = await created.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "Budget" });
@@ -64,34 +68,13 @@ describe("trunk History", () => {
     ).records;
     expect(latest).toMatchObject({ record: { startRevision: 2 }, endRevision: 2 });
     expect(latest!.record.createdAt % 1000).toBe(0);
+    expect(
+      (await created.runtime.historyService.getHistoryList(
+        { unitID: unit.unitId, length: 20 },
+        LOCAL,
+      )).historyIds,
+    ).toEqual([`${unit.unitId}:2`, `${unit.unitId}:1`]);
     await created.dispose();
-
-    const connection = new UniverfileSQLiteConnection({ filename });
-    try {
-      connection.database
-        .prepare(
-          `INSERT INTO collaboration_history_records
-             (unit_id, start_revision, user_id, created_at_ms, origin, additional_fields)
-           VALUES (?, 9, 'local', 9000, 1, NULL)`,
-        )
-        .run(unit.unitId);
-    } finally {
-      connection.dispose();
-    }
-
-    const reopened = new CollabService({ dbPath: filename });
-    try {
-      await reopened.runtime.historyReady;
-      expect(reopened.runtime.historyAdapter.latestStartRevision(unit.unitId)).toBeNull();
-      expect(
-        (await reopened.runtime.historyService.getHistoryList(
-          { unitID: unit.unitId, length: 20 },
-          LOCAL,
-        )).historyIds,
-      ).toEqual([`${unit.unitId}:2`, `${unit.unitId}:1`]);
-    } finally {
-      await reopened.dispose();
-    }
   });
 
   it("serves the History protocol from the file-addressed Gateway route", async () => {
