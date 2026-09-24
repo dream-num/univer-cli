@@ -60,7 +60,6 @@ export class GatewayFileRuntime {
   private readonly _trunkEndpoint: UniverCollabEndpoint;
   private readonly _worktreeEndpoint: UniverCollabWorktreeEndpoint;
   private readonly _historyEndpoint: UniverHistoryEndpoint;
-  private readonly _historyAttachment: { dispose(): void };
   private readonly _historySettlement: Promise<void>;
   private readonly _transport: INodeTransport;
   private readonly _connectionIds = new Set<string>();
@@ -93,11 +92,9 @@ export class GatewayFileRuntime {
         collabService: this.trunkService,
         dbAdapter: this.historyAdapter,
       });
-      this._historyAttachment = this.historyService.attach(this.trunkService);
       this.historyReady = reconcileUniverfileHistory({
         trunkAdapter: this.trunkAdapter,
         historyAdapter: this.historyAdapter,
-        historyService: this.historyService,
       });
       // Own the async reconciliation immediately so a startup failure cannot become an unhandled
       // rejection before the first request observes `historyReady`.
@@ -182,7 +179,6 @@ export class GatewayFileRuntime {
     // A failed derived-index rebuild must not prevent the runtime from releasing its resources.
     await this._historySettlement;
     await this._transport.dispose();
-    this._historyAttachment.dispose();
     await this.historyService.dispose();
     await this.worktreeService.dispose();
     await this.trunkService.dispose();

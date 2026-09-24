@@ -152,10 +152,7 @@ export class CollabService {
         data,
       } as CreateUnitFromDataInput,
       callOptions("local", {
-        [UNIVERFILE_UNIT_METADATA_KEY]: {
-          name,
-          createdAtMs: Date.now(),
-        },
+        [UNIVERFILE_UNIT_METADATA_KEY]: { name },
       }),
     );
     const sheetOrder = adapter.sheetOrder(data);
@@ -186,6 +183,9 @@ export class CollabService {
   public createWorktree(agentId = "", name = ""): WorktreeRecord {
     const worktreeId = newWorktreeId();
     const units = this.listUnits();
+    const records = new Map(
+      this.runtime.trunkAdapter.listUnitRecords().map((record) => [record.unitID, record]),
+    );
     const options = callOptions(agentId || "local", {
       [UNIVERFILE_WORKTREE_METADATA_KEY]: {
         agentId,
@@ -203,14 +203,20 @@ export class CollabService {
         sid: randomUUID(),
         status: "draft",
       },
-      units: units.map((unit) => ({
-        worktreeID: worktreeId,
-        unitID: unit.unitId,
-        type: unit.type,
-        source: "trunk",
-        baselineTrunkRevision: unit.headRev,
-        draftHeadRevision: unit.headRev,
-      })),
+      units: units.map((unit) => {
+        const record = records.get(unit.unitId);
+        if (record === undefined) throw new Error(`Unit ${unit.unitId} disappeared`);
+        return {
+          worktreeID: worktreeId,
+          unitID: unit.unitId,
+          type: unit.type,
+          source: "trunk",
+          creatorID: record.creatorID,
+          createdAt: record.createdAt,
+          baselineTrunkRevision: unit.headRev,
+          draftHeadRevision: unit.headRev,
+        };
+      }),
     });
     return requireWorktree(this.runtime, worktreeId);
   }
@@ -522,7 +528,6 @@ export class CollabService {
           this._externalizeImages(params, unitId, worktreeId),
         ),
       ),
-      createTime: Date.now(),
     };
     const result = await this.runtime.worktreeService.submitChangeset(
       { worktreeID: worktreeId, changeset },
