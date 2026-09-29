@@ -16,6 +16,7 @@ import { UniverBoardsTablePlugin } from "@univerjs-pro/boards-table";
 import { UniverBoardsTableUIPlugin } from "@univerjs-pro/boards-table-ui";
 import { UniverBoardsUIPlugin } from "@univerjs-pro/boards-ui";
 import { UniverBoardsPrintPlugin } from "@univerjs-pro/boards-print";
+import { UniverChartEmbedPlugin } from "@univerjs-pro/chart-embed";
 import { UniverDocsCalloutPlugin } from "@univerjs-pro/docs-callout";
 import { UniverDocsCalloutUIPlugin } from "@univerjs-pro/docs-callout-ui";
 import { UniverDocsChartPlugin } from "@univerjs-pro/docs-chart";
@@ -339,6 +340,7 @@ function registerEmbedCorePlugin(
       ...resourceRefDataProviderRegistrations
     ]
   });
+  univer.registerPlugin(UniverChartEmbedPlugin);
 }
 
 function registerEmbedUIPlugin(univer: Univer): void {
