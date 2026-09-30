@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: Exact release version; the channel is inferred from it, e.g. 0.5.0 or 0.5.1-insiders.20260901-abc1234
+        description: Exact release version; the channel is inferred from it, e.g. 0.6.0 or 0.6.1-insiders.20260901-abc1234
         required: true
         type: string
       dry_run:

@@ -13,17 +13,17 @@ describe("release policy", () => {
       parseReleaseArguments([
         "--channel=insiders",
         "--version",
-        "0.5.0-insiders.test",
+        "0.6.0-insiders.test",
         "--prepare-only",
       ]),
-    ).toEqual({ channel: "insiders", mode: "prepare-only", version: "0.5.0-insiders.test" });
-    expect(() => parseReleaseArguments(["--channel=dev", "--version=0.5.0-dev.test"])).toThrow(
+    ).toEqual({ channel: "insiders", mode: "prepare-only", version: "0.6.0-insiders.test" });
+    expect(() => parseReleaseArguments(["--channel=dev", "--version=0.6.0-dev.test"])).toThrow(
       /exactly one/u,
     );
     expect(() =>
       parseReleaseArguments([
         "--channel=dev",
-        "--version=0.5.0-dev.test",
+        "--version=0.6.0-dev.test",
         "--dry-run",
         "--publish",
       ]),
@@ -44,17 +44,17 @@ describe("release policy", () => {
     }
     for (const overrides of [
       { GITHUB_REF_NAME: "feature/release" },
-      { GITHUB_EVENT_NAME: "push", GITHUB_REF_TYPE: "tag", GITHUB_REF_NAME: "v0.5.0" },
+      { GITHUB_EVENT_NAME: "push", GITHUB_REF_TYPE: "tag", GITHUB_REF_NAME: "v0.6.0" },
       { GITHUB_ACTIONS: "false" },
       { CI: "false" },
     ]) {
-      expect(() => assertReleaseContext("stable", "0.5.0", { ...env, ...overrides })).toThrow();
+      expect(() => assertReleaseContext("stable", "0.6.0", { ...env, ...overrides })).toThrow();
     }
   });
 
   it("allows dev only outside CI", () => {
-    expect(() => assertReleaseContext("dev", "0.5.0-dev.local", {})).not.toThrow();
-    expect(() => assertReleaseContext("dev", "0.5.0-dev.local", { CI: "true" })).toThrow(
+    expect(() => assertReleaseContext("dev", "0.6.0-dev.local", {})).not.toThrow();
+    expect(() => assertReleaseContext("dev", "0.6.0-dev.local", { CI: "true" })).toThrow(
       /local-only/u,
     );
   });
@@ -72,8 +72,8 @@ describe("release policy", () => {
       sdkVersion: "1.0.0-insiders.sdk",
       sourceDirty: false,
       sourceSha: "a".repeat(40),
-      tarball: "univer-cli-0.5.0-insiders.test.tgz",
-      version: "0.5.0-insiders.test",
+      tarball: "univer-cli-0.6.0-insiders.test.tgz",
+      version: "0.6.0-insiders.test",
     };
     expect(validateReleaseManifest(manifest)).toBe(manifest);
     expect(() =>
@@ -87,8 +87,8 @@ describe("release policy", () => {
         ...manifest,
         channel: "stable",
         npmTag: "insiders",
-        tarball: "univer-cli-0.5.0.tgz",
-        version: "0.5.0",
+        tarball: "univer-cli-0.6.0.tgz",
+        version: "0.6.0",
       }),
     ).toThrow(/npmTag/u);
     expect(
@@ -96,15 +96,15 @@ describe("release policy", () => {
         ...manifest,
         channel: "stable",
         npmTag: "latest",
-        tarball: "univer-cli-0.5.0.tgz",
-        version: "0.5.0",
+        tarball: "univer-cli-0.6.0.tgz",
+        version: "0.6.0",
       }),
     ).toMatchObject({ npmTag: "latest" });
   });
 });
 
 function fixtureVersion(channel: "alpha" | "insiders" | "stable"): string {
-  if (channel === "alpha") return "0.5.0-alpha.1";
-  if (channel === "insiders") return "0.5.0-insiders.test";
-  return "0.5.0";
+  if (channel === "alpha") return "0.6.0-alpha.1";
+  if (channel === "insiders") return "0.6.0-insiders.test";
+  return "0.6.0";
 }
