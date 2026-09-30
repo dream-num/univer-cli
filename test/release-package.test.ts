@@ -34,7 +34,7 @@ describe("release package", () => {
           libsql: "^1.2.3",
         },
       },
-      "0.6.0-insiders.20260817-374ec99",
+      "0.5.0-insiders.20260817-374ec99",
       ["libsql"],
       { registry: RELEASE_REGISTRY, tag: "insiders" },
     );
@@ -52,7 +52,7 @@ describe("release package", () => {
         url: "git+https://github.com/dream-num/univer-cli.git",
         directory: "apps/cli",
       },
-      version: "0.6.0-insiders.20260817-374ec99",
+      version: "0.5.0-insiders.20260817-374ec99",
     });
     expect(JSON.stringify(manifest)).not.toContain("workspace:");
   });
@@ -65,7 +65,7 @@ describe("release package", () => {
     );
     const manifest = createReleaseManifest(
       source,
-      "0.6.0-insiders.20260817-374ec99",
+      "0.5.0-insiders.20260817-374ec99",
       audit.required,
       { registry: RELEASE_REGISTRY, tag: "insiders" },
     );
@@ -93,7 +93,7 @@ describe("release package", () => {
           name: "univer-cli",
           dependencies: { "@univerjs/core": "1.0.0" },
         },
-        "0.6.0",
+        "0.5.0",
         ["@univerjs/core"],
         { registry: RELEASE_REGISTRY, tag: "latest" },
       ),
@@ -145,7 +145,7 @@ describe("release package", () => {
         readmePath,
         readmeZhCnPath,
         sourceManifestPath,
-        version: "0.6.0-insiders.test",
+        version: "0.5.0-insiders.test",
       });
 
       await Promise.all(

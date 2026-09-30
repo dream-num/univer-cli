@@ -1,6 +1,6 @@
 export const RELEASE_PACKAGE_NAME = "univer-cli";
 export const RELEASE_REGISTRY = "https://insider-npm-registry.univer.work/";
-export const RELEASE_VERSION_LINE = "0.6";
+export const RELEASE_VERSION_LINE = "0.5";
 export const SOURCE_PACKAGE_VERSION = "0.0.0";
 
 const EXACT_SEMVER_PATTERN =
@@ -41,20 +41,16 @@ export function npmTagForRelease(channel, version) {
     throw new Error(`Unsupported release channel: ${String(channel)}`);
   }
   if (channel === "alpha" && !/^\d+\.\d+\.\d+-alpha\..+$/u.test(version)) {
-    throw new Error(`alpha requires ${RELEASE_VERSION_LINE}.x-alpha.<suffix>, got ${version}`);
+    throw new Error(`alpha requires 0.5.x-alpha.<suffix>, got ${version}`);
   }
   if (channel === "insiders" && !/^\d+\.\d+\.\d+-insiders\..+$/u.test(version)) {
-    throw new Error(
-      `insiders requires ${RELEASE_VERSION_LINE}.x-insiders.<suffix>, got ${version}`,
-    );
+    throw new Error(`insiders requires 0.5.x-insiders.<suffix>, got ${version}`);
   }
   if (channel === "stable" && !/^\d+\.\d+\.\d+$/u.test(version)) {
-    throw new Error(
-      `stable requires ${RELEASE_VERSION_LINE}.x without a prerelease suffix, got ${version}`,
-    );
+    throw new Error(`stable requires 0.5.x without a prerelease suffix, got ${version}`);
   }
   if (channel === "dev" && !/^\d+\.\d+\.\d+-dev\..+$/u.test(version)) {
-    throw new Error(`dev requires ${RELEASE_VERSION_LINE}.x-dev.<suffix>, got ${version}`);
+    throw new Error(`dev requires 0.5.x-dev.<suffix>, got ${version}`);
   }
   return npmTag;
 }
