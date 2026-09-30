@@ -1,6 +1,5 @@
 export const RELEASE_PACKAGE_NAME = "univer-cli";
 export const RELEASE_REGISTRY = "https://insider-npm-registry.univer.work/";
-export const RELEASE_VERSION_LINE = "0.5";
 export const SOURCE_PACKAGE_VERSION = "0.0.0";
 
 const EXACT_SEMVER_PATTERN =
@@ -21,9 +20,6 @@ export function assertExactSemver(version, label = "Version") {
 
 export function channelForVersion(version) {
   assertExactSemver(version, "Release version");
-  if (!version.startsWith(`${RELEASE_VERSION_LINE}.`)) {
-    throw new Error(`univer-cli releases must stay on the ${RELEASE_VERSION_LINE}.x version line.`);
-  }
   if (/^\d+\.\d+\.\d+$/u.test(version)) return "stable";
   if (/^\d+\.\d+\.\d+-insiders\..+$/u.test(version)) return "insiders";
   if (/^\d+\.\d+\.\d+-alpha\..+$/u.test(version)) return "alpha";
@@ -33,24 +29,21 @@ export function channelForVersion(version) {
 
 export function npmTagForRelease(channel, version) {
   assertExactSemver(version, "Release version");
-  if (!version.startsWith(`${RELEASE_VERSION_LINE}.`)) {
-    throw new Error(`univer-cli releases must stay on the ${RELEASE_VERSION_LINE}.x version line.`);
-  }
   const npmTag = CHANNEL_TO_TAG.get(channel);
   if (npmTag === undefined) {
     throw new Error(`Unsupported release channel: ${String(channel)}`);
   }
   if (channel === "alpha" && !/^\d+\.\d+\.\d+-alpha\..+$/u.test(version)) {
-    throw new Error(`alpha requires 0.5.x-alpha.<suffix>, got ${version}`);
+    throw new Error(`alpha requires X.Y.Z-alpha.<suffix>, got ${version}`);
   }
   if (channel === "insiders" && !/^\d+\.\d+\.\d+-insiders\..+$/u.test(version)) {
-    throw new Error(`insiders requires 0.5.x-insiders.<suffix>, got ${version}`);
+    throw new Error(`insiders requires X.Y.Z-insiders.<suffix>, got ${version}`);
   }
   if (channel === "stable" && !/^\d+\.\d+\.\d+$/u.test(version)) {
-    throw new Error(`stable requires 0.5.x without a prerelease suffix, got ${version}`);
+    throw new Error(`stable requires X.Y.Z without a prerelease suffix, got ${version}`);
   }
   if (channel === "dev" && !/^\d+\.\d+\.\d+-dev\..+$/u.test(version)) {
-    throw new Error(`dev requires 0.5.x-dev.<suffix>, got ${version}`);
+    throw new Error(`dev requires X.Y.Z-dev.<suffix>, got ${version}`);
   }
   return npmTag;
 }
