@@ -69,13 +69,15 @@ pnpm dev:board --map <sdk-tarballs.json> --output <new-evidence-directory>
 2. 构建 application 的 browser bundle 与 render page；后续仅在归档 hash、安装后的 dependency lock、根 build 配置
    与全部 browser package 源码一致时复用，
    不构建 demo application。
-3. 通过与 `pnpm dev` 相同的 `tsx` entry 运行 source CLI，使用新的 `.univer` 文件与独立 `UNIVER_HOME`。
+3. 通过 `tsx` 从源码运行 CLI client、daemon 和 content worker，显式设置现有的 daemon entry 与 browser assets
+   环境变量，使用新的 `.univer` 文件与独立 `UNIVER_HOME`。
    验证 graph plan、stale 拒绝、从浏览器返回 headless `execute` 的非空实测标签修复、再次 lint、
    Worktree ready／merge 和 Trunk 语义读回。
 4. 验证真实 model-only lint 的 exit 2、空 stdout 与单个 stderr JSON，仅停止本次 daemon，并在 `finally`
    恢复 workspace／lock 原始字节；普通命令失败时同样恢复。
 
-Evidence 目录保留 command stdout／stderr、package hash／来源、result 与配置原始备份。
+Evidence 目录保留 command stdout／stderr、package hash／来源、source entry 路径／hash、
+实际解析的 SDK entry 路径／version／hash、result 与配置原始备份。
 并行 workspace 编辑与安装完成后的 lock 编辑会保留并报错，不会被覆盖；安装期间 lock 由 pnpm 拥有，
 不要编辑它或运行其他 installer。强制杀进程或断电后，先使用这些备份恢复配置再安装；
 进程锁位于 `node_modules/.cache/board-dev.lock`。删除数据前，先停止 evidence home 对应的 daemon。

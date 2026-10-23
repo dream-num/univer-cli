@@ -1,6 +1,7 @@
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 // @ts-expect-error The development runner is a Node.js maintenance script.
 import {
@@ -9,9 +10,24 @@ import {
   captureInstalledLock,
   replaceOwnedConfiguration,
   restoreOwnedFile,
+  sourceCliRuntime,
 } from "../scripts/dev/verify-board.mjs";
 
 describe("local Board SDK development workflow", () => {
+  it("loads source daemon and workers with the same loader as the source client", () => {
+    const root = fileURLToPath(new URL("../", import.meta.url));
+    const runtime = sourceCliRuntime(root, join(tmpdir(), "board dev evidence"), {
+      NODE_OPTIONS: "--enable-source-maps",
+      UNIVER_CLI_DAEMON_ENTRY: "file:///stale/dist/daemon.js",
+      UNIVER_CLI_VIEW_ASSETS_ROOT: "stale-assets",
+    });
+    expect(runtime.cliArgs).toEqual([join(root, "apps/cli/src/bin.ts")]);
+    expect(runtime.env.UNIVER_CLI_DAEMON_ENTRY).toMatch(/\/src\/daemon-entry\.ts$/u);
+    expect(runtime.env.NODE_OPTIONS).toContain("--enable-source-maps --import=file:");
+    expect(runtime.env.UNIVER_CLI_VIEW_ASSETS_ROOT).toBe(join(root, "apps/cli/dist/browser"));
+    expect(readFileSync(runtime.entries.daemonEntry, "utf8")).toContain('"./runtime-worker.js"');
+    expect(runtime.entries.workerEntry).toBe(join(root, "apps/cli/src/runtime-worker.ts"));
+  });
   it("never adopts a workspace edit made during the install", () => {
     const directory = mkdtempSync(join(tmpdir(), "univer-board-dev-concurrent-"));
     const workspace = {

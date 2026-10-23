@@ -72,13 +72,14 @@ edits remain available for development. The command:
 2. Builds the application's browser bundle, including its render page. It reuses that bundle on subsequent
    runs only when archive hashes, the installed dependency lock, root build configuration and all
    browser-package sources match; no demo applications are built.
-3. Runs the source CLI, using the same `tsx` entry as `pnpm dev`, against a new `.univer` file and isolated
-   `UNIVER_HOME`. It verifies graph planning, stale rejection, a nonempty measured label repair crossing from
+3. Runs the CLI client, daemon and content worker from source with `tsx`, using the existing daemon-entry and
+   browser-assets environment settings, against a new `.univer` file and isolated `UNIVER_HOME`. It verifies graph planning, stale rejection, a nonempty measured label repair crossing from
    the browser back into headless `execute`, re-lint, Worktree ready/merge and Trunk semantic readback.
 4. Checks actual model-only lint exit 2, empty stdout and one stderr JSON, stops only its own daemon, and
    restores the original workspace/lock bytes in `finally`, including on ordinary command failure.
 
-The evidence directory retains command stdout/stderr, package hashes/provenance, the result and original
+The evidence directory retains command stdout/stderr, package hashes/provenance, source entry paths/hashes,
+resolved SDK entry paths/versions/hashes, the result and original
 configuration backups. Concurrent workspace edits and post-install lock edits are preserved and reported rather
 than overwritten. During installation the lock belongs to pnpm; do not edit it or run another installer.
 After an abrupt process kill or machine shutdown, recover configuration from those backups before reinstalling;

@@ -23,6 +23,88 @@ import { verifyBoardFlow } from "./board-flow.mjs";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const SDK_NAME = /^@(?:univer-cli|univerjs|univerjs-pro)\/[a-z0-9][a-z0-9-]*$/u;
 
+export function sourceCliRuntime(root, evidence, inheritedEnv) {
+  const require = createRequire(join(root, "apps/cli/package.json"));
+  const loader = pathToFileURL(require.resolve("tsx")).href;
+  const entry = join(root, "apps/cli/src/bin.ts");
+  const daemonEntry = join(root, "apps/cli/src/daemon-entry.ts");
+  const workerEntry = join(root, "apps/cli/src/runtime-worker.ts");
+  return {
+    cliArgs: [entry],
+    entries: { entry, daemonEntry, workerEntry, loader },
+    env: {
+      ...inheritedEnv,
+      CI: "true",
+      NODE_OPTIONS: [inheritedEnv.NODE_OPTIONS, `--import=${loader}`].filter(Boolean).join(" "),
+      UNIVER_HOME: join(evidence, "home"),
+      UNIVER_CLI_UPDATE_CHECK: "0",
+      UNIVER_CLI_DAEMON_ENTRY: pathToFileURL(daemonEntry).href,
+      UNIVER_CLI_VIEW_ASSETS_ROOT: join(root, "apps/cli/dist/browser"),
+    },
+  };
+}
+
+function recordConsumer(evidence, packages, entries) {
+  const resolvers = ["apps/cli", "packages/render-preset", "packages/render-runtime-client"].map(
+    (directory) => createRequire(join(ROOT, directory, "package.json")),
+  );
+  const installed = packages.map((input) => {
+    let entry;
+    for (const require of resolvers) {
+      try {
+        entry = realpathSync(require.resolve(input.name));
+        break;
+      } catch (error) {
+        if (error.code !== "MODULE_NOT_FOUND") throw error;
+      }
+    }
+    if (!entry) throw new Error(`Cannot resolve installed SDK ${input.name}`);
+    let directory = dirname(entry);
+    for (;;) {
+      const path = join(directory, "package.json");
+      const manifest = existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : undefined;
+      if (manifest?.name === input.name) {
+        if (manifest.version !== input.version)
+          throw new Error(`Installed SDK version mismatch: ${input.name}`);
+        const importTarget = manifest.exports?.["."]?.import ?? manifest.module;
+        const importEntry =
+          typeof importTarget === "string" ? join(directory, importTarget) : entry;
+        return {
+          name: input.name,
+          version: manifest.version,
+          entry,
+          entrySha256: createHash("sha256").update(readFileSync(entry)).digest("hex"),
+          importEntry,
+          importEntrySha256: createHash("sha256").update(readFileSync(importEntry)).digest("hex"),
+        };
+      }
+      const parent = dirname(directory);
+      if (parent === directory) throw new Error(`Cannot identify installed SDK ${input.name}`);
+      directory = parent;
+    }
+  });
+  writeFileSync(
+    join(evidence, "consumer.json"),
+    JSON.stringify(
+      {
+        head: run("git", ["rev-parse", "HEAD"]),
+        trackedChanges: run("git", ["status", "--short", "--untracked-files=no"]),
+        entries: Object.fromEntries(
+          Object.entries(entries).map(([name, path]) => [
+            name,
+            name === "loader"
+              ? path
+              : { path, sha256: createHash("sha256").update(readFileSync(path)).digest("hex") },
+          ]),
+        ),
+        installed,
+      },
+      null,
+      2,
+    ),
+  );
+}
+
 export function addSdkOverrides(source, overrides) {
   const entries = Object.entries(overrides);
   if (entries.some(([name]) => !SDK_NAME.test(name)))
@@ -231,18 +313,7 @@ export function main(argv) {
     ? resolve(values.output)
     : mkdtempSync(join(tmpdir(), "univer-board-dev-"));
   if (values.output) mkdirSync(evidence);
-  const env = {
-    ...process.env,
-    CI: "true",
-    UNIVER_HOME: join(evidence, "home"),
-    UNIVER_CLI_UPDATE_CHECK: "0",
-  };
-  const require = createRequire(join(ROOT, "apps/cli/package.json"));
-  const cliArgs = [
-    "--import",
-    pathToFileURL(require.resolve("tsx")).href,
-    join(ROOT, "apps/cli/src/bin.ts"),
-  ];
+  const { env, cliArgs, entries } = sourceCliRuntime(ROOT, evidence, process.env);
   const files = ["pnpm-workspace.yaml", "pnpm-lock.yaml"].map((name) => ({
     path: join(ROOT, name),
     original: readFileSync(join(ROOT, name)),
@@ -304,6 +375,7 @@ export function main(argv) {
       writeFileSync(marker, JSON.stringify({ fingerprint, packages }, null, 2));
     } else
       process.stdout.write("Reusing the browser bundle: SDK tarballs and browser sources match.\n");
+    recordConsumer(evidence, packages, entries);
     flowStarted = true;
     verifyBoardFlow({ root: ROOT, evidence, env, cliArgs });
   } catch (error) {
