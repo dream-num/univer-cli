@@ -1,6 +1,7 @@
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import type { UniverCollaborationRuntimePool } from "@univer-cli/univer-collaboration-runtime-pool";
 import { UniverInstanceType } from "@univerjs/core";
@@ -83,13 +84,16 @@ describe("Local Univer application adapters", () => {
   });
 
   it("matches the legacy long-path socket fallback", () => {
-    const path = resolveDaemonSocketPath(`/tmp/${"a".repeat(100)}`);
-    expect(path).toMatch(/^\/tmp\/univer-[a-f0-9]{16}\.sock$/u);
+    const path = resolveDaemonSocketPath(`/tmp/${"a".repeat(100)}`, "linux");
+    expect(dirname(path)).toBe(join("/tmp"));
+    expect(path).toMatch(/univer-[a-f0-9]{16}\.sock$/u);
   });
 
   it("accepts local paths and file URLs but rejects remote targets", () => {
-    expect(resolveLocalUniverfile("book.univer", "/tmp")).toBe("/tmp/book.univer");
-    expect(resolveLocalUniverfile("file:///tmp/book.univer")).toBe("/tmp/book.univer");
+    const path = join(tmpdir(), "book.univer");
+    expect(resolveLocalUniverfile("book.univer", tmpdir())).toBe(path);
+    expect(resolveLocalUniverfile(pathToFileURL(path).href)).toBe(path);
+    expect(resolveLocalUniverfile(path)).toBe(path);
     expect(() => resolveLocalUniverfile("https://example.com/book.univer")).toThrow(
       /local path or file: URL/,
     );

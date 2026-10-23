@@ -73,7 +73,12 @@ univer open
        -> read-only pinned Unit comparison (Trunk or Worktree <-> current Worktree)
        -> trunk-only Universer exchange tasks + all-scope print plugins
 
-univer screenshot / print-pdf / lint / compile-svg
+univer lint --mode model (Board)
+  -> CLI SDK layout lint
+       -> standard headless Univer factory
+            -> Board model Facade analysis
+
+univer screenshot / print-pdf / lint (Slide / Board rendered) / compile-svg
   -> CLI SDK browser orchestration
        -> packaged render-runtime-client
             -> CLI SDK univer-render-page
@@ -81,9 +86,11 @@ univer screenshot / print-pdf / lint / compile-svg
 ```
 
 daemon 只管理本地服务和 runtime lifecycle。它为 render operation 物化 UnitData、解析同文件依赖并投影本地
-图片资产；PNG/PDF 输出、layout analysis 和文本测量由 CLI SDK capability 与 browser runtime 完成。
+图片资产；PNG/PDF 输出、layout analysis 和文本测量由 CLI SDK capability 与其 runtime 完成。Board model-only lint 使用标准 headless factory，不启动浏览器；rendered 与 both 模式使用 browser runtime。两阶段分析同一份独立 snapshot；应用仅传递来源与本地资源，规则和几何检查留在 SDK。
 
 Gateway 按 `.univer` runtime 隔离 Viewer Ribbon 使用的 `source=1` exchange 上传、异步 import/export task 与临时 artifact；导入在当前 trunk 创建新 Unit，导出物化 trunk head。Worktree 路径不暴露 exchange。嵌入资源继续使用按 Unit/worktree 授权的 `source=3` 文件协议，不能与 exchange artifact 混用。
+
+Gateway 的 Trunk、Worktree 与 snapshot materialization 显式使用 Collaboration SDK 的 in-process execution，复用 application daemon 的进程边界，避免每个文件嵌套创建 runtime worker pool。CLI Facade 执行仍由独立 runtime worker 承担。
 
 Gateway 为 trunk revision 组合 Collaboration SDK History Service 与 Endpoint。`@univer/univerfile-sqlite` 在共享文件 connection 上实现 History persistence contract；History 表只是由 core Unit/changeset 重建的派生索引：Unit 缺少记录时 History Service 在首次读取时重建，落后于 trunk head 时在下一次提交时追平；文件升级和 optimizer 保证不留下超过 trunk head 的边界。Viewer 按 Unit 类型为 trunk Sheet、Doc、Slide、Base 和 Board 注册各自的标准 SDK History UI 插件；Worktree 与 merge preview 不呈现这项能力。
 

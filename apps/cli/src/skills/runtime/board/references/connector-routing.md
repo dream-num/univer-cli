@@ -30,7 +30,8 @@ Declare marker type/size/offset; let the renderer calculate paint bounds and ter
 
 ## Rendered evidence
 
-Run model analysis and a full `screenshot --json`; inspect `outputs[0].layoutAnalysis`. An automatic connector
+Run standard Board `lint --mode both --json` and a full `screenshot --json`; inspect the report and
+`outputs[0].layoutAnalysis`. On exit code 2, the report is retained at `error.details.report`. An automatic connector
 without persisted route points can be unresolved in model analysis. Only final rendering establishes its route.
 
 | Finding                                                                                            | Response                                                                                  |

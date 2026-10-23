@@ -172,7 +172,7 @@ export class CollabService {
       throw new Error(`Unit ${unitId} was not found with type ${String(type)}`);
     }
     const loadData = await this._getTrunkLoadDataWithBlocks(unitId, type, 0, "gateway-exchange");
-    const materializer = new UnitSnapshotMaterializer();
+    const materializer = new UnitSnapshotMaterializer({ execution: { mode: "in-process" } });
     try {
       return await materializer.materializeSnapshot(loadData);
     } finally {
@@ -972,7 +972,7 @@ export class CollabService {
             unit.type,
             unit.revision,
           );
-    const materializer = new UnitSnapshotMaterializer();
+    const materializer = new UnitSnapshotMaterializer({ execution: { mode: "in-process" } });
     try {
       const materialized = await materializer.materializeSnapshot(loadData);
       return {

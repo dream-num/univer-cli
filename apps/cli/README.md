@@ -18,7 +18,7 @@ univer worktree add|list|ready|reopen|merge|discard ...
 univer unit add|remove|list ...
 univer execute <file.univer> --worktree <id> --unit <id> -e '<facade-js>'
 univer inspect <target> <selectors...> <file.univer> --unit <id> (--trunk|--worktree <id>)
-univer lint --file <file.univer> --unit <slide-id> [--worktree <id>] [--pages <pages>]
+univer lint --file <file.univer> --unit <slide-or-board-id> [--worktree <id>] [--pages <pages>] [--mode <model|rendered|both>]
 univer screenshot <file.univer> [--worktree <id>] [--unit <id>] [--out <dir>]
 univer screenshot setup [--force]
 univer print-pdf <file.univer> <output.pdf> [--worktree <id>] [--unit <id>]
@@ -119,9 +119,17 @@ univer screenshot ./book.univer --worktree <id> --unit <slide-id> \
 univer print-pdf ./book.univer ./book.pdf --unit <sheet-id>
 univer print-pdf ./book.univer ./review.pdf --worktree <id> --unit <doc-id>
 univer lint --file ./book.univer --worktree <id> --unit <slide-id> --pages 1,3-5
+univer lint --file ./book.univer --unit <board-id> --mode model --json
+univer lint --file ./book.univer --worktree <id> --unit <board-id> --mode both --json
 ```
 
-`lint` uses the CLI SDK layout-lint capability and browser glyph geometry to detect `text-off-page`, `text-escapes-container`, and `text-overlaps-text` findings. Findings are review suggestions backed by geometry evidence.
+`lint` delegates to the CLI SDK layout-lint capability. Slide uses browser glyph geometry for `text-off-page`, `text-escapes-container`, and `text-overlaps-text` findings. Board supports `--mode model|rendered|both` (default: both), with `--pages` selecting one-based pages or IDs. Model-only analysis uses the standard headless factory and does not start a browser. The command reads trunk by default or the selected Worktree without editing it.
+
+Board reports preserve raw SDK rules, element/connector/label IDs, focus bounds, routes, per-source analyses, snapshot identity, and coverage. Missing or unresolved evidence produces incomplete coverage. Model-only results exclude final font metrics and rendered automatic routes. Errors or incomplete coverage exit with code 2; `--json` writes a single machine failure to stderr with the complete report at `error.details.report`, leaving stdout empty. Warnings alone succeed. Slide findings retain their existing exit behavior.
+
+Board `--plan-labels` with rendered or both mode includes read-only native repair plans in `analyses[].labelPlan`. Apply only a `ready` plan with `board.applyLayoutPlan(plan)` through `execute` in the existing draft, then re-run lint. A stale plan must be regenerated; lint never edits content.
+
+Apply only a plan for the current Board page; `applyLayoutPlan` rejects a mismatched page.
 
 `compile-svg` uses real browser font measurement by default; `--estimate-text-size` opts into deterministic estimation. `compile-typst --apply` materializes a Doc snapshot in memory and writes it as one Worktree Unit. `resources` uses configured resource manifests and stores downloads under `${UNIVER_HOME}/cache/resources`.
 

@@ -1,6 +1,7 @@
 import type { LocalRenderApplication } from "../src/features/render/service.js";
 import { runCli } from "../src/cli.js";
 import { describe, expect, it } from "vitest";
+import type { BoardUnitLayoutLintReport } from "@univer-cli/unit-layout-lint";
 
 describe("Local layout lint command", () => {
   it("adds Local file and Worktree targeting to the SDK lint grammar", async () => {
@@ -96,6 +97,75 @@ describe("Local layout lint command", () => {
     );
     expect(valid.exitCode).toBe(0);
     expect(loaded).toEqual([{ path: "deck.univer", unitId: "slide-1" }]);
+  });
+
+  it("maps Board mode and retains diagnostic evidence in the machine failure", async () => {
+    const linted: unknown[] = [];
+    const bounds = { left: 10, top: 20, width: 30, height: 40 };
+    const report: BoardUnitLayoutLintReport = {
+      kind: "unit-layout-lint",
+      unitType: "board",
+      unitId: "board-1",
+      mode: "both",
+      snapshotHash: "snapshot",
+      status: "incomplete",
+      coverage: {
+        pages: [{ page: 1, pageId: "canvas" }],
+        sources: ["model", "rendered"],
+        complete: false,
+        incomplete: [{ pageId: "canvas", source: "rendered", reason: "unresolved-label" }],
+        limitations: [],
+      },
+      analyses: [],
+      findings: [
+        {
+          id: "label",
+          rule: "connector-label-layout-unresolved",
+          severity: "warning",
+          elementIds: ["node"],
+          connectorIds: ["edge"],
+          labelIds: ["role"],
+          bounds,
+          focusBounds: bounds,
+          source: "rendered",
+          page: 1,
+          pageId: "canvas",
+          fingerprint: "label",
+        },
+      ],
+    };
+    const application = fakeRender({
+      async loadLayoutLintSource() {
+        return { unitType: "board", unitData: { id: "board-1" } } as never;
+      },
+      layoutLint: {
+        async lint(input) {
+          linted.push(input);
+          return report;
+        },
+      },
+    });
+    const result = await invoke(
+      [
+        "lint",
+        "--file",
+        "board.univer",
+        "--unit",
+        "board-1",
+        "--mode",
+        "both",
+        "--plan-labels",
+        "--json",
+      ],
+      application,
+    );
+    expect(linted[0]).toMatchObject({ unitType: "board", mode: "both", includeLabelPlan: true });
+    expect(result.exitCode).toBe(2);
+    expect(result.stdout).toBe("");
+    expect(JSON.parse(result.stderr)).toMatchObject({
+      ok: false,
+      error: { code: "UNIT_LAYOUT_LINT_BOARD_FAILED", details: { report } },
+    });
   });
 });
 

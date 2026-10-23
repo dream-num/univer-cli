@@ -74,8 +74,10 @@ export class GatewayFileRuntime {
       this.historyAdapter = this._univerfile.historyDatabaseAdapter;
       this.assetStore = this._univerfile.assetStore;
 
+      // Gateway already lives in the application daemon; avoid nested per-file worker pools.
       this.trunkService = new UniverCollabService({
         dbAdapter: this.trunkAdapter,
+        runtime: { execution: { mode: "in-process" } },
       });
       this.worktreeService = new UniverCollabWorktreeService({
         trunk: {
@@ -83,6 +85,7 @@ export class GatewayFileRuntime {
           dbAdapter: this.trunkAdapter,
         },
         dbAdapter: this.worktreeAdapter,
+        runtime: { execution: { mode: "in-process" } },
       });
       this.historyService = new UniverHistoryService({
         collabService: this.trunkService,

@@ -19,7 +19,7 @@ univer worktree add|list|ready|reopen|merge|discard ...
 univer unit add|remove|list ...
 univer execute <file.univer> --worktree <id> --unit <id> -e '<facade-js>'
 univer inspect <target> <selectors...> <file.univer> --unit <id> (--trunk|--worktree <id>)
-univer lint --file <file.univer> --unit <slide-id> [--worktree <id>] [--pages <pages>]
+univer lint --file <file.univer> --unit <slide-or-board-id> [--worktree <id>] [--pages <pages>] [--mode <model|rendered|both>]
 univer screenshot <file.univer> [--worktree <id>] [--unit <id>] [--out <dir>]
 univer screenshot setup [--force]
 univer print-pdf <file.univer> <output.pdf> [--worktree <id>] [--unit <id>]
@@ -133,10 +133,25 @@ univer screenshot ./book.univer --worktree <id> --unit <slide-id> \
 univer print-pdf ./book.univer ./book.pdf --unit <sheet-id>
 univer print-pdf ./book.univer ./review.pdf --worktree <id> --unit <doc-id>
 univer lint --file ./book.univer --worktree <id> --unit <slide-id> --pages 1,3-5
+univer lint --file ./book.univer --unit <board-id> --mode model --json
+univer lint --file ./book.univer --worktree <id> --unit <board-id> --mode both --json
 ```
 
-`lint` 使用 CLI SDK layout-lint capability，对 browser glyph geometry 执行 `text-off-page`、
-`text-escapes-container` 与 `text-overlaps-text` 检查。finding 是带几何证据的复查建议。
+`lint` 使用 CLI SDK layout-lint capability。Slide 根据 browser glyph geometry 执行 `text-off-page`、
+`text-escapes-container` 与 `text-overlaps-text` 检查。Board 支持 `--mode model|rendered|both`（默认 both），
+`--pages` 可选择从 1 开始的页码或 page ID。Model-only 使用标准 headless factory，不启动浏览器。
+command 默认只读检查 trunk，也可以选择已有 Worktree。
+
+Board report 保留 SDK 原始规则、element/connector/label ID、focus bounds、路线、各阶段分析、snapshot identity
+和 coverage。缺失或未解析的证据会使 coverage 不完整。Model-only 不覆盖最终字体度量和 rendered 自动路线。
+错误或不完整 coverage 以 code 2 退出；`--json` 仅向 stderr 写入一个 machine failure，完整 report 位于
+`error.details.report`，stdout 保持为空。仅有 warning 时成功；Slide finding 保持原有退出行为。
+
+Board 在 rendered 或 both 模式可使用 `--plan-labels`，通过 `analyses[].labelPlan` 返回只读的原生修复 plan。
+在已有草稿中通过 `execute` 调用 `board.applyLayoutPlan(plan)`，仅应用 `ready` plan，然后重新 lint；
+过期 plan 必须重新生成。lint 不修改内容。
+
+仅应用当前 Board page 对应的 plan；`applyLayoutPlan` 会拒绝页面不匹配的 plan。
 
 `compile-svg` 默认使用 browser runtime 的真实字体测量；`--estimate-text-size` 才使用确定性估算。
 `compile-typst --apply` 在内存中物化 Doc snapshot，再作为一个 Worktree Unit 写入。`resources` 使用配置的

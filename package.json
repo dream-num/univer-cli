@@ -25,8 +25,8 @@
     "start": "pnpm --filter univer-cli start",
     "release:cli": "node scripts/release/release-cli.mjs",
     "release:validate-skills": "node scripts/release/validate-skill-distribution.mjs",
-    "test": "pnpm build && vitest run --exclude '.worktrees/**' test/*.test.ts && pnpm --filter './apps/**' --filter './packages/**' -r --if-present test",
-    "typecheck": "pnpm --filter './apps/**' --filter './packages/**' -r --if-present typecheck"
+    "test": "pnpm build && vitest run --dir test && pnpm -r --if-present test",
+    "typecheck": "pnpm -r --if-present typecheck"
   },
   "devDependencies": {
     "@types/node": "^24.10.0",
