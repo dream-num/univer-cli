@@ -1,15 +1,5 @@
-import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import {
-  copyFileSync,
-  existsSync,
-  readFileSync,
-  realpathSync,
-  renameSync,
-  unlinkSync,
-  writeFileSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
+import { copyFileSync, existsSync, realpathSync, renameSync, unlinkSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { UniverfileSQLiteConnection } from "../connection.js";
@@ -25,6 +15,13 @@ import { migrateV0CandidateToV3 } from "./readers/v0.js";
 import { migrateV1CandidateToV2 } from "./readers/v1.js";
 import { migrateV2CandidateToV3, normalizeChangesetCreateTimes } from "./readers/v2.js";
 import { verifyV3Candidate, type UniverfileVerification } from "./verify.js";
+import {
+  runUniverfileSQLiteWorker,
+  completeUniverfileSQLiteWorker,
+  SQLITE_WORKER_CANDIDATE_ENV,
+  SQLITE_WORKER_ENV,
+  SQLITE_WORKER_OPERATION_ENV,
+} from "./worker.js";
 
 export type UniverfileUpgradeSourceFormat = "v0" | "v1" | "v2";
 
@@ -54,10 +51,7 @@ export interface UpgradeUniverfileSQLiteOptions {
   readonly execution?: "in-process" | "subprocess";
 }
 
-const UPGRADE_WORKER_ENV = "UNIVERFILE_UPGRADE_WORKER";
 const UPGRADE_IN_PROCESS_ENV = "UNIVERFILE_UPGRADE_IN_PROCESS";
-const UPGRADE_PATH_ENV = "UNIVERFILE_UPGRADE_PATH";
-const UPGRADE_RESULT_ENV = "UNIVERFILE_UPGRADE_RESULT";
 const REPLACE_RETRY_MS = [0, 50, 100, 200, 400] as const;
 const WAIT_BUFFER = new Int32Array(new SharedArrayBuffer(4));
 
@@ -67,17 +61,6 @@ type PreparedUpgrade =
       readonly candidatePath?: string;
     });
 
-interface UpgradeWorkerSuccess {
-  readonly ok: true;
-  readonly outcome: PreparedUpgrade;
-}
-
-interface UpgradeWorkerFailure {
-  readonly ok: false;
-  readonly code: ConstructorParameters<typeof UniverfileSQLiteError>[0];
-  readonly message: string;
-}
-
 export function upgradeUniverfileSQLite(
   filename: string,
   options: UpgradeUniverfileSQLiteOptions = {},
@@ -85,21 +68,19 @@ export function upgradeUniverfileSQLite(
   if (process.env[UPGRADE_IN_PROCESS_ENV] === "1") {
     return publish(upgradeInProcess(filename, options));
   }
-  if (usesSubprocess(options)) return upgradeViaSubprocess(filename, options);
+  if (usesSubprocess(options)) {
+    // Windows detection runs in its own read-only helper, so this fast path holds no native handles.
+    if (detectUniverfileSQLiteFormat(filename) === "v3")
+      return { status: "unchanged", format: "v3" };
+    return upgradeViaSubprocess(filename, options);
+  }
   return publish(upgradeInProcess(filename, options));
 }
 
 function usesSubprocess(options: UpgradeUniverfileSQLiteOptions): boolean {
   if (options.execution === "subprocess") return true;
   if (options.execution === "in-process") return false;
-  return process.platform === "win32" && canLaunchWorker(workerScriptPath());
-}
-
-function canLaunchWorker(script: string): boolean {
-  if (!script.endsWith(".ts")) return true;
-  return process.execArgv.some(
-    (arg) => arg.includes("tsx") || arg.includes("strip-types") || arg.includes("transform-types"),
-  );
+  return process.platform === "win32";
 }
 
 function upgradeInProcess(
@@ -143,7 +124,7 @@ function upgradeViaSubprocess(
   options: UpgradeUniverfileSQLiteOptions,
 ): UniverfileUpgradeResult {
   return withUniverfileUpgradeLock(filename, options.lockTimeoutMs ?? 5_000, () => {
-    const outcome = runUpgradeChild(filename);
+    const outcome = runUniverfileSQLiteWorker<PreparedUpgrade>(filename, "upgrade");
     if (outcome.status === "unchanged") return outcome;
     const candidatePath = outcome.candidatePath;
     if (candidatePath === undefined) {
@@ -174,10 +155,9 @@ function prepareUpgrade(filename: string, deferReplace: boolean): PreparedUpgrad
   const sourceFormat = detectUniverfileSQLiteFormat(filename);
   if (sourceFormat === "v3") return { status: "unchanged", format: "v3" };
   const backup = createUniverfileBackup(filename, sourceFormat);
-  const candidatePath = join(
-    dirname(filename),
-    `.${basename(filename)}.upgrade-${randomUUID()}.univer`,
-  );
+  const candidatePath =
+    (deferReplace ? process.env[SQLITE_WORKER_CANDIDATE_ENV] : undefined) ??
+    join(dirname(filename), `.${basename(filename)}.upgrade-${randomUUID()}.univer`);
   try {
     copyFileSync(backup.path, candidatePath);
     const preservedMergingWorktrees = migrateCandidate(candidatePath, sourceFormat);
@@ -199,7 +179,8 @@ function prepareUpgrade(filename: string, deferReplace: boolean): PreparedUpgrad
       ...(deferReplace ? { candidatePath } : {}),
     };
   } catch (error) {
-    if (existsSync(candidatePath)) unlinkSync(candidatePath);
+    // The parent removes a failed worker candidate only after native handles have exited.
+    if (!deferReplace && existsSync(candidatePath)) unlinkSync(candidatePath);
     if (error instanceof UniverfileSQLiteError) throw error;
     throw new UniverfileSQLiteError(
       "UPGRADE_FAILED",
@@ -207,59 +188,6 @@ function prepareUpgrade(filename: string, deferReplace: boolean): PreparedUpgrad
       { cause: error },
     );
   }
-}
-
-function runUpgradeChild(filename: string): PreparedUpgrade {
-  const resultPath = join(tmpdir(), `univerfile-upgrade-${randomUUID()}.json`);
-  const script = workerScriptPath();
-  try {
-    const child = spawnSync(process.execPath, workerLaunchArgs(script), {
-      env: {
-        ...process.env,
-        [UPGRADE_WORKER_ENV]: "1",
-        [UPGRADE_IN_PROCESS_ENV]: "1",
-        [UPGRADE_PATH_ENV]: filename,
-        [UPGRADE_RESULT_ENV]: resultPath,
-      },
-      encoding: "utf8",
-      windowsHide: true,
-      timeout: 120_000,
-    });
-    if (!existsSync(resultPath)) {
-      const detail = `${child.stderr ?? ""}${child.stdout ?? ""}`.trim();
-      throw new UniverfileSQLiteError(
-        "UPGRADE_FAILED",
-        detail || `upgrade helper exited (${String(child.status ?? child.signal ?? "unknown")})`,
-      );
-    }
-    const payload = JSON.parse(readFileSync(resultPath, "utf8")) as
-      | UpgradeWorkerSuccess
-      | UpgradeWorkerFailure;
-    if (!payload.ok) throw new UniverfileSQLiteError(payload.code, payload.message);
-    return payload.outcome;
-  } finally {
-    if (existsSync(resultPath)) unlinkSync(resultPath);
-  }
-}
-
-/**
- * Built CLI emits `dist/upgrade-worker.js`. Code splitting places this module in `dist/chunks/`,
- * so the worker is that parent entry. Source and single-file test bundles fall back to this module.
- */
-function workerScriptPath(): string {
-  const self = thisModulePath();
-  for (const candidate of [
-    join(dirname(self), "upgrade-worker.js"),
-    join(dirname(self), "..", "upgrade-worker.js"),
-  ]) {
-    if (existsSync(candidate)) return candidate;
-  }
-  return self;
-}
-
-function workerLaunchArgs(script: string): string[] {
-  if (script.endsWith(".ts")) return [...process.execArgv, script];
-  return [script];
 }
 
 /**
@@ -283,26 +211,11 @@ function thisModulePath(): string {
 
 /** Entry point for the helper process. The parent replaces the original after this process exits. */
 export function runUpgradeWorker(): void {
-  const filename = process.env[UPGRADE_PATH_ENV];
-  const resultPath = process.env[UPGRADE_RESULT_ENV];
-  if (filename === undefined || filename.length === 0 || resultPath === undefined) {
-    process.stderr.write("upgrade helper is missing its path or result file\n");
-    process.exit(1);
-  }
-  try {
-    const outcome = upgradeInProcess(filename, { assumeLocked: true, deferReplace: true });
-    const payload: UpgradeWorkerSuccess = { ok: true, outcome };
-    writeFileSync(resultPath, JSON.stringify(payload));
-    process.exit(0);
-  } catch (error) {
-    const payload: UpgradeWorkerFailure = {
-      ok: false,
-      code: error instanceof UniverfileSQLiteError ? error.code : "UPGRADE_FAILED",
-      message: error instanceof Error ? error.message : String(error),
-    };
-    writeFileSync(resultPath, JSON.stringify(payload));
-    process.exit(1);
-  }
+  completeUniverfileSQLiteWorker((filename) =>
+    process.env[SQLITE_WORKER_OPERATION_ENV] === "detect"
+      ? detectUniverfileSQLiteFormat(filename)
+      : upgradeInProcess(filename, { assumeLocked: true, deferReplace: true }),
+  );
 }
 
 function replaceCandidate(candidatePath: string, filename: string): void {
@@ -332,7 +245,7 @@ function isSharingViolation(error: unknown): boolean {
 }
 
 function isUpgradeWorkerProcess(): boolean {
-  if (process.env[UPGRADE_WORKER_ENV] !== "1") return false;
+  if (process.env[SQLITE_WORKER_ENV] !== "1") return false;
   const entry = process.argv[1];
   if (entry === undefined) return false;
   try {

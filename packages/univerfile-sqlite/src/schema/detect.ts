@@ -1,5 +1,7 @@
 import Database from "libsql";
+import { existsSync } from "node:fs";
 import { UniverfileSQLiteError } from "../errors.js";
+import { runUniverfileSQLiteWorker, SQLITE_WORKER_ENV } from "../migration/worker.js";
 import {
   ASSET_V1_TABLES,
   CORE_V1_TABLES,
@@ -26,6 +28,10 @@ interface ColumnRow {
 }
 
 export function detectUniverfileSQLiteFormat(filename: string): UniverfileSQLiteFormat {
+  if (!existsSync(filename)) throw unsupported(".univer file does not exist");
+  if (process.platform === "win32" && process.env[SQLITE_WORKER_ENV] !== "1") {
+    return runUniverfileSQLiteWorker<UniverfileSQLiteFormat>(filename, "detect");
+  }
   let database: Database.Database | undefined;
   try {
     database = new Database(filename, { readonly: true, fileMustExist: true });

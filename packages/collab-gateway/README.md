@@ -18,6 +18,10 @@ lifecycle。打开 v0/v1 Univerfile 时，统一 open seam 委托 `@univer/unive
 Endpoint 通过 SDK `register(router)` 接入 HTTP 与 WebSocket 路由；连接跟踪包装保留路由参数，
 并在连接关闭或打开失败时释放跟踪记录。
 
+Windows 上，现有 optimize 路径在同一进程中生成并关闭 SQLite candidate 后再 rename／删除，仍受 libsql 0.5.29
+prepared statement 文件锁限制，可能返回 EBUSY／EPERM；这是尚未解决的功能限制。格式识别／升级 helper 的退出隔离
+不覆盖 optimizer。不要通过等待 GC 或忽略 cleanup 错误把 optimize 失败视为成功。
+
 ```bash
 pnpm --filter @univer/collab-gateway typecheck
 pnpm --filter @univer/collab-gateway test

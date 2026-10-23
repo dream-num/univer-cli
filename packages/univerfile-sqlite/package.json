@@ -21,5 +21,8 @@
     "@univerjs-pro/collaboration-worktree-service": "1.2.0",
     "@univerjs/protocol": "1.2.0",
     "libsql": "^0.5.29"
+  },
+  "devDependencies": {
+    "tsx": "4.19.4"
   }
 }
