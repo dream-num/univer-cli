@@ -86,3 +86,21 @@ mode, move an endpoint annotation, or give the terminal more room. Routing norma
 font readiness, or a label box that is too large. Never silently reduce font size, drop multiplicities, replace
 editable texts with an image, or move unrelated nodes just to obtain a clean diagnostic result. Recheck the final
 readback and screenshot after repair. For a label-interaction test, also exercise a middle-label edit/delete and undo.
+
+## Spacing before label repair
+
+If a measured label plan is incomplete with `connector-label-endpoint-constrained` or `no-free-position`, a dense
+class/ER diagram may need more space between nodes. For ordinary automatic endpoints whose affected nodes may move:
+
+1. Reuse the graph options with the same `elementIds`, `fixedElementIds`, `direction` and other constraints.
+   Increase `layerGap` above its previous value; for example, call
+   `board.planGraphLayout({ ...graphOptions, layerGap: 160 })` through `execute` in the existing draft.
+2. Inspect the new graph plan and apply it only if `ready`, using `board.applyLayoutPlan(plan)`. A graph edit
+   invalidates earlier label plans; never replay one against the changed geometry.
+3. Re-run `lint --mode both --plan-labels --json` against that draft. Read the new `analyses[].labelPlan` from
+   the report or `error.details.report`, apply only a new `ready` plan for the current Board page, then re-lint
+   and inspect the screenshot.
+
+Keep manual routes, native layout ownership, explicit placements and hard constraints intact. If graph or label
+planning remains incomplete, report its unresolved diagnostics. Retain all raw findings, including manual-route
+findings; resolving label collisions does not establish that the whole diagram is clean.

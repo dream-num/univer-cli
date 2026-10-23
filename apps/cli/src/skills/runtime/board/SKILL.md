@@ -94,6 +94,10 @@ For a generated diagram, follow intent → spec when useful → layout decisions
    only a `ready` native plan through `board.applyLayoutPlan(plan)` in the existing draft with `execute`.
    Apply only a plan for the current Board page; `applyLayoutPlan` rejects a mismatched page.
    A rejected stale plan requires fresh lint. Re-run lint and inspect the screenshot after applying.
+   For endpoint/no-free-position constraints on ordinary automatic connectors with movable nodes, retain the same
+   selection, fixed IDs and direction, increase graph `layerGap` (for example, to 160), then capture a new label plan.
+   Follow the [spacing repair procedure](references/connector-labels.md#spacing-before-label-repair); keep manual,
+   native and hard constraints intact, and report any remaining incomplete plan.
    Repair implicated elements and recapture. Use [routing](references/connector-routing.md) or
    [label](references/connector-labels.md) guidance for their diagnostics. Never silently discard semantics to pass.
 4. Hand off an overview and any needed readable details. Distinguish clean results, visually reviewed diagnostic
