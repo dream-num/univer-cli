@@ -23,16 +23,16 @@ pnpm --filter @univerjs-pro/boards-mind pack --pack-destination <new-output-dire
 检查归档的 package name、exports 和编译产物。本地 Pro pack 不等于正式 release gate 通过。
 每次构建使用新的输出路径，即使 manifest version 未变也如此。
 
-CLI SDK 已有 dev version preparation，可执行完整 artifact 与 clean-consumer gate：
+CLI SDK 提供 dev version preparation，可执行完整 artifact 与 clean-consumer gate：
 
 ```bash
 pnpm release -- --version=1.2.0-dev.<unique-id> --prepare-only
 ```
 
 在干净的 SDK checkout 中执行，产出 `.release/release-manifest.json` 与 `.release/tarballs/`，不发布。
-其精确 dependency pins 必须可解析。Consumer 临时 override 不会让 producer gate 自动通过，
-也不会为此前手工打包的 candidate 补上证明。将 producer manifest 与 gate 证据和 package 一起保留；
-若 producer 暂时无法准备 dev 产物，明确报告该缺口。
+其精确 dependency pins 必须可解析。Consumer 临时 override 不满足 producer release gate。
+将 producer manifest 与 gate 证据和 package 一起保留；若缺少所需的 producer 产物或 gate 证据，
+明确报告该验证缺口。
 
 在 tracked configuration 之外建立本地 JSON map。路径相对于 map 或使用绝对路径。记录打包时真实的 producer commit
 及源码是否有未提交修改；runner 保留这些显式提供的来源信息，并计算每个归档的 SHA-256。
@@ -86,5 +86,5 @@ Evidence 目录保留 command stdout／stderr、package hash／来源、result �
 Viewer server 不替代 CLI lint 所需的静态 render-page bundle。SDK／browser 修改使 bundle fingerprint 失效；
 仅 CLI 源码修改无需重建浏览器。
 
-本地检查覆盖上述 Board 流程。另行运行 `pnpm check` 与 producer 要求的检查；本地联调成功不等于正式 release，
-也不表示全部 Windows database 检查已通过。
+本地检查覆盖上述 Board 流程，不替代 `pnpm check`、producer release gate，
+或各受支持平台的 database 验证。

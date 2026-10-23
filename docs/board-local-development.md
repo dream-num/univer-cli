@@ -25,16 +25,16 @@ pnpm --filter @univerjs-pro/boards-mind pack --pack-destination <new-output-dire
 Check the archives' package names, exports and compiled files. Local Pro packing is not the formal release gate.
 Use a unique output path for every build, even when its manifest version has not changed.
 
-The CLI SDK already provides dev-version preparation with its full artifact and clean-consumer gates:
+The CLI SDK provides dev-version preparation with its full artifact and clean-consumer gates:
 
 ```bash
 pnpm release -- --version=1.2.0-dev.<unique-id> --prepare-only
 ```
 
 Run it in a clean SDK checkout; it produces `.release/release-manifest.json` and `.release/tarballs/` without
-publishing. It requires resolvable exact dependency pins. A temporary consumer override does not make that
-producer gate pass or certify an earlier hand-packed candidate. Keep the producer's manifest and gate evidence
-alongside the packages. When a producer cannot yet prepare its dev artifacts, report that gap explicitly.
+publishing. It requires resolvable exact dependency pins. Temporary consumer overrides do not satisfy producer
+release gates. Keep the producer's manifest and gate evidence alongside the packages. If required producer
+artifacts or gate evidence are unavailable, report that validation gap explicitly.
 
 Create a local JSON map outside tracked configuration. Paths are relative to the map, or absolute. Record the
 actual producer commit and whether it had source changes when packing; the runner retains this supplied
@@ -91,5 +91,5 @@ For interactive CLI edits, use `pnpm dev -- <command>`. The existing Viewer dev 
 The Viewer server does not replace the static render-page bundle required by CLI lint. SDK/browser changes
 invalidate the integration bundle fingerprint; CLI-only source edits need no browser rebuild.
 
-This local check exercises the specified Board workflow. Run `pnpm check` and the producers' required checks
-separately; local integration success is not a formal release or a claim that all Windows database checks pass.
+This local check exercises the specified Board workflow. It does not replace `pnpm check`, the producers'
+release gates, or database validation on each supported platform.
