@@ -171,6 +171,9 @@ univer daemon stop
 pnpm unlink:cli
 ```
 
+Daemon startup initializes the local Gateway. Standard headless Univer composition loads when a content worker
+or document-authoring request needs it; document-authoring instances are disposed after each request.
+
 ### Local Board integration
 
 Use `pnpm dev:board --map <sdk-tarballs.json>` to verify unpublished SDK tarballs with the source CLI, an isolated

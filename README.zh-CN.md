@@ -164,6 +164,9 @@ univer daemon stop
 pnpm unlink:cli
 ```
 
+Daemon 启动时初始化本地 Gateway；content worker 或文档创建请求需要时才加载标准 headless Univer composition。
+文档创建实例在每次请求结束后释放。
+
 ### 本地 Board 联调
 
 使用 `pnpm dev:board --map <sdk-tarballs.json>`，通过 source CLI、隔离的文件／daemon home 验证未发布的 SDK tarball；

@@ -85,6 +85,7 @@ univer screenshot / print-pdf / lint (Slide / Board rendered) / compile-svg
                  -> standard Univer SDK render composition
 ```
 
+daemon 启动时初始化 Gateway，标准 headless Univer composition 延迟到 content worker 或文档创建请求中加载；文档创建实例在请求结束时释放。
 daemon 只管理本地服务和 runtime lifecycle。它为 render operation 物化 UnitData、解析同文件依赖并投影本地
 图片资产；PNG/PDF 输出、layout analysis 和文本测量由 CLI SDK capability 与其 runtime 完成。Board model-only lint 使用标准 headless factory，不启动浏览器；rendered 与 both 模式使用 browser runtime。两阶段分析同一份独立 snapshot；应用仅传递来源与本地资源，规则和几何检查留在 SDK。
 
