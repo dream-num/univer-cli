@@ -13,6 +13,13 @@ pnpm --filter @univerjs-pro/boards pack --pack-destination <new-output-directory
 pnpm --filter @univerjs-pro/boards-ui pack --pack-destination <new-output-directory>
 ```
 
+若修改了原生 mind-map factory 或布局，还应构建并打包对应的 owner package：
+
+```bash
+pnpm --filter @univerjs-pro/boards-mind build
+pnpm --filter @univerjs-pro/boards-mind pack --pack-destination <new-output-directory>
+```
+
 检查归档的 package name、exports 和编译产物。本地 Pro pack 不等于正式 release gate 通过。
 每次构建使用新的输出路径，即使 manifest version 未变也如此。
 
@@ -41,7 +48,8 @@ pnpm release -- --version=1.2.0-dev.<unique-id> --prepare-only
 }
 ```
 
-包括此次实验所需的全部未发布 dependency，通常为两个 Pro Board package，以及 CLI SDK 的
+包括此次实验所需的全部未发布 dependency：实际修改的 Pro Board package（`boards`、`boards-ui`，以及相关时的
+`boards-mind`），以及 CLI SDK 的
 `headless-univer`、`unit-layout-lint`、`unit-layout-lint-command`、`univer-render-page`、`univer-render-runtime`
 和 `api-reference`。Runner 检查归档身份，拒绝仅适用于源码的 `file:`、`link:` 或 `workspace:` dependency。
 它不发现相邻 checkout，也不替代 producer release validation。
@@ -58,7 +66,8 @@ pnpm dev:board --map <sdk-tarballs.json> --output <new-evidence-directory>
 或启动第二个联调流程；产品源码仍可正常开发。命令会：
 
 1. 保存 workspace／lock 原始字节，临时安装 map 明确列出的 SDK 归档。
-2. 构建 application 的 browser bundle 与 render page；后续仅在归档 hash 与全部 browser package 源码一致时复用，
+2. 构建 application 的 browser bundle 与 render page；后续仅在归档 hash、安装后的 dependency lock、根 build 配置
+   与全部 browser package 源码一致时复用，
    不构建 demo application。
 3. 通过与 `pnpm dev` 相同的 `tsx` entry 运行 source CLI，使用新的 `.univer` 文件与独立 `UNIVER_HOME`。
    验证 graph plan、stale 拒绝、从浏览器返回 headless `execute` 的非空实测标签修复、再次 lint、
@@ -67,7 +76,8 @@ pnpm dev:board --map <sdk-tarballs.json> --output <new-evidence-directory>
    恢复 workspace／lock 原始字节；普通命令失败时同样恢复。
 
 Evidence 目录保留 command stdout／stderr、package hash／来源、result 与配置原始备份。
-并行配置编辑会保留并报错，不会被覆盖。强制杀进程或断电后，先使用这些备份恢复配置再安装；
+并行 workspace 编辑与安装完成后的 lock 编辑会保留并报错，不会被覆盖；安装期间 lock 由 pnpm 拥有，
+不要编辑它或运行其他 installer。强制杀进程或断电后，先使用这些备份恢复配置再安装；
 进程锁位于 `node_modules/.cache/board-dev.lock`。删除数据前，先停止 evidence home 对应的 daemon。
 配置恢复后 `node_modules` 仍包含实验依赖；通过正常 `pnpm install --frozen-lockfile` 回到 committed dependency。
 

@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import {
   closeSync,
   existsSync,
@@ -9,6 +9,7 @@ import {
   readFileSync,
   readdirSync,
   realpathSync,
+  renameSync,
   unlinkSync,
   writeFileSync,
 } from "node:fs";
@@ -51,6 +52,46 @@ export function restoreOwnedFile(path, original, owned) {
     );
   }
   writeFileSync(path, original);
+}
+
+export function replaceOwnedConfiguration(file, replacement) {
+  const temporaryPath = `${file.path}.board-dev-${randomUUID()}.tmp`;
+  try {
+    writeFileSync(temporaryPath, replacement, { flag: "wx" });
+    if (!readFileSync(file.path).equals(file.owned))
+      throw new Error(`Concurrent edit preserved at ${file.path}`);
+    renameSync(temporaryPath, file.path);
+    file.owned = replacement;
+  } finally {
+    if (existsSync(temporaryPath)) unlinkSync(temporaryPath);
+  }
+}
+
+export function captureInstalledLock(workspace, lock) {
+  // The installer owns the lock only; never adopt another writer's workspace configuration.
+  lock.owned = readFileSync(lock.path);
+  if (!readFileSync(workspace.path).equals(workspace.owned)) {
+    throw new Error(`Concurrent edit preserved at ${workspace.path}`);
+  }
+}
+
+export function assertCompiledSdkEntry(manifest) {
+  function targets(value) {
+    if (typeof value === "string") return [value];
+    return value && typeof value === "object" ? Object.values(value).flatMap(targets) : [];
+  }
+  const entries = targets(manifest.exports ?? manifest.main);
+  if (
+    entries.some(
+      (entry) =>
+        entry.includes("/src/") || (/\.[cm]?tsx?$/u.test(entry) && !/\.d\.[cm]?ts$/u.test(entry)),
+    ) ||
+    !entries.some((entry) => /\.[cm]?js$/u.test(entry))
+  ) {
+    throw new Error(
+      `${manifest.name} has no compiled SDK runtime entry; use its producer's dev packaging workflow.`,
+    );
+  }
 }
 
 function run(command, args, options = {}) {
@@ -96,6 +137,7 @@ function readTarballs(mapPath) {
       ) {
         throw new Error(`Tarball name/version mismatch: ${name}`);
       }
+      assertCompiledSdkEntry(manifest);
       for (const dependencies of [
         manifest.dependencies,
         manifest.optionalDependencies,
@@ -127,6 +169,14 @@ function readTarballs(mapPath) {
 
 function browserFingerprint(packages) {
   const hash = createHash("sha256").update(JSON.stringify(packages));
+  for (const name of [
+    "pnpm-lock.yaml",
+    "pnpm-workspace.yaml",
+    "package.json",
+    "tsconfig.base.json",
+  ]) {
+    hash.update(name).update(readFileSync(join(ROOT, name)));
+  }
   function visit(directory) {
     for (const entry of readdirSync(directory, { withFileTypes: true }).sort((a, b) =>
       a.name.localeCompare(b.name),
@@ -197,21 +247,26 @@ export function main(argv) {
     path: join(ROOT, name),
     original: readFileSync(join(ROOT, name)),
   }));
+  for (const file of files) file.owned = file.original;
   mkdirSync(join(ROOT, "node_modules/.cache"), { recursive: true });
   const lockPath = join(ROOT, "node_modules/.cache/board-dev.lock");
   const lock = openSync(lockPath, "wx");
   closeSync(lock);
-  for (const file of files)
-    writeFileSync(join(evidence, `${relative(ROOT, file.path)}.original`), file.original);
-  writeFileSync(join(evidence, "packages.json"), JSON.stringify(packages, null, 2));
   process.stdout.write(`Board local dev evidence: ${evidence}\n`);
   let stopFailed = false;
+  let flowStarted = false;
+  const failures = [];
   try {
-    writeFileSync(
-      files[0].path,
-      addSdkOverrides(
-        files[0].original.toString("utf8"),
-        Object.fromEntries(packages.map(({ name, path }) => [name, path])),
+    for (const file of files)
+      writeFileSync(join(evidence, `${relative(ROOT, file.path)}.original`), file.original);
+    writeFileSync(join(evidence, "packages.json"), JSON.stringify(packages, null, 2));
+    replaceOwnedConfiguration(
+      files[0],
+      Buffer.from(
+        addSdkOverrides(
+          files[0].original.toString("utf8"),
+          Object.fromEntries(packages.map(({ name, path }) => [name, path])),
+        ),
       ),
     );
     const installLog = openSync(join(evidence, "install.log"), "w");
@@ -227,8 +282,11 @@ export function main(argv) {
         { env, stdio: ["ignore", installLog, installLog] },
       );
     } finally {
-      closeSync(installLog);
-      for (const file of files) file.owned = readFileSync(file.path);
+      try {
+        closeSync(installLog);
+      } finally {
+        captureInstalledLock(files[0], files[1]);
+      }
     }
     const fingerprint = browserFingerprint(packages);
     const marker = join(ROOT, "apps/cli/dist/browser/.board-dev-input.json");
@@ -246,32 +304,49 @@ export function main(argv) {
       writeFileSync(marker, JSON.stringify({ fingerprint, packages }, null, 2));
     } else
       process.stdout.write("Reusing the browser bundle: SDK tarballs and browser sources match.\n");
+    flowStarted = true;
     verifyBoardFlow({ root: ROOT, evidence, env, cliArgs });
+  } catch (error) {
+    failures.push(error);
   } finally {
-    const stopped = spawnSync(process.execPath, [...cliArgs, "daemon", "stop", "--json"], {
-      cwd: ROOT,
-      env,
-      encoding: "utf8",
-      timeout: 30_000,
-      windowsHide: true,
-    });
+    const stopped = flowStarted
+      ? spawnSync(process.execPath, [...cliArgs, "daemon", "stop", "--json"], {
+          cwd: ROOT,
+          env,
+          encoding: "utf8",
+          timeout: 30_000,
+          windowsHide: true,
+        })
+      : { status: 0, stdout: "No workflow daemon was started.\n", stderr: "" };
     stopFailed = stopped.status !== 0;
-    writeFileSync(
-      join(evidence, "daemon-stop.json"),
-      JSON.stringify(
-        { exitCode: stopped.status, stdout: stopped.stdout, stderr: stopped.stderr },
-        null,
-        2,
-      ),
-    );
     try {
-      for (const file of files)
-        restoreOwnedFile(file.path, file.original, file.owned ?? readFileSync(file.path));
-    } finally {
+      writeFileSync(
+        join(evidence, "daemon-stop.json"),
+        JSON.stringify(
+          { exitCode: stopped.status, stdout: stopped.stdout, stderr: stopped.stderr },
+          null,
+          2,
+        ),
+      );
+    } catch (error) {
+      failures.push(error);
+    }
+    for (const file of files) {
+      try {
+        restoreOwnedFile(file.path, file.original, file.owned);
+      } catch (error) {
+        failures.push(error);
+      }
+    }
+    try {
       unlinkSync(lockPath);
+    } catch (error) {
+      failures.push(error);
     }
   }
-  if (stopFailed) throw new Error(`Own daemon stop failed; inspect ${evidence}`);
+  if (stopFailed) failures.push(new Error(`Own daemon stop failed; inspect ${evidence}`));
+  if (failures.length)
+    throw new AggregateError(failures, `Board local dev verification failed; inspect ${evidence}`);
   process.stdout.write(
     "Board local dev verification passed; original workspace/lock bytes restored.\n",
   );

@@ -15,6 +15,13 @@ pnpm --filter @univerjs-pro/boards pack --pack-destination <new-output-directory
 pnpm --filter @univerjs-pro/boards-ui pack --pack-destination <new-output-directory>
 ```
 
+For native mind-map factory or layout changes, also build and pack the changed owner package:
+
+```bash
+pnpm --filter @univerjs-pro/boards-mind build
+pnpm --filter @univerjs-pro/boards-mind pack --pack-destination <new-output-directory>
+```
+
 Check the archives' package names, exports and compiled files. Local Pro packing is not the formal release gate.
 Use a unique output path for every build, even when its manifest version has not changed.
 
@@ -43,7 +50,8 @@ provenance and computes each archive's SHA-256. An optional `sha256` rejects an 
 }
 ```
 
-Include every unpublished dependency needed by the experiment, commonly both Pro Board packages and CLI SDK
+Include every unpublished dependency needed by the experiment: the changed Pro Board packages (`boards`,
+`boards-ui`, and `boards-mind` when relevant), and CLI SDK
 `headless-univer`, `unit-layout-lint`, `unit-layout-lint-command`, `univer-render-page`, `univer-render-runtime`,
 and `api-reference`. The runner checks archive identity and rejects source-only `file:`, `link:` or `workspace:`
 dependencies. It does not discover adjacent checkouts or replace producer release validation.
@@ -62,7 +70,8 @@ edits remain available for development. The command:
 
 1. Saves the original workspace/lock bytes and temporarily installs only the explicitly mapped SDK archives.
 2. Builds the application's browser bundle, including its render page. It reuses that bundle on subsequent
-   runs only when archive hashes and all browser-package sources match; no demo applications are built.
+   runs only when archive hashes, the installed dependency lock, root build configuration and all
+   browser-package sources match; no demo applications are built.
 3. Runs the source CLI, using the same `tsx` entry as `pnpm dev`, against a new `.univer` file and isolated
    `UNIVER_HOME`. It verifies graph planning, stale rejection, a nonempty measured label repair crossing from
    the browser back into headless `execute`, re-lint, Worktree ready/merge and Trunk semantic readback.
@@ -70,7 +79,8 @@ edits remain available for development. The command:
    restores the original workspace/lock bytes in `finally`, including on ordinary command failure.
 
 The evidence directory retains command stdout/stderr, package hashes/provenance, the result and original
-configuration backups. Concurrent configuration edits are preserved and reported rather than overwritten.
+configuration backups. Concurrent workspace edits and post-install lock edits are preserved and reported rather
+than overwritten. During installation the lock belongs to pnpm; do not edit it or run another installer.
 After an abrupt process kill or machine shutdown, recover configuration from those backups before reinstalling;
 the process lock is `node_modules/.cache/board-dev.lock`. Stop the evidence home's daemon before removing its
 data. Installed `node_modules` still contains the experiment after configuration restoration; run the normal

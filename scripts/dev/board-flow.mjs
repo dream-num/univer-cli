@@ -33,6 +33,7 @@ export function verifyBoardFlow({ root, evidence, env, cliArgs }) {
     return result.stdout?.trim() ? JSON.parse(result.stdout) : undefined;
   }
 
+  let failure;
   try {
     run(["new", file, "--json"]);
     const { worktreeId } = run([
@@ -180,7 +181,15 @@ return { rejected, applied: board.applyLayoutPlan(plan), status: plan.status };`
         2,
       ),
     );
-  } finally {
-    run(["daemon", "stop", "--json"]);
+  } catch (error) {
+    failure = error;
   }
+  try {
+    run(["daemon", "stop", "--json"]);
+  } catch (error) {
+    failure = failure
+      ? new AggregateError([failure, error], "Board flow and own daemon shutdown failed")
+      : error;
+  }
+  if (failure) throw failure;
 }
