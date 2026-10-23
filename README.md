@@ -171,6 +171,13 @@ univer daemon stop
 pnpm unlink:cli
 ```
 
+### Local Board integration
+
+Use `pnpm dev:board --map <sdk-tarballs.json>` to verify unpublished SDK tarballs with the source CLI, an isolated
+file/daemon home, and a browser bundle reused only when its inputs match. See
+[local Board development](docs/board-local-development.md) for package provenance, producer dev packing,
+temporary configuration recovery, and interactive CLI/Viewer entrypoints.
+
 ### SDK upgrades
 
 Every `@univerjs`, `@univerjs-pro`, and `@univer-cli` dependency shares one exact version baseline.

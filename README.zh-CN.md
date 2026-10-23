@@ -164,6 +164,12 @@ univer daemon stop
 pnpm unlink:cli
 ```
 
+### 本地 Board 联调
+
+使用 `pnpm dev:board --map <sdk-tarballs.json>`，通过 source CLI、隔离的文件／daemon home 验证未发布的 SDK tarball；
+浏览器 bundle 仅在输入一致时复用。Package 来源、producer dev 打包、临时配置恢复与 CLI／Viewer 交互入口见
+[本地 Board 开发](docs/board-local-development.zh-CN.md)。
+
 ### SDK 升级
 
 `@univerjs`、`@univerjs-pro`、`@univer-cli` 的全部依赖使用同一个精确版本基线。使用以下命令升级：
