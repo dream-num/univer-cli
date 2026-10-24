@@ -25,8 +25,8 @@ Before generating or changing a Modern Doc, read [Markdown authoring](references
 supported syntax, assets, commands, and the selected-block update workflow. Load it with
 `univer skills get doc --full`. Use explicit top-level block IDs and save the source map from a
 successful apply. For local edits, export the selected **current native** blocks first, then update
-with that read's refreshed map and revision. Preserve identities inside the exported fragment and
-content outside it. If native content cannot be represented without loss, report the diagnostics;
+with that read's refreshed map. The returned revision is read metadata. Preserve identities inside the
+exported fragment and content outside it. If native content cannot be represented without loss, report the diagnostics;
 do not regenerate the whole Doc over user edits. Use Typst or DOCX import for Traditional physical pages.
 
 ## Model essentials

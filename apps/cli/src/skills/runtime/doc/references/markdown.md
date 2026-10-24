@@ -168,19 +168,19 @@ univer export-markdown report.univer --unit report --worktree <id> --blocks summ
 
 Edit `review/summary.md`, keeping the selected root ID and exported heading/link identity directives.
 The default refreshed map is `review/summary.md.map.json`; `--source-map-out` can choose another path.
-Reopen a ready Worktree before applying the change. Use the export's returned `revision`, not an
-estimated head revision or the original creation result:
+Reopen a ready Worktree before applying the change. The export's returned `revision` records the
+read version; block replacement uses the refreshed native identity map:
 
 ```bash
 univer compile-markdown review/summary.md --unit report --apply report.univer --worktree <id> \
-  --blocks summary --source-map review/summary.md.map.json --revision <exported-revision> \
+  --blocks summary --source-map review/summary.md.map.json \
   --source-map-out review/report.map.json --json
 ```
 
-`--blocks` accepts comma-separated **top-level source IDs** and requires both `--source-map` and a
-positive `--revision`. All three must refer to the same target and current read. Replace the saved map
-only after success. A revision or mapping conflict requires a fresh native export and replanning;
-do not retry with a guessed revision. Unselected content and native identities must remain untouched.
+`--blocks` accepts comma-separated **top-level source IDs** and requires `--source-map` from the
+same target and current read. Native block identities and boundaries are validated before editing.
+Replace the saved map only after success. A mapping conflict requires a fresh native export and
+replanning. Unselected content and native identities must remain untouched.
 
 Native content is authoritative; the original Markdown is not automatically synchronized after user
 edits. This workflow supports mapped generated blocks, not arbitrary native Docs. Custom fonts or
