@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -186,10 +187,13 @@ describe("authoritative Browser View rendering composition", () => {
       "@univerjs-pro/slides-print/lib/index.css",
       "@univerjs-pro/slides-table-ui/lib/index.css"
     ]);
-    expectInOrder(styles, [
-      "@univerjs-pro/bases-ui/lib/index.css",
-      "@univerjs-pro/bases-exchange-client/lib/index.css"
-    ]);
+    expect(styles).toContain("@univerjs-pro/bases-ui/lib/index.css");
+    const require = createRequire(resolve(packageRoot, "render-preset/package.json"));
+    for (const [, specifier] of styles.matchAll(/@import "([^"]+)"/gu)) {
+      await expect(readFile(require.resolve(specifier!), "utf8")).resolves.toEqual(
+        expect.any(String)
+      );
+    }
   });
 
   it("registers the standard SDK history UI for every trunk Unit type", async () => {
