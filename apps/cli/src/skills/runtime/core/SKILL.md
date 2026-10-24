@@ -41,6 +41,9 @@ Load the matching unit Skill through the same CLI before writing Facade code; ne
 - Feed a Chart from another Unit's range → load the Host Unit Skill and the Sheet or Base Unit Skill,
   then `univer skills get embed` (see "Referencing another Unit's data from a Chart")
 
+For Modern Doc generation or selected-block Markdown edits, use `univer skills get doc --full`
+to load its Markdown syntax, asset rules, and export/update commands.
+
 ## Typical worktree edit
 
 ```bash
@@ -109,6 +112,8 @@ Use `univer <command> --help` as the syntax authority.
 | Write    | `execute`                                | Primary read/write surface; requires `--worktree` and `--unit`; accepts `-e`, `--code`, or `--script`.                                                                                                                  |
 | Write    | `compile-svg`                            | The slide element-generation path: compile SVG to Facade operations and apply it with `--page <n> --apply`.                                                                                                             |
 | Write    | `compile-typst`                          | Compile a Typst Source Bundle into a new Doc; inspect JS, diagnostics, and PNG in build-only mode or commit once with `--apply --worktree`.                                                                             |
+| Write    | `compile-markdown`                       | Compile Markdown into an editable Modern Doc with SDK default typography; replace named blocks with a runtime source map and native identity/boundary validation.                                                       |
+| Read     | `export-markdown`                        | Read selected current native Doc blocks into Markdown and assets with refreshed identities and the same-read revision as read metadata.                                                                                 |
 | Verify   | `inspect`                                | Read-only exploration for Sheet workbook/range, Doc document/paragraph, Slide presentation/page, Base schema, and Board element structure.                                                                              |
 | Verify   | `screenshot`                             | Render PNG evidence. Use it for every slide page and run `screenshot setup` first.                                                                                                                                      |
 | Deliver  | `worktree ready\|reopen\|merge\|discard` | Mark work ready for review or explicitly reopen it for same-task rework; the user owns merge.                                                                                                                           |
