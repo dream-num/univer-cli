@@ -1240,6 +1240,7 @@ export class App {
 
   /** Back to the current version (trunk) — used after merge/discard. */
   private exitToHome(): void {
+    const preferUnitId = this.selectedUnitId;
     this.cancelComparisonRequests();
     this.view = { kind: "trunk" };
     this.selectedUnitId = undefined;
@@ -1251,7 +1252,7 @@ export class App {
     this.worktreeEvents?.close();
     this.worktreeEvents = undefined;
     this.emit();
-    this.autoSelectFirstTrunk();
+    this.autoSelectFirstTrunk(preferUnitId);
   }
 
   private autoSelectFirstTrunk(preferUnitId?: string): void {
