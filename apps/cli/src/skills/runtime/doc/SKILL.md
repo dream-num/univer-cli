@@ -1,6 +1,6 @@
 ---
 name: doc
-description: "Read, edit, paginate, chart, inspect, and visually verify Doc units with the Lite Interface."
+description: "Generate and locally update Modern Docs from Markdown; read, edit, paginate, chart, and visually verify native Doc units with the Lite Interface."
 ---
 
 # Doc units
@@ -8,6 +8,26 @@ description: "Read, edit, paginate, chart, inspect, and visually verify Doc unit
 `execute` provides `univerAPI`, `api` (an alias of `univerAPI`), and `doc` (the `FDocument` bound by `--unit`). Do not redeclare them. A Doc unit does not provide `workbook` or `presentation`; if one is undefined, verify the selected unit type.
 
 Use `doc.getParagraphs()` and `doc.getParagraph(paragraphId)` to select paragraphs. Use `univer api find <query...>` to discover API symbols, then use `univer api show <symbol>` for exact signatures, enum values, documentation, and examples.
+
+## Generate Modern Docs from Markdown
+
+For a new Modern Doc, author Markdown and use `compile-markdown`; keep the source and local assets.
+The shared AI SDK compiler creates editable native paragraphs, rich text, blocks, tables, and drawings.
+Inherit the Univer SDK Modern defaults; do not add line spacing and paragraph spacing to every paragraph.
+Use plain `:::callout` blocks by default. Omit `tone` and color overrides so the SDK theme supplies
+the native Callout background and border; use an explicit tone only when the user requests custom coloring.
+Use `columns` / `column` directives for native Modern `ColumnGroup` layouts, not section breaks.
+Finish authoring the Markdown before conversion. Do not patch generated Docs with cosmetic Facade
+mutations afterward; correct the Markdown or a shared conversion/rendering defect instead. Readback
+and screenshots remain required and do not modify the document.
+
+Before generating or changing a Modern Doc, read [Markdown authoring](references/markdown.md) for
+supported syntax, assets, commands, and the selected-block update workflow. Load it with
+`univer skills get doc --full`. Use explicit top-level block IDs and save the source map from a
+successful apply. For local edits, export the selected **current native** blocks first, then update
+with that read's refreshed map and revision. Preserve identities inside the exported fragment and
+content outside it. If native content cannot be represented without loss, report the diagnostics;
+do not regenerate the whole Doc over user edits. Use Typst or DOCX import for Traditional physical pages.
 
 ## Model essentials
 
