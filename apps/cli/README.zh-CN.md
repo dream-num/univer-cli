@@ -151,6 +151,10 @@ Board 在 rendered 或 both 模式可使用 `--plan-labels`，通过 `analyses[]
 在已有草稿中通过 `execute` 调用 `board.applyLayoutPlan(plan)`，仅应用 `ready` plan，然后重新 lint；
 过期 plan 必须重新生成。lint 不修改内容。
 
+生成新图或执行明确要求的修复时，先根据渲染测量扩大形状或表格框。生成的泳道容量可通过原生泳道 API
+扩大后再重新规划；用户指定的容量和固定、锁定的所有者保持不变。每次写入都验证 Undo/Redo，若新 plan
+不完整，则连同容量一起回滚该轮尺寸变化。截图审阅仍是独立步骤。
+
 仅应用当前 Board page 对应的 plan；`applyLayoutPlan` 会拒绝页面不匹配的 plan。
 
 `compile-svg` 默认使用 browser runtime 的真实字体测量；`--estimate-text-size` 才使用确定性估算。

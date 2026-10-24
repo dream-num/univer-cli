@@ -129,6 +129,8 @@ Board reports preserve raw SDK rules, element/connector/label IDs, focus bounds,
 
 Board `--plan-labels` with rendered or both mode includes read-only native repair plans in `analyses[].labelPlan`. Apply only a `ready` plan with `board.applyLayoutPlan(plan)` through `execute` in the existing draft, then re-run lint. A stale plan must be regenerated; lint never edits content.
 
+For a new diagram or an explicit repair, use rendered measurements before growing shapes or table frames. Generated lane capacity can be enlarged with the native lane API before replanning; authored capacities and fixed or locked owners stay unchanged. Verify each write with Undo/Redo and roll back the capacity and size changes if the fresh plan is incomplete. Screenshot review remains a separate step.
+
 Apply only a plan for the current Board page; `applyLayoutPlan` rejects a mismatched page.
 
 `compile-svg` uses real browser font measurement by default; `--estimate-text-size` opts into deterministic estimation. `compile-typst --apply` materializes a Doc snapshot in memory and writes it as one Worktree Unit. `resources` uses configured resource manifests and stores downloads under `${UNIVER_HOME}/cache/resources`.
