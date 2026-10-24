@@ -10,7 +10,7 @@ import {
   type OptimizeUniverfileReport,
   type OptimizeUniverfileWorktrees,
 } from "@univer/collab-gateway-contract";
-import { type DatabaseContext, UniverUnitRuntime } from "@univerjs-pro/collaboration-service";
+import { type DatabaseContext, createUnitRuntime } from "@univerjs-pro/collaboration-service";
 import type { UniverType } from "@univerjs/protocol";
 import { externalizeEmbeddedImages } from "../assets/externalize-embedded-images.js";
 import { GatewaySemanticError } from "../errors.js";
@@ -274,7 +274,7 @@ async function materializeCurrentHeads(connection: UniverfileSQLiteConnection): 
     filename: connection.filename,
     connection,
   });
-  const runtime = new UniverUnitRuntime({ reader: adapter });
+  const runtime = createUnitRuntime({ reader: adapter, execution: { mode: "in-process" } });
   const context = optimizationDatabaseContext();
   const units = connection.database
     .prepare(

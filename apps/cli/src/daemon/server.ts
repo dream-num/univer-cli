@@ -1,5 +1,5 @@
 import { createDaemonServer, type DaemonServer, type JsonValue } from "@univer-cli/daemon";
-import { createStandardHeadlessUniverFactory } from "@univer-cli/headless-univer";
+import type { HeadlessUniverFactory } from "@univer-cli/headless-univer";
 import { startServer, type StartedServer } from "@univer/collab-gateway";
 import {
   createApplicationConfig,
@@ -62,7 +62,10 @@ export async function startApplicationDaemon(
       },
       origin,
     });
-  const createHeadlessUniver = createStandardHeadlessUniverFactory({ license });
+  const createHeadlessUniver: HeadlessUniverFactory = async (context) => {
+    const { createStandardHeadlessUniverFactory } = await import("@univer-cli/headless-univer");
+    return await createStandardHeadlessUniverFactory({ license })(context);
+  };
   const daemon = createDaemonServer({
     identity: applicationDaemonIdentity(env),
     socketPath: options.socketPath ?? paths.socketPath,

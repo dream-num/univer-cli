@@ -16,6 +16,12 @@
 candidate。再次打开同一份未变化的文件时复用已有的相同字节 backup。Windows 上迁移在 helper 进程中完成，
 持锁的父进程在 helper 退出后替换 source。
 
+Windows 的只读格式识别也在 helper 中完成，父进程不为检测 prepare statement。Source／Vitest 开发入口使用本
+package 声明的 `tsx` dev loader，compiled CLI 复用 `upgrade-worker.js`；缺少可用 helper 时明确失败，
+不静默回退为 in-process 迁移。失败 candidate 由父进程在 helper 退出后删除，保留原始迁移错误与完整 source。
+libsql 0.5.29 的 prepared statement 仍可能在普通 connection `dispose()` 后持有 Windows 文件锁；需要删除
+已打开文件时先停止拥有它的 daemon，本 helper 不改变长期 content connection 的生命周期。
+
 存在 `collaboration_schema_versions` 时，component version 是格式识别的权威来源。格式检查只要求对应版本的
 必要表与列；额外 SQLite 对象不会使 current v3 无效。升级只把受支持内容写入 candidate，source-only
 表、索引、trigger 与 view 不进入 current v3；它们仍完整保存在 byte-for-byte backup 中。

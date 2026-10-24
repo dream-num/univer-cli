@@ -69,7 +69,7 @@ with the Slide chart reading data from the Sheet.
 | Doc     | Paragraphs, rich text, lists, tasks, tables, images, charts, headers, footers, and pagination | Document/paragraph readback, page screenshots, and PDF printing     | `.doc` `.docx`                       | `.docx`               |
 | Slide   | Pages, text, shapes, images, tables, charts, SVG layouts, and transitions                     | Structure inspection, layout lint, screenshots, and PDF printing    | `.ppt` `.pptx`                       | `.pptx`               |
 | Base    | Tables, fields, records, views, formulas, filters, sorting, and grouping                      | Structured data checks and workbench screenshots                    | `.xls` `.xlsx` `.xlsm` `.csv` `.tsv` | `.xlsx` `.csv` `.tsv` |
-| Board   | Shapes, text, connectors, images, native charts, and routing                                  | Element/connector analysis, screenshots, and PDF printing           | —                                    | —                     |
+| Board   | Shapes, text, connectors, images, native charts, and routing                                  | Model/rendered layout lint, screenshots, and PDF printing           | —                                    | —                     |
 
 Every content type supports isolated draft editing, review, revision, merge, and discard. Board file import and export are not currently supported.
 
@@ -124,7 +124,7 @@ The Skill selects these capabilities automatically. Most users do not need to ca
 | `worktree`                                         | Create, prepare, reopen, merge, or discard isolated changes                       |
 | `inspect`                                          | Read Workbook, Worksheet, Range, Document, Paragraph, Presentation, or Slide data |
 | `execute`                                          | Read or edit content through trusted Univer Facade code                           |
-| `screenshot`, `print-pdf`, `lint`                  | Render content, print PDF, and diagnose Slide layout issues                       |
+| `screenshot`, `print-pdf`, `lint`                  | Render content, print PDF, and diagnose Slide or Board layout issues              |
 | `compile-svg`, `compile-typst`                     | Turn SVG or Typst sources into editable Univer content                            |
 | `export`, `open`                                   | Export Office files or return a local Viewer URL                                  |
 | `api`, `resources`, `skills`                       | Find Facade APIs, visual resources, and operational guidance                      |
@@ -135,7 +135,7 @@ See the [complete CLI reference](apps/cli/README.md) for command options, select
 ## Requirements and current limits
 
 - An agent that supports Agent Skills, plus Node.js 24.0 or later and npm/npx.
-- Screenshot, PDF printing, Slide layout lint, and browser text measurement require Chrome, Chromium, or Edge. The agent can prepare the browser through `univer screenshot setup`.
+- Screenshot, PDF printing, Slide and rendered Board layout lint, and browser text measurement require Chrome, Chromium, or Edge. The agent can prepare the browser through `univer screenshot setup`.
 - `execute` runs trusted JavaScript and is not a sandbox for untrusted code.
 - `.univer` files, the Gateway, Viewer, daemon, runtime workers, and browser cache stay on the local machine. Explicit HTTP imports, resource downloads, and update checks can access the network.
 - Board supports structural and visual verification but does not currently support file import or export.
@@ -170,6 +170,16 @@ Stop the daemon before unlinking a local build:
 univer daemon stop
 pnpm unlink:cli
 ```
+
+Daemon startup initializes the local Gateway. Standard headless Univer composition loads when a content worker
+or document-authoring request needs it; document-authoring instances are disposed after each request.
+
+### Local Board integration
+
+Use `pnpm dev:board --map <sdk-tarballs.json>` to verify unpublished SDK tarballs with the source CLI, an isolated
+file/daemon home, and a browser bundle reused only when its inputs match. See
+[local Board development](docs/board-local-development.md) for package provenance, producer dev packing,
+temporary configuration recovery, and interactive CLI/Viewer entrypoints.
 
 ### SDK upgrades
 
