@@ -133,6 +133,10 @@ For a new diagram or an explicit repair, use rendered measurements before growin
 
 Apply only a plan for the current Board page; `applyLayoutPlan` rejects a mismatched page.
 
+Rendered `analyses[].rendered.elementTextLayouts` includes native local available/content sizes for shape text
+without overflow. Use ready metrics to fit generated heading frames explicitly, then remeasure and verify history;
+pending fonts remain unresolved and inspection never resizes content.
+
 `compile-svg` uses real browser font measurement by default; `--estimate-text-size` opts into deterministic estimation. `compile-typst --apply` materializes a Doc snapshot in memory and writes it as one Worktree Unit. `resources` uses configured resource manifests and stores downloads under `${UNIVER_HOME}/cache/resources`.
 
 ## Configuration and processes
