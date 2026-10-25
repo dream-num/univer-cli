@@ -3,7 +3,7 @@ import {
   parseDocMarkdownSourceMap,
   DocMarkdownCompileError,
 } from "@univer-cli/doc-markdown-facade";
-import { writeDocMarkdownExport } from "@univer-cli/doc-markdown-facade/node";
+import { writeDocMarkdownExport } from "@univer-cli/doc-markdown-facade/files";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { Command } from "commander";
