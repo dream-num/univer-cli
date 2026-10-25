@@ -24,6 +24,8 @@ univer screenshot setup [--force]
 univer print-pdf <file.univer> <output.pdf> [--worktree <id>] [--unit <id>]
 univer compile-svg <file.svg> ...
 univer compile-typst <bundle> ...
+univer compile-markdown <source.md> --unit <id> (--out <program.js>|--apply <file.univer> --worktree <id>)
+univer export-markdown <file.univer> --worktree <id> --unit <id> --blocks <ids> --source-map <map.json> --out <fragment.md>
 univer resources registries|find|export|cache ...
 univer api find|show ...
 univer optimize <file.univer> (--dry-run|--out <copy.univer>)
@@ -124,6 +126,22 @@ univer lint --file ./book.univer --worktree <id> --unit <slide-id> --pages 1,3-5
 `lint` uses the CLI SDK layout-lint capability and browser glyph geometry to detect `text-off-page`, `text-escapes-container`, and `text-overlaps-text` findings. Findings are review suggestions backed by geometry evidence.
 
 `compile-svg` uses real browser font measurement by default; `--estimate-text-size` opts into deterministic estimation. `compile-typst --apply` materializes a Doc snapshot in memory and writes it as one Worktree Unit. `resources` uses configured resource manifests and stores downloads under `${UNIVER_HOME}/cache/resources`.
+
+`compile-markdown` compiles CommonMark/GFM and supported Univer directives into an editable Modern Doc
+using the shared CLI SDK compiler and Univer SDK default typography. Local assets resolve beneath the
+source directory. Use `--source-map-out <file>` with `--apply` to retain actual native identities.
+ID-directed replacement requires `--blocks <ids> --source-map <file>`. The compiler validates native
+block identities and boundaries before changing the selected content.
+Unsupported syntax fails with structured diagnostics. New document creation never overwrites an existing Unit.
+
+For an existing generated Doc, use `export-markdown` to read the selected blocks from the current
+native content, including user edits. It works on draft and ready Worktrees without committing a
+change. The output includes local asset sidecars and a refreshed source map with the revision from
+the same runtime read; by default the map is written to `<out>.map.json`. Edit that Markdown, then
+apply only those block IDs with `compile-markdown --blocks ... --source-map ...`.
+Untouched native paragraphs and objects retain their identities. Unsupported native formatting is
+reported before partial Markdown is written. Initial generation uses one Markdown conversion;
+inspection and screenshots do not require follow-up styling mutations.
 
 ## Configuration and processes
 

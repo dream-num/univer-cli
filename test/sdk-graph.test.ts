@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { validateSdkDependencyGraph } from "../scripts/release/sdk-graph.mjs";
 
@@ -98,5 +101,32 @@ describe("release SDK graph", () => {
         },
       ]),
     ).toThrow(/resolves to both/u);
+  });
+
+  it("shares browser SDK class identities across rendering and viewer packages", () => {
+    const roots = ["collab-web", "render-preset", "unit-comparison-viewer"].map((name) =>
+      resolve(import.meta.dirname, "../packages", name),
+    );
+    const packages = roots.map((root) => ({
+      require: createRequire(resolve(root, "package.json")),
+      dependencies: (
+        JSON.parse(readFileSync(resolve(root, "package.json"), "utf8")) as {
+          dependencies: Record<string, string>;
+        }
+      ).dependencies,
+    }));
+    const shared = Object.keys(packages[1]!.dependencies).filter(
+      (name) =>
+        (name.startsWith("@univerjs/") || name.startsWith("@univerjs-pro/")) &&
+        name !== "@univerjs/icons" &&
+        packages.filter((entry) => name in entry.dependencies).length > 1,
+    );
+    expect(shared).toContain("@univerjs/docs-ui");
+    for (const name of shared) {
+      const resolved = packages
+        .filter((entry) => name in entry.dependencies)
+        .map((entry) => entry.require.resolve(name));
+      expect(new Set(resolved).size, `${name} must use one browser SDK instance`).toBe(1);
+    }
   });
 });

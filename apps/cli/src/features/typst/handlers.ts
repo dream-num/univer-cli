@@ -1,10 +1,8 @@
 import type { DaemonServer, JsonValue } from "@univer-cli/daemon";
-import {
-  createStandardHeadlessUniverFacade,
-  type HeadlessUniverFactory,
-} from "@univer-cli/headless-univer";
+import { materializeDocProgram } from "@univer-cli/doc-markdown-facade/node";
+import type { HeadlessUniverFactory } from "@univer-cli/headless-univer";
 import type { StartedServer } from "@univer/collab-gateway";
-import { UniverInstanceType, type IDocumentData } from "@univerjs/core";
+import { UniverInstanceType } from "@univerjs/core";
 import {
   codedError,
   requireDraftWorktree,
@@ -31,17 +29,16 @@ export function registerTypstHandlers(input: {
         `Unit ${request.unitId} already exists in Worktree ${request.worktreeId}`,
       );
     }
-    const data = await materializeDocument(
-      input.createHeadlessUniver,
-      request.unitId,
-      request.code,
+    const materialized = await materializeDocProgram(
+      { targetUnitId: request.unitId, javascript: request.code },
+      { createUniver: input.createHeadlessUniver },
     );
     await univerfile.collab.createWorktreeUnit(
       request.worktreeId,
       UniverInstanceType.UNIVER_DOC,
       request.name,
       request.unitId,
-      data,
+      materialized.data,
     );
     const unit = requireUnit(univerfile.collab, request.worktreeId, request.unitId);
     return {
@@ -52,34 +49,9 @@ export function registerTypstHandlers(input: {
       type: unit.type,
       unitId: unit.unitId,
       worktreeId: request.worktreeId,
+      ...(materialized.value === undefined
+        ? {}
+        : { value: JSON.parse(JSON.stringify(materialized.value)) as JsonValue }),
     } as JsonValue;
   });
-}
-
-async function materializeDocument(
-  createUniver: HeadlessUniverFactory,
-  unitId: string,
-  code: string,
-): Promise<IDocumentData> {
-  const univer = await createUniver({ unitId, unitType: UniverInstanceType.UNIVER_DOC });
-  try {
-    const univerAPI = createStandardHeadlessUniverFacade(univer);
-    // The compiler emits a trusted async function body that creates exactly one target Doc.
-    // oxlint-disable-next-line no-new-func -- this is the explicit local authoring execution seam.
-    const execute = new Function(
-      "univerAPI",
-      `"use strict"; return (async () => { ${code}\n})();`,
-    ) as (api: typeof univerAPI) => Promise<unknown>;
-    await execute(univerAPI);
-    const document = univerAPI.getDocument(unitId);
-    if (document === null) {
-      throw codedError(
-        "DOC_PROGRAM_TARGET_MISSING",
-        `Document program did not create target Unit ${unitId}`,
-      );
-    }
-    return document.save();
-  } finally {
-    univer.dispose();
-  }
 }

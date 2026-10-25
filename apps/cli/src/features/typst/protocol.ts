@@ -4,6 +4,10 @@ import { parseUnitCreateResult, type UnitCreateResult } from "../unit/protocol.j
 
 export const CONTENT_CREATE_DOCUMENT_METHOD = "univer.content.create-document";
 
+export interface DocumentCreateResult extends UnitCreateResult {
+  readonly value?: JsonValue;
+}
+
 export interface ContentCreateDocumentRequest {
   readonly code: string;
   readonly name: string;
@@ -25,6 +29,10 @@ export function parseContentCreateDocumentRequest(
   };
 }
 
-export function parseContentCreateDocumentResult(value: JsonValue): UnitCreateResult {
-  return parseUnitCreateResult(value);
+export function parseContentCreateDocumentResult(value: JsonValue): DocumentCreateResult {
+  const record = requireRecord(value, "content create document result");
+  return {
+    ...parseUnitCreateResult(value),
+    ...(record["value"] === undefined ? {} : { value: record["value"] }),
+  };
 }

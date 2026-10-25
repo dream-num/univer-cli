@@ -160,6 +160,107 @@ describe("built univer executable", () => {
     }
   }, 20_000);
 
+  it("commits Markdown block replacements through the packaged SDK worker", async () => {
+    const root = await realpath(await mkdtemp(join(tmpdir(), "univer-cli-built-markdown-")));
+    const env = {
+      ...process.env,
+      UNIVER_HOME: join(root, "home"),
+      UNIVER_COLLAB_GATEWAY_PORT: String(await freePort()),
+    };
+    const target = join(root, "document.univer");
+    const source = join(root, "document.md");
+    const map = join(root, "map.json");
+    const unitId = "markdown-doc";
+    const call = async (args: readonly string[]): Promise<string> =>
+      (
+        await execFileAsync(process.execPath, [executable, ...args, "--json"], {
+          cwd: projectRoot,
+          encoding: "utf8",
+          env,
+          timeout: 10_000,
+        })
+      ).stdout;
+    const markdown = (intro: string): string =>
+      `# Local update\n\n:::block{#intro}\n${intro}\n:::\n\n:::block{#outro}\nKeep this paragraph.\n:::\n`;
+    const readMap = async (): Promise<readonly { id: string; paragraphIds: string[] }[]> =>
+      (
+        JSON.parse(await readFile(map, "utf8")) as {
+          sourceMap: { id: string; paragraphIds: string[] }[];
+        }
+      ).sourceMap;
+    try {
+      await call(["new", target]);
+      const { worktreeId } = JSON.parse(
+        await call(["worktree", "add", target, "--name", "Markdown"]),
+      ) as { worktreeId: string };
+      const common = [
+        "compile-markdown",
+        source,
+        "--unit",
+        unitId,
+        "--apply",
+        target,
+        "--worktree",
+        worktreeId,
+        "--source-map-out",
+        map,
+      ];
+      await writeFile(source, markdown("Original intro."), "utf8");
+      const created = JSON.parse(await call(common)) as { applied: { headRev: number } };
+      expect(created.applied.headRev).toBe(1);
+      const originalOutro = (await readMap()).find((entry) => entry.id === "outro")!.paragraphIds;
+
+      for (const [index, text] of [
+        "First replacement with **native bold**.\n\nSecond paragraph.",
+        "Final replacement.",
+      ].entries()) {
+        await writeFile(source, markdown(text), "utf8");
+        const updated = JSON.parse(
+          await call([...common, "--blocks", "intro", "--source-map", map]),
+        ) as { applied: { committed: boolean; revision: number } };
+        expect(updated.applied).toMatchObject({ committed: true, revision: index + 2 });
+        expect((await readMap()).find((entry) => entry.id === "outro")!.paragraphIds).toEqual(
+          originalOutro,
+        );
+      }
+
+      const staleMap = JSON.parse(await readFile(map, "utf8")) as {
+        sourceMap: { id: string; paragraphIds: string[] }[];
+      };
+      staleMap.sourceMap.find((entry) => entry.id === "intro")!.paragraphIds = [
+        "missing-native-paragraph",
+      ];
+      await writeFile(map, JSON.stringify(staleMap), "utf8");
+      await writeFile(source, markdown("Invalid mapped content must never appear."), "utf8");
+      await expect(
+        call([...common, "--blocks", "intro", "--source-map", map]),
+      ).rejects.toMatchObject({
+        stderr: expect.stringContaining("DOC_MARKDOWN_UPDATE_STALE_SOURCE_MAP"),
+      });
+      const inspection = JSON.parse(
+        await call(["inspect", "document", target, "--unit", unitId, "--worktree", worktreeId]),
+      ) as { paragraphs: { id: string; textPreview: string }[] };
+      expect(inspection.paragraphs.map((paragraph) => paragraph.textPreview)).toEqual([
+        "Local update",
+        "Final replacement.",
+        "Keep this paragraph.",
+      ]);
+      expect(inspection.paragraphs.at(-1)?.id).toBe(originalOutro[0]);
+      const status = JSON.parse(
+        await call(["status", target, "--unit", unitId, "--worktree", worktreeId]),
+      ) as { units: { headRev: number }[] };
+      expect(status.units[0]?.headRev).toBe(3);
+    } finally {
+      await execFileAsync(process.execPath, [executable, "daemon", "stop", "--json"], {
+        cwd: projectRoot,
+        encoding: "utf8",
+        env,
+        timeout: 5_000,
+      }).catch(() => undefined);
+      await rm(root, { recursive: true, force: true });
+    }
+  }, 30_000);
+
   it("completes the Local Univerfile, Gateway, Viewer, migration, and daemon read loop", async () => {
     const root = await realpath(await mkdtemp(join(tmpdir(), "univer-cli-built-")));
     const home = join(root, "home");

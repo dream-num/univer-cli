@@ -84,7 +84,9 @@ describe("Universer exchange File API", () => {
   });
 
   async function waitForTask(taskID: string): Promise<Record<string, unknown>> {
-    for (let attempt = 0; attempt < 100; attempt += 1) {
+    // SDK exports may initialize an isolated native worker before the task settles.
+    const deadline = Date.now() + 25_000;
+    while (Date.now() < deadline) {
       const response = await fetch(`${base()}/universer-api/exchange/task/${taskID}`);
       expect(response.status).toBe(200);
       const task = (await response.json()) as Record<string, unknown>;
