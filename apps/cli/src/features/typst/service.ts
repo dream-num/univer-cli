@@ -1,7 +1,10 @@
 import type { DaemonClient } from "@univer-cli/daemon";
 import { resolveLocalUniverfile } from "../../environment/univerfile-path.js";
-import type { UnitCreateResult } from "../unit/protocol.js";
-import { CONTENT_CREATE_DOCUMENT_METHOD, parseContentCreateDocumentResult } from "./protocol.js";
+import {
+  CONTENT_CREATE_DOCUMENT_METHOD,
+  parseContentCreateDocumentResult,
+  type DocumentCreateResult,
+} from "./protocol.js";
 
 export interface LocalTypstApplication {
   createDocumentFromProgram(input: {
@@ -11,7 +14,7 @@ export interface LocalTypstApplication {
     readonly path: string;
     readonly unitId: string;
     readonly worktreeId: string;
-  }): Promise<UnitCreateResult>;
+  }): Promise<DocumentCreateResult>;
 }
 
 export function createLocalTypstApplication(daemon: DaemonClient): LocalTypstApplication {

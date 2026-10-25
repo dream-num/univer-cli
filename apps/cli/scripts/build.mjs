@@ -94,6 +94,16 @@ const plugins = [
       ]),
 ];
 
+// The server SDK resolves its Unit runtime worker beside its owning module.
+// Bundle the published worker as an entry so its SDK dependencies also ship inline.
+const gatewayRequire = createRequire(
+  createRequire(import.meta.url).resolve("@univer/collab-gateway"),
+);
+const unitRuntimeWorkerEntry = join(
+  dirname(gatewayRequire.resolve("@univerjs-pro/collaboration-service")),
+  "unit-runtime-worker.cjs",
+);
+
 await rm(join(projectRoot, "dist"), { force: true, recursive: true });
 // One build with code splitting: the SDK and other shared modules are emitted once into
 // chunks/ and imported by every entry, instead of each entry inlining its own full copy.
@@ -105,6 +115,7 @@ const nodeBuild = await build({
     daemon: join(projectRoot, "src", "daemon-entry.ts"),
     "runtime-worker": join(projectRoot, "src", "runtime-worker.ts"),
     "upgrade-worker": join(projectRoot, "src", "upgrade-worker.ts"),
+    "unit-runtime-worker": unitRuntimeWorkerEntry,
   },
   external: EXTERNAL_DEPENDENCY_WHITELIST,
   format: "esm",
@@ -147,4 +158,12 @@ const poolEntryPath = createRequire(import.meta.url).resolve(
 await cp(
   join(dirname(poolEntryPath), "worker-child.mjs"),
   join(projectRoot, "dist", "chunks", "worker-child.mjs"),
+);
+
+// The SDK's relative URL ends in .cjs inside the shared chunk directory. Keep
+// that bootstrap in the same worker thread while loading our bundled ESM entry.
+await writeFile(
+  join(projectRoot, "dist", "chunks", "unit-runtime-worker.cjs"),
+  'void import("../unit-runtime-worker.js");\n',
+  "utf8",
 );

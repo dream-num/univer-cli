@@ -118,8 +118,16 @@ Worktree 全量 Unit 预加载。
 ## Source ownership
 
 `apps/cli/src/program.ts` 是 composition root。源码按用户能力划分为 `univerfile`、`exchange`、`optimize`、
-`worktree`、`unit`、`unit-content`、`render`、`lint`、`svg`、`typst`、`doctor`、`skills` 和 `update`。
+`worktree`、`unit`、`unit-content`、`render`、`lint`、`svg`、`typst`、`markdown`、`doctor`、`skills` 和 `update`。
 每个 feature 并置自己的 command、application service、handler 与私有 protocol；command handler 保持轻薄。
+
+Modern Doc 的 Markdown 解析、扩展指令、资源校验、源码映射和按 ID 替换由 CLI SDK 的
+`doc-markdown-facade` capability 提供。application 复用内存文档物化路径创建 Worktree Unit，接收程序
+返回的原生 ID 映射；局部更新通过 content execution，在编辑前校验原生块 ID 与边界。文档仍以
+Univer SDK 原生模型持久化，继承 SDK Modern 默认排版；Markdown 不替代协作数据或建立隐式双向同步。
+局部编辑通过同一 capability 生成只读 Facade 程序，从当前原生块导出 Markdown、资源与刷新后的映射。
+content read 允许读取 ready Worktree，按同一 runtime lease 返回内容和 revision，不提交 mutation；
+revision 作为读取版本元信息保留；编辑后的片段按原生块映射替换写回。不可保真的结构返回诊断，不退回旧 Markdown。
 
 ```text
 apps/cli/src/environment/           # Home、config 与本地路径

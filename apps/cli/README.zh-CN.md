@@ -25,6 +25,8 @@ univer screenshot setup [--force]
 univer print-pdf <file.univer> <output.pdf> [--worktree <id>] [--unit <id>]
 univer compile-svg <file.svg> ...
 univer compile-typst <bundle> ...
+univer compile-markdown <source.md> --unit <id> (--out <program.js>|--apply <file.univer> --worktree <id>)
+univer export-markdown <file.univer> --worktree <id> --unit <id> --blocks <ids> --source-map <map.json> --out <fragment.md>
 univer resources registries|find|export|cache ...
 univer api find|show ...
 univer optimize <file.univer> (--dry-run|--out <copy.univer>)
@@ -141,6 +143,19 @@ univer lint --file ./book.univer --worktree <id> --unit <slide-id> --pages 1,3-5
 `compile-svg` 默认使用 browser runtime 的真实字体测量；`--estimate-text-size` 才使用确定性估算。
 `compile-typst --apply` 在内存中物化 Doc snapshot，再作为一个 Worktree Unit 写入。`resources` 使用配置的
 resource manifest，并将下载缓存写入 `${UNIVER_HOME}/cache/resources`。
+
+`compile-markdown` 通过共享 CLI SDK 编译器，将 CommonMark/GFM 与受支持的 Univer 指令转换为可编辑
+Modern Doc，继承 Univer SDK 默认排版。本地资源限定在源文件目录内。使用
+`--apply --source-map-out <file>` 保存实际原生对象 ID。按 ID 替换需要
+`--blocks <ids> --source-map <file>`；编译器在修改选定内容前校验原生块 ID 与边界。
+不支持的语法返回结构化诊断；新建不会覆盖已有 Unit。
+
+调整已有生成文档时，先用 `export-markdown` 从选定的当前原生块读取 Markdown，包含用户的原生编辑。
+读取支持 draft 和 ready Worktree，不产生内容提交。输出包含本地资源文件和刷新后的原生 ID 映射，
+revision 来自同一次 runtime 读取；映射默认写入 `<out>.map.json`。编辑该 Markdown 后，通过
+`compile-markdown --blocks ... --source-map ...` 只更新这些块，保留未选段落与对象的 ID。
+无法保真的原生格式会在写出局部 Markdown 前明确诊断。初次生成只转换一次 Markdown；检查和截图
+无需在转换后追加样式调整 mutation。
 
 ## Configuration and processes
 

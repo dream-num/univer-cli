@@ -56,6 +56,8 @@ import { createLocalUpdateApplication, type UpdateApplication } from "./features
 import { checkForUpdateAtStartup } from "./features/update/startup.js";
 import { createCompileSvgCommand } from "./features/svg/command.js";
 import { createCompileTypstCommand } from "./features/typst/command.js";
+import { createCompileMarkdownCommand } from "./features/markdown/command.js";
+import { createExportMarkdownCommand } from "./features/markdown/export-command.js";
 import {
   createLocalTypstApplication,
   type LocalTypstApplication,
@@ -258,6 +260,8 @@ export function createProgram(options: UniverLocalProgramOptions = {}): Command 
         unitContent: unitContentApplication,
       }),
       createCompileTypstCommand(typstApplication),
+      createCompileMarkdownCommand(typstApplication, unitContentApplication),
+      createExportMarkdownCommand(unitContentApplication),
     ],
     HELP_GROUPS.authoring,
     output,
