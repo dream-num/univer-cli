@@ -7,8 +7,7 @@ export interface LocalOptimizeApplication {
   optimize(input: {
     readonly cwd?: string;
     readonly dryRun: boolean;
-    readonly history?: "reset";
-    readonly images?: "externalize";
+    readonly history?: "compact";
     readonly outputPath?: string;
     readonly path: string;
     readonly worktrees?: "clean";
@@ -26,7 +25,6 @@ export function createLocalOptimizeApplication(daemon: DaemonClient): LocalOptim
           ...(input.outputPath === undefined
             ? {}
             : { outputPath: resolveLocalUniverfile(input.outputPath, cwd) }),
-          ...(input.images === undefined ? {} : { images: input.images }),
           ...(input.worktrees === undefined ? {} : { worktrees: input.worktrees }),
           ...(input.history === undefined ? {} : { history: input.history }),
         }),

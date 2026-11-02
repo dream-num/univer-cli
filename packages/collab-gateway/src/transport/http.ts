@@ -17,7 +17,6 @@ import type {
   UnitComparisonContextQuery,
 } from "@univer/collab-gateway-contract";
 import { CollabGatewayAssetScopeNotFoundError } from "../assets/errors.js";
-import { GatewaySemanticError } from "../errors.js";
 import { optimizeUniverfilePath } from "../optimization/univerfile-optimizer.js";
 import { MAX_UNIVERFILE_ASSET_BYTES } from "@univer/univerfile-sqlite";
 import {
@@ -455,14 +454,11 @@ function parseOptimizeRequest(body: unknown): OptimizeUniverfileRequest {
     throw new UniverfileError("optimize request body must be an object");
   }
   const value = body as Record<string, unknown>;
-  if (value.images !== undefined && value.images !== "externalize") {
-    throw new UniverfileError("optimize images must be externalize");
-  }
   if (value.worktrees !== undefined && value.worktrees !== "clean") {
     throw new UniverfileError("optimize worktrees must be clean");
   }
-  if (value.history !== undefined && value.history !== "reset") {
-    throw new UniverfileError("optimize history must be reset");
+  if (value.history !== undefined && value.history !== "compact") {
+    throw new UniverfileError("optimize history must be compact");
   }
   if (typeof value.dryRun !== "boolean") {
     throw new UniverfileError("optimize dryRun must be a boolean");
@@ -472,7 +468,6 @@ function parseOptimizeRequest(body: unknown): OptimizeUniverfileRequest {
   }
   return {
     ...(value.outputPath === undefined ? {} : { outputPath: value.outputPath }),
-    ...(value.images === undefined ? {} : { images: value.images }),
     ...(value.worktrees === undefined ? {} : { worktrees: value.worktrees }),
     ...(value.history === undefined ? {} : { history: value.history }),
     dryRun: value.dryRun,
@@ -1131,13 +1126,5 @@ function asMessage(error: unknown): string {
 }
 
 function toErrorDetail(error: unknown): ErrorEnvelope["error"] {
-  if (error instanceof GatewaySemanticError) {
-    return {
-      code: 0,
-      message: error.message,
-      semanticCode: error.semanticCode,
-      ...(error.details === undefined ? {} : { details: error.details }),
-    };
-  }
   return { code: 0, message: asMessage(error) };
 }

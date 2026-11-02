@@ -19,23 +19,13 @@ describe("Local data maintenance commands", () => {
     });
 
     const optimized = await invoke(
-      [
-        "optimize",
-        "book.univer",
-        "--out",
-        "compact.univer",
-        "--images",
-        "--worktrees",
-        "--history",
-        "--json",
-      ],
+      ["optimize", "book.univer", "--out", "compact.univer", "--worktrees", "--history", "--json"],
       application,
     );
     expect(optimized.exitCode).toBe(0);
     expect(input).toEqual({
       dryRun: false,
-      history: "reset",
-      images: "externalize",
+      history: "compact",
       outputPath: "compact.univer",
       path: "book.univer",
       worktrees: "clean",
@@ -70,20 +60,8 @@ function optimizeReport(sourcePath: string, outputPath?: string) {
     ...(outputPath === undefined ? {} : { outputPath }),
     dryRun: outputPath === undefined,
     beforeBytes: 100,
-    ...(outputPath === undefined ? {} : { afterBytes: 80 }),
-    images: {
-      selected: false,
-      references: 0,
-      uniqueBlobs: 0,
-      sourceBytes: 0,
-      storedBytes: 0,
-    },
-    worktrees: { mode: "preserve" as const, impliedByHistory: false, removedWorktrees: 0 },
-    history: {
-      mode: "preserve" as const,
-      resetUnits: 0,
-      removedSnapshots: 0,
-      removedChangesets: 0,
-    },
+    afterBytes: 80,
+    worktrees: { mode: "preserve" as const, removedWorktrees: 0, removedAssets: 0 },
+    history: { mode: "preserve" as const, removedSnapshots: 0, removedSheetBlocks: 0 },
   };
 }

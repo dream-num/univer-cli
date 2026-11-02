@@ -35,7 +35,7 @@ Univer SDK 提供 Unit 数据模型、Facade、formula、render engine、Office 
 
 Collaboration SDK 提供 changeset、Snapshot、Worktree persistence contract、Service、Endpoint、Transport、
 browser client 和 runtime integration。`packages/collab-gateway` 与
-`packages/univerfile-sqlite` 实现本地 transport 和 database adapter，但不重新定义 SDK 的协作语义。
+`packages/univerfile-sqlite` 实现本地 transport 和 persistence store，但不重新定义 SDK 的协作语义。
 
 ### Univer CLI SDK
 
@@ -63,7 +63,7 @@ univer command
        -> Collaboration Gateway
             -> one GatewayFileRuntime per opened .univer
                  -> Collaboration SDK services
-                 -> @univer/univerfile-sqlite adapters
+                 -> @univer/univerfile-sqlite stores
        -> CLI SDK runtime worker pool
             -> headless Univer runtime worker
 
@@ -85,7 +85,7 @@ daemon 只管理本地服务和 runtime lifecycle。它为 render operation 物�
 
 Gateway 按 `.univer` runtime 隔离 Viewer Ribbon 使用的 `source=1` exchange 上传、异步 import/export task 与临时 artifact；导入在当前 trunk 创建新 Unit，导出物化 trunk head。Worktree 路径不暴露 exchange。嵌入资源继续使用按 Unit/worktree 授权的 `source=3` 文件协议，不能与 exchange artifact 混用。
 
-Gateway 为 trunk revision 组合 Collaboration SDK History Service 与 Endpoint。`@univer/univerfile-sqlite` 在共享文件 connection 上实现 History persistence contract；History 表只是由 core Unit/changeset 重建的派生索引：Unit 缺少记录时 History Service 在首次读取时重建，落后于 trunk head 时在下一次提交时追平；文件升级和 optimizer 保证不留下超过 trunk head 的边界。Viewer 按 Unit 类型为 trunk Sheet、Doc、Slide、Base 和 Board 注册各自的标准 SDK History UI 插件；Worktree 与 merge preview 不呈现这项能力。
+Gateway 为 trunk revision 组合 Collaboration SDK History Service 与 Endpoint。`@univer/univerfile-sqlite` 在共享文件 connection 上实现 History persistence contract；History 表只是由 core Unit/changeset 重建的派生索引：Unit 缺少记录时 History Service 在首次读取时重建，落后于 trunk head 时在下一次提交时追平；文件升级保证不留下超过 trunk head 的边界；optimizer 只删除 trunk 中间 snapshot，不改动 History 记录。Viewer 按 Unit 类型为 trunk Sheet、Doc、Slide、Base 和 Board 注册各自的标准 SDK History UI 插件；Worktree 与 merge preview 不呈现这项能力。
 
 Viewer 的 Unit comparison 在创建时固定左右 ref、Unit 集合和各自 head。Gateway 通过 Collaboration SDK
 把每侧物化为最终 snapshot；history 连续时同时返回从共同 Trunk revision 到两侧 head 的 changeset path，

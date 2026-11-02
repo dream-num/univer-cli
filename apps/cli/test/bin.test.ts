@@ -340,13 +340,13 @@ describe("built univer executable", () => {
       await expectPng(sheetScreenshot.outputs[0]!.location);
 
       const dryRun = parseJson(
-        (await invoke(["optimize", importedFile, "--dry-run", "--images", "--json"], env)).stdout,
+        (await invoke(["optimize", importedFile, "--dry-run", "--history", "--json"], env)).stdout,
       ) as Record<string, unknown>;
       expect(dryRun).toMatchObject({ dryRun: true, sourcePath: importedFile });
       const optimized = parseJson(
         (
           await invoke(
-            ["optimize", importedFile, "--out", optimizedFile, "--images", "--json"],
+            ["optimize", importedFile, "--out", optimizedFile, "--history", "--json"],
             env,
           )
         ).stdout,

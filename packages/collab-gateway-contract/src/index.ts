@@ -47,9 +47,7 @@ export type {
   UnitComparisonContext,
   UnitComparisonAxisAlignment,
   UnitComparisonContextResponse,
-  OptimizeHistoryActiveWorktreeDetails,
   OptimizeUniverfileHistory,
-  OptimizeUniverfileImages,
   OptimizeUniverfileWorktrees,
   OptimizeUniverfileReport,
   OptimizeUniverfileRequest,
@@ -57,7 +55,6 @@ export type {
 } from "./types.js";
 
 export {
-  GatewaySemanticErrorCode,
   UNIT_TYPE_DOC,
   UNIT_TYPE_SHEET,
   UNIT_TYPE_SLIDE,

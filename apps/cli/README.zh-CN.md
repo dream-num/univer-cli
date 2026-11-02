@@ -27,7 +27,7 @@ univer compile-svg <file.svg> ...
 univer compile-typst <bundle> ...
 univer resources registries|find|export|cache ...
 univer api find|show ...
-univer optimize <file.univer> (--dry-run|--out <copy.univer>)
+univer optimize <file.univer> (--dry-run|--out <copy.univer>) [--worktrees] [--history]
 univer config path|list|get|set|unset ...
 univer doctor [--json]
 univer doctor collect [--last <duration>|--since <time>|--all] [--trace-id <id>] [--output <dir>]
@@ -114,7 +114,15 @@ Sheet/Base → XLSX/CSV/TSV、Doc → DOCX、Slide → PPTX。CSV/TSV 使用 `--
 
 `univer open` 的可编辑 Viewer 支持通过 Ribbon 导入和导出：导入会在当前 `.univer` 中新建 Unit。trunk Sheet、Doc、Slide、Base 和 Board 均提供对应的标准 SDK 版本历史 UI；只读 Viewer 只能查看，可编辑 Viewer 可以显式恢复历史版本。只读 Sheet 中不提供保护和打印。Worktree 与合并预览不提供导入、导出或版本历史；其他受支持的 Unit 仍可打印，Board 仅支持打印。
 
-`optimize` 是 copy-only operation；除 `--dry-run` 外必须提供 `--out`，不会覆盖 source。
+`optimize` 是 copy-only operation；除 `--dry-run` 外必须提供 `--out`，不会覆盖 source。它在 source 的私有副本上
+执行：source 为早期格式时只升级副本，完成验证与压缩后才把副本移到 `--out`。至少选择一项：
+
+- `--worktrees` 删除已合并和已丢弃的 Worktree，连同其 Unit、changeset 与 Worktree 范围的资源；draft、ready
+  与 merging Worktree 保留。
+- `--history` 删除每个 trunk Unit 最早与最新已存 snapshot 之间的 snapshot。changeset 全部保留，因此每个
+  revision 与版本历史仍可读取；活跃 Worktree 不受影响。
+
+`--dry-run` 在临时副本上执行同样的步骤，报告结果大小与删除数量后删除副本。
 
 ## Rendering and authoring helpers
 
@@ -176,8 +184,8 @@ resource manifest，并将下载缓存写入 `${UNIVER_HOME}/cache/resources`。
 
 新 Univerfile 使用 v3。v0、v1 与 v2 是受支持的输入格式，在 application 首次显式打开路径时升级到 v3。升级执行
 只读识别、lock、byte-for-byte backup、独立 candidate、storage/runtime 验证、source hash 复查和 atomic
-replace；失败不会替换 source。再次打开同一份未变化的文件时复用这份 backup。Windows 上迁移在 helper
-进程中完成，原文件在该进程退出后才被替换。v3 再次打开是无副作用 operation。
+replace；失败不会替换 source。再次打开同一份未变化的文件时复用这份 backup。v3 再次打开是无副作用
+operation。
 
 完整合同见 [data compatibility contract](https://github.com/dream-num/univer-cli/blob/main/docs/data-compatibility.md)。
 
