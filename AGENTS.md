@@ -19,7 +19,8 @@
 - `.univer`、路径、进程、Gateway、数据升级和其他 application-specific 能力由本仓库实现。
 - command handler 保持轻薄，业务规则进入 capability 或 application use case。
 - Univer runtime 和数据模型只通过 Univer SDK 使用；协作数据通道与 Worktree 语义只通过 Collaboration SDK 使用。
-- 不依赖相邻 checkout，不复制 SDK 源码，不从其他 Univer repository 导入实现 snapshot；例外见下方
+- 每个 package 必须能在本仓库内独立构建和发布：不依赖相邻 checkout，不复制 SDK 源码，不引入只能依附其他
+  Univer repository 存在的实现 snapshot；跨仓库复用通过已发布的 package 完成。共享副本见下方
   “Shared packages”。
 - 新增 Univer dependency 前必须确认它属于上述三个 SDK 边界，并在 architecture 文档中保持关系准确。
 
@@ -51,8 +52,8 @@ Issues 和 specs 使用不进入 repository history 的 `.scratch/` 本地 Markd
 
 ## Shared packages
 
-以下 package 在多个 Univer repository 各有一份，这是对“不从其他 Univer repository 导入实现 snapshot”的例外；
-修改时必须同步更新所有副本。
+以下 package 在多个 Univer repository 各有一份完整副本，每个仓库都能独立构建和发布，因此不违反上述规则；为避免
+各份各自演化，修改时必须同步更新所有副本。
 
 - `packages/univerfile-sqlite`：univer-cli 与 `dream-num/dsh-univer-office` 各有一份，两份的 `src/` 与 `test/`
   必须保持逐字节一致。
