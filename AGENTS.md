@@ -20,7 +20,7 @@
 - command handler 保持轻薄，业务规则进入 capability 或 application use case。
 - Univer runtime 和数据模型只通过 Univer SDK 使用；协作数据通道与 Worktree 语义只通过 Collaboration SDK 使用。
 - 不依赖相邻 checkout，不复制 SDK 源码，不从其他 Univer repository 导入实现 snapshot；例外见下方
-  “Shared persistence package”。
+  “Shared packages”。
 - 新增 Univer dependency 前必须确认它属于上述三个 SDK 边界，并在 architecture 文档中保持关系准确。
 
 ## Development
@@ -49,12 +49,13 @@ Issues 和 specs 使用不进入 repository history 的 `.scratch/` 本地 Markd
 
 使用 single-context glossary：根目录 `CONTEXT.md`。详见 `docs/agents/domain.md`。
 
-## Shared UI component
+## Shared packages
 
-目前没有适合放置 application-level shared UI component 的公共位置。`univer-workspace` 和 `dsh`
-plugin 暂时各自复制 `packages/unit-comparison-viewer`；修改时必须同步更新两份副本。
+以下 package 在多个 Univer repository 各有一份，这是对“不从其他 Univer repository 导入实现 snapshot”的例外；
+修改时必须同步更新所有副本。
 
-## Shared persistence package
-
-univer-cli 与 `dream-num/dsh-univer-office` 各有一份 `packages/univerfile-sqlite`，这是对“不从其他 Univer
-repository 导入实现 snapshot”的例外。两份的 `src/` 与 `test/` 必须保持逐字节一致；修改时必须同步更新两份。
+- `packages/univerfile-sqlite`：univer-cli 与 `dream-num/dsh-univer-office` 各有一份，两份的 `src/` 与 `test/`
+  必须保持逐字节一致。
+- `packages/unit-comparison-viewer`：univer-cli、`dream-num/univer-workspace` 与 `dream-num/dsh-univer-office`
+  各有一份，保持行为一致，允许各自针对宿主做兼容。目前没有适合放置 application-level shared UI component 的
+  公共位置。
