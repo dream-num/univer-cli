@@ -56,7 +56,5 @@ plugin 暂时各自复制 `packages/unit-comparison-viewer`；修改时必须同
 
 ## Shared persistence package
 
-`packages/univerfile-sqlite` 是 `dream-num/dsh-univer-office` 中 `packages/univerfile-sqlite` 的副本，是对“不从其他
-Univer repository 导入实现 snapshot”的例外，在该 package 发布前保留。`src/` 与 `test/` 必须与上游逐字节
-一致：改动先合入 dsh-univer-office，再整体复制过来，不得只在本仓库修改。本仓库只维护 `package.json`、
-`tsconfig*.json` 等接入配置。
+univer-cli 与 `dream-num/dsh-univer-office` 各有一份 `packages/univerfile-sqlite`，这是对“不从其他 Univer
+repository 导入实现 snapshot”的例外。两份的 `src/` 与 `test/` 必须保持逐字节一致；修改时必须同步更新两份。
