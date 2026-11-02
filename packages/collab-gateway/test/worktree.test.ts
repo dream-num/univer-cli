@@ -24,7 +24,7 @@ describe("SDK-backed Worktree via CollabService", () => {
     const svc = new CollabService();
     try {
       const sheet = await svc.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "S" });
-      const worktree = svc.createWorktree("agent-1", "task");
+      const worktree = await svc.createWorktree("agent-1", "task");
       expect(worktree.status).toBe("draft");
       expect(worktree.baseline[sheet.unitId]).toBe(1);
       expect(svc.listWorktrees().map((f) => f.worktreeId)).toEqual([worktree.worktreeId]);
@@ -37,7 +37,7 @@ describe("SDK-backed Worktree via CollabService", () => {
     const svc = new CollabService();
     try {
       const sheet = await svc.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "S" });
-      const worktree = svc.createWorktree();
+      const worktree = await svc.createWorktree();
       const r = await changeWorktree(svc, worktree.worktreeId, "edit A1", {
         modify: { [sheet.unitId]: mutations(sheet.unitId) }
       });
@@ -67,7 +67,7 @@ describe("SDK-backed Worktree via CollabService", () => {
     const svc = new CollabService();
     try {
       await svc.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "S" });
-      const worktree = svc.createWorktree();
+      const worktree = await svc.createWorktree();
       const r = await changeWorktree(svc, worktree.worktreeId, "new sheet", {
         create: [{ type: UniverInstanceType.UNIVER_SHEET, name: "S2" }]
       });
@@ -87,7 +87,7 @@ describe("SDK-backed Worktree via CollabService", () => {
   it("preserves the Base unit type in a worktree-created snapshot", async () => {
     const svc = new CollabService();
     try {
-      const worktree = svc.createWorktree();
+      const worktree = await svc.createWorktree();
       const result = await changeWorktree(svc, worktree.worktreeId, "new base", {
         create: [{ type: UniverInstanceType.UNIVER_BASE, name: "B" }]
       });
@@ -108,8 +108,8 @@ describe("SDK-backed Worktree via CollabService", () => {
     const svc = new CollabService();
     try {
       const sheet = await svc.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "S" });
-      const a = svc.createWorktree("agent-a");
-      const b = svc.createWorktree("agent-b");
+      const a = await svc.createWorktree("agent-a");
+      const b = await svc.createWorktree("agent-b");
       await changeWorktree(svc, a.worktreeId, "a-edit", {
         modify: { [sheet.unitId]: mutations(sheet.unitId) }
       });

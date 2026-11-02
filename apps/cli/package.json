@@ -45,7 +45,6 @@
     "@univerjs-pro/doc-typst-native-binding": "1.0.0-insiders.20260723-c21613b",
     "@univerjs-pro/engine-formula-rust": "1.0.3",
     "@univerjs-pro/exchange-node": "1.0.3",
-    "libsql": "0.5.29",
     "puppeteer-core": "25.6.0",
     "typescript": "^5.9.3",
     "ws": "8.21.0"

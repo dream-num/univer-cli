@@ -79,7 +79,7 @@ describe("lifecycle events over WebSocket", () => {
   it("scopes the worktree channel to that worktree and isolates it from the univerfile channel", async () => {
     const key = Buffer.from(join(dir, "book.univer")).toString("base64url");
     const uf = server.manager.createByKey(key);
-    const w = uf.collab.createWorktree("agent");
+    const w = await uf.collab.createWorktree("agent");
 
     const trunkWs = connect(`/uf/${key}/events`);
     const worktreeWs = connect(`/uf/${key}/worktrees/${w.worktreeId}/events`);

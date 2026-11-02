@@ -27,7 +27,7 @@ describe("pinned Worktree Unit comparisons", () => {
     const service = new CollabService();
     try {
       const unit = await service.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "Retry" });
-      const branch = service.createWorktree("retry");
+      const branch = await service.createWorktree("retry");
       const session = service.createUnitComparison(branch.worktreeId);
       const storageRead = vi.spyOn(service.runtime.trunkAdapter, "getSnapshot");
       storageRead.mockRejectedValueOnce(new Error("Transient snapshot storage failure"));
@@ -46,7 +46,7 @@ describe("pinned Worktree Unit comparisons", () => {
     const service = new CollabService();
     try {
       const unit = await service.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "Eviction" });
-      const branch = service.createWorktree("eviction");
+      const branch = await service.createWorktree("eviction");
       const first = service.createUnitComparison(branch.worktreeId);
       await service.getUnitComparison(branch.worktreeId, first.comparisonId, unit.unitId);
       const pending = service.getUnitComparisonContext(branch.worktreeId, first.comparisonId, unit.unitId);
@@ -68,7 +68,7 @@ describe("pinned Worktree Unit comparisons", () => {
     const service = new CollabService();
     try {
       const sheet = await service.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "Shared" });
-      const branch = service.createWorktree("shared");
+      const branch = await service.createWorktree("shared");
       await changeWorktree(service, branch.worktreeId, "edit", {
         modify: { [sheet.unitId]: setCell(sheet.unitId, 0, "Pinned value") },
       });
@@ -95,8 +95,8 @@ describe("pinned Worktree Unit comparisons", () => {
     const service = new CollabService();
     try {
       const sheet = await service.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "Sheet" });
-      const right = service.createWorktree("right");
-      const advanceTrunk = service.createWorktree("trunk");
+      const right = await service.createWorktree("right");
+      const advanceTrunk = await service.createWorktree("trunk");
 
       await changeWorktree(service, right.worktreeId, "right edit", {
         modify: { [sheet.unitId]: setCell(sheet.unitId, 1, "right") },
@@ -176,8 +176,8 @@ describe("pinned Worktree Unit comparisons", () => {
     const service = new CollabService();
     try {
       const sheet = await service.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "Sheet" });
-      const left = service.createWorktree("left", "Left");
-      const right = service.createWorktree("right", "Right");
+      const left = await service.createWorktree("left", "Left");
+      const right = await service.createWorktree("right", "Right");
       await changeWorktree(service, left.worktreeId, "left edit", {
         modify: { [sheet.unitId]: setCell(sheet.unitId, 0, "left") },
       });
@@ -231,7 +231,7 @@ describe("pinned Worktree Unit comparisons", () => {
         name: baseData.name,
         data: baseData,
       });
-      const right = service.createWorktree("right");
+      const right = await service.createWorktree("right");
       const session = service.createUnitComparison(right.worktreeId);
 
       const comparison = await service.getUnitComparison(
@@ -258,7 +258,7 @@ describe("pinned Worktree Unit comparisons", () => {
     try {
       const kept = await service.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "Kept" });
       const deleted = await service.createUnit(UniverInstanceType.UNIVER_DOC, { name: "Deleted" });
-      const right = service.createWorktree("right");
+      const right = await service.createWorktree("right");
       await changeWorktree(service, right.worktreeId, "presence changes", {
         create: [
           {

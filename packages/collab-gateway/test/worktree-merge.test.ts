@@ -48,7 +48,7 @@ describe("Worktree merge (Phase 3): OT rebase into trunk", () => {
     const svc = new CollabService();
     try {
       const sheet = await svc.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "Old name" });
-      const worktree = svc.createWorktree("agent-1");
+      const worktree = await svc.createWorktree("agent-1");
 
       await changeWorktree(svc,
         worktree.worktreeId,
@@ -82,8 +82,8 @@ describe("Worktree merge (Phase 3): OT rebase into trunk", () => {
     const svc = new CollabService();
     try {
       const sheet = await svc.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "Old name" });
-      const renameWorktree = svc.createWorktree("rename-agent");
-      const editWorktree = svc.createWorktree("edit-agent");
+      const renameWorktree = await svc.createWorktree("rename-agent");
+      const editWorktree = await svc.createWorktree("edit-agent");
 
       await changeWorktree(svc,
         renameWorktree.worktreeId,
@@ -112,7 +112,7 @@ describe("Worktree merge (Phase 3): OT rebase into trunk", () => {
     const svc = new CollabService();
     try {
       const sheet = await svc.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "S" });
-      const worktree = svc.createWorktree("agent-1");
+      const worktree = await svc.createWorktree("agent-1");
       await changeWorktree(svc, worktree.worktreeId, "set A1", {
         modify: { [sheet.unitId]: setCell(sheet.unitId, 0, 0, "a") }
       });
@@ -134,8 +134,8 @@ describe("Worktree merge (Phase 3): OT rebase into trunk", () => {
     const svc = new CollabService();
     try {
       const sheet = await svc.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "S" });
-      const a = svc.createWorktree("agent-a");
-      const b = svc.createWorktree("agent-b"); // both baseline rev 1
+      const a = await svc.createWorktree("agent-a");
+      const b = await svc.createWorktree("agent-b"); // both baseline rev 1
 
       await changeWorktree(svc, a.worktreeId, "A1", {
         modify: { [sheet.unitId]: setCell(sheet.unitId, 0, 0, "a") }
@@ -161,8 +161,8 @@ describe("Worktree merge (Phase 3): OT rebase into trunk", () => {
     const svc = new CollabService();
     try {
       const sheet = await svc.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "S" });
-      const a = svc.createWorktree("agent-a");
-      const b = svc.createWorktree("agent-b"); // both baseline rev 1
+      const a = await svc.createWorktree("agent-a");
+      const b = await svc.createWorktree("agent-b"); // both baseline rev 1
 
       await changeWorktree(svc, a.worktreeId, "A1", {
         modify: { [sheet.unitId]: setCell(sheet.unitId, 0, 0, "a") }
@@ -192,7 +192,7 @@ describe("Worktree merge (Phase 3): OT rebase into trunk", () => {
     const svc = new CollabService();
     try {
       await svc.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "S" });
-      const worktree = svc.createWorktree();
+      const worktree = await svc.createWorktree();
       const r = await changeWorktree(svc, worktree.worktreeId, "new", {
         create: [{ type: UniverInstanceType.UNIVER_SHEET, name: "S2" }]
       });
@@ -211,8 +211,8 @@ describe("Worktree merge (Phase 3): OT rebase into trunk", () => {
     const svc = new CollabService();
     try {
       const sheet = await svc.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "S" });
-      const a = svc.createWorktree("agent-a");
-      const b = svc.createWorktree("agent-b"); // baseline rev 1
+      const a = await svc.createWorktree("agent-a");
+      const b = await svc.createWorktree("agent-b"); // baseline rev 1
 
       await changeWorktree(svc, a.worktreeId, "A1", {
         modify: { [sheet.unitId]: setCell(sheet.unitId, 0, 0, "a") }

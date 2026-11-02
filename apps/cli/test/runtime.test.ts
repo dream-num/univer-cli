@@ -51,7 +51,7 @@ describe("Local collaboration runtime worker", () => {
       viewAssetsRoot: join(projectRoot, "dist", "browser"),
     });
     const univerfile = gateway.manager.openByPath(filename);
-    const worktree = univerfile.collab.createWorktree("", "Embed regression");
+    const worktree = await univerfile.collab.createWorktree("", "Embed regression");
     const sheet = await univerfile.collab.createWorktreeUnit(
       worktree.worktreeId,
       UniverInstanceType.UNIVER_SHEET,
@@ -117,7 +117,7 @@ describe("Local collaboration runtime worker", () => {
       viewAssetsRoot: join(projectRoot, "dist", "browser"),
     });
     const univerfile = gateway.manager.openByPath(filename);
-    const worktree = univerfile.collab.createWorktree("", "Rename regression");
+    const worktree = await univerfile.collab.createWorktree("", "Rename regression");
     const cases = [
       {
         accessor: "getActiveDocument",

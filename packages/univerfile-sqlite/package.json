@@ -2,7 +2,7 @@
   "name": "@univer/univerfile-sqlite",
   "version": "0.1.0",
   "private": true,
-  "description": "SQLite database adapters, schema and safe upgrades for .univer files.",
+  "description": "SQLite persistence, schema, and safe upgrades for .univer files.",
   "type": "module",
   "types": "./src/index.ts",
   "exports": {
@@ -19,7 +19,9 @@
     "@univerjs-pro/collaboration-history-service": "1.0.3",
     "@univerjs-pro/collaboration-service": "1.0.3",
     "@univerjs-pro/collaboration-worktree-service": "1.0.3",
-    "@univerjs/protocol": "1.0.3",
-    "libsql": "^0.5.29"
+    "@univerjs/protocol": "1.0.3"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
   }
 }

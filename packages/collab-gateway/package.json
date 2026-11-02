@@ -51,7 +51,6 @@
     "@univerjs/sheets": "1.0.3",
     "@univerjs/sheets-drawing": "1.0.3",
     "busboy": "^1.6.0",
-    "libsql": "^0.5.29",
     "sirv": "^3.0.2",
     "ws": "8.21.0"
   },

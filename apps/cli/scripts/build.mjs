@@ -104,7 +104,6 @@ const nodeBuild = await build({
     bin: join(projectRoot, "src", "bin.ts"),
     daemon: join(projectRoot, "src", "daemon-entry.ts"),
     "runtime-worker": join(projectRoot, "src", "runtime-worker.ts"),
-    "upgrade-worker": join(projectRoot, "src", "upgrade-worker.ts"),
   },
   external: EXTERNAL_DEPENDENCY_WHITELIST,
   format: "esm",
@@ -120,7 +119,7 @@ const nodeBuild = await build({
   sourcemap: false,
   target: "node22.12",
 });
-for (const entryName of ["bin", "daemon", "runtime-worker", "upgrade-worker"]) {
+for (const entryName of ["bin", "daemon", "runtime-worker"]) {
   await chmod(join(projectRoot, "dist", `${entryName}.js`), 0o755);
 }
 await writeFile(
