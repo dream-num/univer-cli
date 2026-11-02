@@ -19,7 +19,8 @@
 - `.univer`、路径、进程、Gateway、数据升级和其他 application-specific 能力由本仓库实现。
 - command handler 保持轻薄，业务规则进入 capability 或 application use case。
 - Univer runtime 和数据模型只通过 Univer SDK 使用；协作数据通道与 Worktree 语义只通过 Collaboration SDK 使用。
-- 不依赖相邻 checkout，不复制 SDK 源码，不从其他 Univer repository 导入实现 snapshot。
+- 不依赖相邻 checkout，不复制 SDK 源码，不从其他 Univer repository 导入实现 snapshot；例外见下方
+  “Shared persistence package”。
 - 新增 Univer dependency 前必须确认它属于上述三个 SDK 边界，并在 architecture 文档中保持关系准确。
 
 ## Development
@@ -52,3 +53,10 @@ Issues 和 specs 使用不进入 repository history 的 `.scratch/` 本地 Markd
 
 目前没有适合放置 application-level shared UI component 的公共位置。`univer-workspace` 和 `dsh`
 plugin 暂时各自复制 `packages/unit-comparison-viewer`；修改时必须同步更新两份副本。
+
+## Shared persistence package
+
+`packages/univerfile-sqlite` 是 `dream-num/dsh-univer-office` 中 `packages/univerfile-sqlite` 的副本，是对“不从其他
+Univer repository 导入实现 snapshot”的例外，在该 package 发布前保留。`src/` 与 `test/` 必须与上游逐字节
+一致：改动先合入 dsh-univer-office，再整体复制过来，不得只在本仓库修改。本仓库只维护 `package.json`、
+`tsconfig*.json` 等接入配置。
