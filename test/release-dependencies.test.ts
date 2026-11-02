@@ -21,7 +21,7 @@ function metafileWith(...imports) {
 describe("external dependency whitelist", () => {
   it("reports the whitelist as required and dynamic imports as conditional", () => {
     const audit = externalDependencyAudit([
-      metafileWith(["libsql"], ["@univerjs-pro/cli-assets"], ["node:fs"]),
+      metafileWith(["puppeteer-core"], ["@univerjs-pro/cli-assets"], ["node:fs"]),
       metafileWith(["ws", "dynamic-import"], ["typescript", "dynamic-import"]),
     ]);
     expect(audit.required).toEqual([...EXTERNAL_DEPENDENCY_WHITELIST].sort());

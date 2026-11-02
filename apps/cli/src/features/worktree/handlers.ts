@@ -20,7 +20,7 @@ export function registerWorktreeHandlers(input: {
   input.daemon.handle(WORKTREE_CREATE_METHOD, async (payload) => {
     const request = parseWorktreeCreateRequest(payload);
     const univerfile = input.gateway.manager.openByPath(request.path);
-    const worktree = univerfile.collab.createWorktree("", request.name ?? "");
+    const worktree = await univerfile.collab.createWorktree("", request.name ?? "");
     return {
       filePath: univerfile.path,
       agentId: worktree.agentId,

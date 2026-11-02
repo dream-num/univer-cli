@@ -1,5 +1,5 @@
 import type { JsonValue } from "@univer-cli/daemon";
-import type { UniverfileUpgradeResult } from "@univer/univerfile-sqlite";
+import type { UniverfileUpgradeOutcome } from "@univer/univerfile-sqlite";
 import {
   codedError,
   optionalString,
@@ -13,7 +13,7 @@ export const UNIVERFILE_STATUS_METHOD = "univer.univerfile.status";
 
 export interface UniverfileOpenResult {
   readonly filePath: string;
-  readonly upgrade: UniverfileUpgradeResult;
+  readonly upgrade: UniverfileUpgradeOutcome;
 }
 
 export interface UniverfileUnitResult {
@@ -126,7 +126,7 @@ function parseWorktree(value: JsonValue): UniverfileWorktreeResult {
   };
 }
 
-function requireUpgrade(value: JsonValue | undefined): UniverfileUpgradeResult {
+function requireUpgrade(value: JsonValue | undefined): UniverfileUpgradeOutcome {
   const record = requireRecord(value, "univerfile upgrade result");
   if (record["status"] === "unchanged" && record["format"] === "v3") {
     return { status: "unchanged", format: "v3" };
@@ -140,5 +140,5 @@ function requireUpgrade(value: JsonValue | undefined): UniverfileUpgradeResult {
   ) {
     throw codedError("DAEMON_RESULT_INVALID", "univerfile upgrade result is invalid");
   }
-  return value as unknown as UniverfileUpgradeResult;
+  return value as unknown as UniverfileUpgradeOutcome;
 }

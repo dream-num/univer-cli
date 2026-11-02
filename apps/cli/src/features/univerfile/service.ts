@@ -1,6 +1,6 @@
 import type { DaemonClient } from "@univer-cli/daemon";
 import { encodeUniverfile } from "@univer/collab-gateway-contract";
-import type { UniverfileUpgradeResult } from "@univer/univerfile-sqlite";
+import type { UniverfileUpgradeOutcome } from "@univer/univerfile-sqlite";
 import { GATEWAY_INFO_METHOD, parseGatewayInfo } from "../../daemon/protocol.js";
 import {
   parseUniverfileOpenResult,
@@ -19,7 +19,7 @@ export interface CreateUniverfileResult {
 export interface OpenUniverfileResult {
   readonly filePath: string;
   readonly openUrl: string;
-  readonly upgrade: UniverfileUpgradeResult;
+  readonly upgrade: UniverfileUpgradeOutcome;
   readonly unitId?: string;
   readonly worktreeId?: string;
 }
