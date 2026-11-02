@@ -26,7 +26,7 @@ describe("previewMerge: merge preview summary (no writes)", () => {
     const svc = new CollabService();
     try {
       const sheet = await svc.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "S" });
-      const w = svc.createWorktree("agent-1");
+      const w = await svc.createWorktree("agent-1");
       await changeWorktree(svc, w.worktreeId, "edit", {
         modify: { [sheet.unitId]: setCell(sheet.unitId, 0, 0, "a") }
       });
@@ -54,8 +54,8 @@ describe("previewMerge: merge preview summary (no writes)", () => {
     try {
       const s1 = await svc.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "S1" });
       const s2 = await svc.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "S2" });
-      const w = svc.createWorktree("agent-w"); // baseline s1:1, s2:1
-      const a = svc.createWorktree("agent-a");
+      const w = await svc.createWorktree("agent-w"); // baseline s1:1, s2:1
+      const a = await svc.createWorktree("agent-a");
 
       // a advances trunk s2 to rev 2
       await changeWorktree(svc, a.worktreeId, "a edits s2", {
@@ -88,8 +88,8 @@ describe("previewMerge: merge preview summary (no writes)", () => {
     const svc = new CollabService();
     try {
       const sheet = await svc.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "S" });
-      const a = svc.createWorktree("agent-a");
-      const w = svc.createWorktree("agent-w"); // baseline rev 1
+      const a = await svc.createWorktree("agent-a");
+      const w = await svc.createWorktree("agent-w"); // baseline rev 1
 
       await changeWorktree(svc, a.worktreeId, "A1", {
         modify: { [sheet.unitId]: setCell(sheet.unitId, 0, 0, "a") }
@@ -120,8 +120,8 @@ describe("previewMerge: merge preview summary (no writes)", () => {
     const svc = new CollabService();
     try {
       const sheet = await svc.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "S" });
-      const a = svc.createWorktree("agent-a");
-      const b = svc.createWorktree("agent-b");
+      const a = await svc.createWorktree("agent-a");
+      const b = await svc.createWorktree("agent-b");
 
       await changeWorktree(svc, a.worktreeId, "a", {
         modify: { [sheet.unitId]: setCell(sheet.unitId, 0, 0, "a") }
@@ -144,7 +144,7 @@ describe("previewMerge: merge preview summary (no writes)", () => {
     const svc = new CollabService();
     try {
       await svc.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "S" });
-      const w = svc.createWorktree();
+      const w = await svc.createWorktree();
       const r = await changeWorktree(svc, w.worktreeId, "new", {
         create: [{ type: UniverInstanceType.UNIVER_SHEET, name: "S2" }]
       });
@@ -165,7 +165,7 @@ describe("previewMerge: merge preview summary (no writes)", () => {
     try {
       await svc.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "S1" });
       const s2 = await svc.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "S2" });
-      const w = svc.createWorktree();
+      const w = await svc.createWorktree();
       await changeWorktree(svc, w.worktreeId, "del s2", { delete: [s2.unitId] });
 
       const preview = await svc.previewMerge(w.worktreeId);
@@ -184,7 +184,7 @@ describe("getMergePreviewUnit: per-unit render data", () => {
     const svc = new CollabService();
     try {
       const sheet = await svc.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "S" });
-      const w = svc.createWorktree();
+      const w = await svc.createWorktree();
       await changeWorktree(svc, w.worktreeId, "edit", {
         modify: { [sheet.unitId]: setCell(sheet.unitId, 0, 0, "x") }
       });
@@ -209,8 +209,8 @@ describe("getMergePreviewUnit: per-unit render data", () => {
     const svc = new CollabService();
     try {
       const sheet = await svc.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "S" });
-      const a = svc.createWorktree("agent-a");
-      const w = svc.createWorktree("agent-w");
+      const a = await svc.createWorktree("agent-a");
+      const w = await svc.createWorktree("agent-w");
 
       // a advances trunk to rev 2
       await changeWorktree(svc, a.worktreeId, "a", {
@@ -246,7 +246,7 @@ describe("getMergePreviewUnit: per-unit render data", () => {
     const svc = new CollabService();
     try {
       const doc = await svc.createUnit(UniverInstanceType.UNIVER_DOC, { name: "D" });
-      const w = svc.createWorktree();
+      const w = await svc.createWorktree();
 
       const data = await svc.getMergePreviewUnit(w.worktreeId, doc.unitId);
       expect(data.error).toBeUndefined();
@@ -263,7 +263,7 @@ describe("getMergePreviewUnit: per-unit render data", () => {
     try {
       await svc.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "S1" });
       const s2 = await svc.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "S2" });
-      const w = svc.createWorktree();
+      const w = await svc.createWorktree();
       await changeWorktree(svc, w.worktreeId, "del s2", { delete: [s2.unitId] });
 
       const data = await svc.getMergePreviewUnit(w.worktreeId, s2.unitId);

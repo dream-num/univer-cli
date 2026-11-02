@@ -5,6 +5,7 @@ import { UniverInstanceType } from "@univerjs/core";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { startServer, type StartedServer } from "../src/server.js";
 import { MAX_UNIVERFILE_ASSET_BYTES } from "@univer/univerfile-sqlite";
+import { countAssetRows } from "./asset-counts.js";
 
 const BYTES = Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10, 1, 2, 3, 4]);
 
@@ -46,13 +47,12 @@ describe("local Univer File API", () => {
   it("isolates worktree assets, publishes them on merge, and deduplicates identical blobs", async () => {
     const univerfile = server.manager.resolveByKey(key);
     const unit = await univerfile.collab.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "S" });
-    const worktree = univerfile.collab.createWorktree("agent");
+    const worktree = await univerfile.collab.createWorktree("agent");
 
     const first = await upload({ unitId: unit.unitId, worktreeId: worktree.worktreeId });
     const second = await upload({ unitId: unit.unitId, worktreeId: worktree.worktreeId });
     expect(first).not.toBe(second);
-    expect(univerfile.collab.runtime.assetStore.countAssets()).toBe(2);
-    expect(univerfile.collab.runtime.assetStore.countBlobs()).toBe(1);
+    expect(countAssetRows(univerfile.path)).toEqual({ assets: 2, blobs: 1 });
 
     const trunkBefore = await fetch(`${origin()}/uf/${key}/universer-api/file/${first}/content`);
     expect(trunkBefore.status).toBe(404);
