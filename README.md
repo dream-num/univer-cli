@@ -132,6 +132,16 @@ The Skill selects these capabilities automatically. Most users do not need to ca
 
 See the [complete CLI reference](apps/cli/README.md) for command options, selectors, environment variables, machine output, and process behavior.
 
+Board rendered/both `lint` accepts opt-in `--maximum-automatic-label-distance <board-units>`.
+The limit must be finite and non-negative, including zero. Missing native support or unresolved distance
+is incomplete; exceeded limits are errors, and either exits 2. The native sampled, marker-trimmed
+stroke-centerline metric is not raster ink and preserves fixed/authored and endpoint-role labels.
+Inspection never moves labels.
+
+Board rendered/both `lint --plan-ports` returns native read-only port-order plans in `analyses[].portPlan`.
+Missing or incomplete planning makes coverage incomplete. Apply one ready plan through the Board Facade,
+then lint a fresh snapshot before using another plan. Original findings remain visible until rechecked.
+
 ## Requirements and current limits
 
 - An agent that supports Agent Skills, plus Node.js 24.0 or later and npm/npx.
@@ -180,6 +190,7 @@ Use `pnpm dev:board --map <sdk-tarballs.json>` to verify unpublished SDK tarball
 file/daemon home, and a browser bundle reused only when its inputs match. See
 [local Board development](docs/board-local-development.md) for package provenance, producer dev packing,
 temporary configuration recovery, and interactive CLI/Viewer entrypoints.
+Validation follows transitive SDK dependencies and checks that installed runtime entry bytes match the supplied tarballs.
 
 ### SDK upgrades
 

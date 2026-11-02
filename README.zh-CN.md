@@ -125,6 +125,15 @@ Skill 会自动选择这些能力，日常使用通常不需要手动调用。
 
 完整 command option、selector、环境变量、machine output 与进程行为见 [CLI 完整参考](apps/cli/README.zh-CN.md)。
 
+Board 的 rendered/both `lint` 可显式设置 `--maximum-automatic-label-distance <board-units>`。
+阈值必须有限且非负，含 0。缺少原生支持或距离未解析为 incomplete，超限为 error，两者均以 code 2 退出。
+度量针对原生采样、裁去 marker 的 stroke 中心线，不是 raster ink；保留 fixed/authored 与端点角色标签。
+检查不会移动标签。
+
+Board 的 rendered/both `lint --plan-ports` 通过 `analyses[].portPlan` 返回原生只读端口排序计划。
+请求后计划缺失或不完整会使 coverage 不完整。通过 Board Facade 应用一个 ready 计划后，
+对新 snapshot 重新 lint，再使用其他计划。原始 findings 会保留，直到重新检查。
+
 ## 要求与当前限制
 
 - 支持 Agent Skills 的 Agent，以及 Node.js 24.0 或更高版本和 npm/npx。
@@ -172,6 +181,7 @@ Daemon 启动时初始化本地 Gateway；content worker 或文档创建请求�
 使用 `pnpm dev:board --map <sdk-tarballs.json>`，通过 source CLI、隔离的文件／daemon home 验证未发布的 SDK tarball；
 浏览器 bundle 仅在输入一致时复用。Package 来源、producer dev 打包、临时配置恢复与 CLI／Viewer 交互入口见
 [本地 Board 开发](docs/board-local-development.zh-CN.md)。
+验证会沿间接 SDK 依赖继续查找，并检查已安装 runtime 入口的字节与指定 tarball 一致。
 
 ### SDK 升级
 

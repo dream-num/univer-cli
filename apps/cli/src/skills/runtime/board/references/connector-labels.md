@@ -74,6 +74,19 @@ string instead of guessing a smaller character-based mask. Empty content should 
 
 ## Verification and repair
 
+For automatic crossings, excessive detours, or labels reported as `connector-label-distance-exceeded`, inspect
+`FBoard.planRenderedPortLayout` in the installed Boards UI Facade. Its read-only native plan orders automatic
+port slots and, when supported, searches bounded exterior routes for distant automatic captions. Preserve node
+frames, label content, fixed placements, authored ports/routes and native ownership. Only explicitly automatic
+ports with finite positions are eligible; never reinterpret missing legacy metadata as permission to move a port.
+A headless runtime cannot produce this measured plan. Request rendered lint with port planning and the desired
+maximum automatic label distance rather than estimating or copying source routes.
+
+Apply one ready, non-empty plan through `board.applyLayoutPlan(plan)` on the same current Board/page.
+Discard other plans derived from the old snapshot, then obtain fresh rendered analysis and label plans.
+Missing or incomplete port planning is unfinished evidence; an empty plan does not clear existing findings.
+Inspect the overview, arrowheads and affected route details after application.
+
 Headless Facade success proves accepted data, not exact font metrics or visual clearance. After fonts and render
 resources settle, inspect the full screenshot and rendered layout diagnostics. Treat label-layout-unresolved as
 unfinished evidence, not a clean pass. Review `connector-label-overflow`, `connector-label-collision`, and
@@ -104,3 +117,20 @@ class/ER diagram may need more space between nodes. For ordinary automatic endpo
 Keep manual routes, native layout ownership, explicit placements and hard constraints intact. If graph or label
 planning remains incomplete, report its unresolved diagnostics. Retain all raw findings, including manual-route
 findings; resolving label collisions does not establish that the whole diagram is clean.
+
+## Optional automatic-label distance inspection
+
+When proximity is part of the task, explicitly request `maximumAutomaticLabelDistance: 12` through
+`board.analyzeRenderedLayout(48, { maximumAutomaticLabelDistance: 12 })` or the matching lint option.
+Omitting the option retains the existing diagnostic behavior; zero is a valid non-negative limit.
+The native `labelDistanceInspection` receipt must echo the requested limit and
+`metric: "rendered-stroke-polyline-v1"`. Ready label measurements then contain
+`automaticLabelDistance`: a ready numeric distance, an excluded reason (`empty`, `authored-placement`,
+or `endpoint-role`), or unresolved status. Fixed/authored labels and endpoint annotations remain in place.
+
+Missing producer support or unresolved requested distance is incomplete, not a clean result. Exceeding the
+explicit limit produces `connector-label-distance-exceeded` errors. This is distance to the native sampled,
+marker-trimmed stroke centerline before dash gaps and label clipping, not raster ink, arrowhead paint or raw
+model-polyline distance. Curves use the native bounded approximation; unsupported jump arcs remain unresolved.
+Inspection never moves labels. Keep all text, native ownership and explicit placements, and review screenshots
+after any separately authorized repair. Collision-free or near-line diagnostics do not establish visual approval.

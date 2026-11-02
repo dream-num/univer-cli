@@ -155,11 +155,17 @@ describe("Local layout lint command", () => {
         "--mode",
         "both",
         "--plan-labels",
+        "--plan-ports",
         "--json",
       ],
       application,
     );
-    expect(linted[0]).toMatchObject({ unitType: "board", mode: "both", includeLabelPlan: true });
+    expect(linted[0]).toMatchObject({
+      unitType: "board",
+      mode: "both",
+      includeLabelPlan: true,
+      includePortPlan: true,
+    });
     expect(result.exitCode).toBe(2);
     expect(result.stdout).toBe("");
     expect(JSON.parse(result.stderr)).toMatchObject({

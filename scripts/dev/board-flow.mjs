@@ -7,7 +7,7 @@ import { join } from "node:path";
 export function verifyBoardFlow({ root, evidence, env, cliArgs }) {
   const file = join(evidence, "board.univer");
   let sequence = 0;
-  function run(args, expected = [0]) {
+  function run(args, expected = [0], parseJson = true) {
     const result = spawnSync(process.execPath, [...cliArgs, ...args], {
       cwd: root,
       env,
@@ -30,7 +30,11 @@ export function verifyBoardFlow({ root, evidence, env, cliArgs }) {
       assert.equal(failure.error.code, "UNIT_LAYOUT_LINT_BOARD_FAILED");
       return failure.error.details.report;
     }
-    return result.stdout?.trim() ? JSON.parse(result.stdout) : undefined;
+    return result.stdout?.trim()
+      ? parseJson
+        ? JSON.parse(result.stdout)
+        : result.stdout.trim()
+      : undefined;
   }
 
   let failure;
@@ -69,6 +73,8 @@ export function verifyBoardFlow({ root, evidence, env, cliArgs }) {
         "--json",
       ]);
     };
+    const portReference = run(["api", "show", "FBoard.planRenderedPortLayout"], [0], false);
+    assert.ok(portReference.includes("planRenderedPortLayout"));
     const authored = execute(
       `
 const names = ["Client", "API", "Database"];
@@ -84,8 +90,8 @@ const edges = board.insertConnectors([
 ]);
 if (!edges) throw new Error("Cannot create relations");
 if (!board.setConnectorLabels(edges[0].id, [
-  { id: "request", content: "request" },
-  { id: "response", content: "response" }
+  { id: "request", content: "request", placement: { mode: "fixed", anchor: "path", pathRatio: 0.5 } },
+  { id: "response", content: "response", placement: { mode: "fixed", anchor: "path", pathRatio: 0.5 } }
 ])) throw new Error("Cannot create independent labels");
 const stale = board.planGraphLayout({ layerGap: 200 });
 const note = board.insertShape({
@@ -96,10 +102,13 @@ if (!note) throw new Error("Cannot create intervening edit");
 note.getText().setText("Audit");
 const rejected = board.applyLayoutPlan(stale) === false;
 const plan = board.planGraphLayout({ layerGap: 200 });
-return { rejected, applied: board.applyLayoutPlan(plan), status: plan.status };`,
+return { rejected, applied: board.applyLayoutPlan(plan), status: plan.status, connectorId: edges[0].id };`,
       "author",
     );
-    assert.deepEqual(authored.value, { rejected: true, applied: true, status: "ready" });
+    const { connectorId, ...authoredFlags } = authored.value;
+    assert.equal(typeof connectorId, "string");
+    assert.ok(connectorId.length);
+    assert.deepEqual(authoredFlags, { rejected: true, applied: true, status: "ready" });
     const lint = () =>
       run(
         [
@@ -113,14 +122,57 @@ return { rejected, applied: board.applyLayoutPlan(plan), status: plan.status };`
           "--mode",
           "both",
           "--plan-labels",
+          "--plan-ports",
           "--json",
         ],
         [0, 2],
       );
     const before = lint();
-    const plans = before.analyses.map((page) => page.labelPlan);
+    assert.equal(before.coverage.complete, true);
+    assert.equal(before.status, "findings");
+    assert.ok(before.findings.some((finding) => finding.rule === "connector-label-collision"));
+    const portPlans = before.analyses.map((page) => page.portPlan);
+    assert.ok(portPlans.every((plan) => plan?.status === "ready"));
+    assert.ok(portPlans.every((plan) => plan.patches.length === 0));
+    const pinnedPlans = before.analyses.map((page) => page.labelPlan);
+    assert.ok(pinnedPlans.every((plan) => plan?.status === "incomplete"));
+    assert.ok(pinnedPlans.every((plan) => plan.patches.every((patch) => !patch.labels?.length)));
+    assert.deepEqual(
+      pinnedPlans
+        .flatMap((plan) =>
+          plan.diagnostics.flatMap((diagnostic) => {
+            assert.equal(diagnostic.code, "label-layout/pinned");
+            return diagnostic.labelIds;
+          }),
+        )
+        .sort(),
+      ["request", "response"],
+    );
+    const rejectedPins = execute(
+      `return ${JSON.stringify(pinnedPlans)}.map(plan => board.applyLayoutPlan(plan));`,
+      "reject-pinned-plan",
+    );
+    assert.ok(rejectedPins.value.every((accepted) => accepted === false));
+    const automatic = execute(
+      `
+const id = ${JSON.stringify(connectorId)};
+const before = board.getConnectorLabels(id);
+if (!board.setConnectorLabels(id, before.map(label => ({ ...label, placement: { mode: "auto" } }))))
+  throw new Error("Cannot enable automatic labels");
+const automatic = board.getConnectorLabels(id);
+if (!await board.undo()) throw new Error("Cannot undo automatic label edit");
+const undone = board.getConnectorLabels(id);
+if (!await board.redo()) throw new Error("Cannot redo automatic label edit");
+return { before, automatic, undone, redone: board.getConnectorLabels(id) };`,
+      "automatic-labels",
+    );
+    assert.ok(automatic.value.before.every((label) => label.placement?.mode === "fixed"));
+    assert.ok(automatic.value.automatic.every((label) => label.placement?.mode === "auto"));
+    assert.deepEqual(automatic.value.undone, automatic.value.before);
+    assert.deepEqual(automatic.value.redone, automatic.value.automatic);
+    const unlocked = lint();
+    const plans = unlocked.analyses.map((page) => page.labelPlan);
     assert.ok(plans.every((plan) => plan?.status === "ready"));
-    assert.ok(plans.some((plan) => plan.patches.some((patch) => patch.labels?.length)));
     const repair = execute(
       `return ${JSON.stringify(plans)}.map(plan => board.applyLayoutPlan(plan));`,
       "repair",
@@ -173,6 +225,8 @@ return { rejected, applied: board.applyLayoutPlan(plan), status: plan.status };`
           unitId,
           authored,
           before,
+          automatic,
+          unlocked,
           after,
           trunk,
           incomplete,

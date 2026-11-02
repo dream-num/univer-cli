@@ -44,45 +44,71 @@ export function sourceCliRuntime(root, evidence, inheritedEnv) {
   };
 }
 
-function recordConsumer(evidence, packages, entries) {
+export function resolveInstalledSdkPackages(root, packages) {
   const resolvers = ["apps/cli", "packages/render-preset", "packages/render-runtime-client"].map(
-    (directory) => createRequire(join(ROOT, directory, "package.json")),
+    (directory) => createRequire(join(root, directory, "package.json")),
   );
-  const installed = packages.map((input) => {
-    let entry;
-    for (const require of resolvers) {
-      try {
-        entry = realpathSync(require.resolve(input.name));
-        break;
-      } catch (error) {
-        if (error.code !== "MODULE_NOT_FOUND") throw error;
+  const pending = new Map(packages.map((input) => [input.name, input]));
+  const installed = new Map();
+  let previousSize;
+  do {
+    previousSize = pending.size;
+    for (const input of pending.values()) {
+      let entry;
+      for (const require of resolvers) {
+        try {
+          entry = realpathSync(require.resolve(input.name));
+          break;
+        } catch (error) {
+          if (error.code !== "MODULE_NOT_FOUND") throw error;
+        }
+      }
+      if (!entry) continue;
+      let directory = dirname(entry);
+      for (;;) {
+        const path = join(directory, "package.json");
+        const manifest = existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : undefined;
+        if (manifest?.name === input.name) {
+          if (manifest.version !== input.version)
+            throw new Error(`Installed SDK version mismatch: ${input.name}`);
+          const importTarget = manifest.exports?.["."]?.import ?? manifest.module;
+          const importEntry =
+            typeof importTarget === "string" ? join(directory, importTarget) : entry;
+          for (const compiledEntry of new Set([entry, importEntry])) {
+            const name = relative(directory, compiledEntry).replaceAll("\\", "/");
+            const packed = spawnSync("tar", ["-xOf", input.path, `package/${name}`], {
+              windowsHide: true,
+              maxBuffer: 64 * 1024 * 1024,
+            });
+            if (packed.status !== 0 || !packed.stdout?.equals(readFileSync(compiledEntry)))
+              throw new Error(
+                `Installed SDK entry differs from its tarball: ${input.name}/${name}`,
+              );
+          }
+          installed.set(input.name, {
+            name: input.name,
+            version: manifest.version,
+            entry,
+            entrySha256: createHash("sha256").update(readFileSync(entry)).digest("hex"),
+            importEntry,
+            importEntrySha256: createHash("sha256").update(readFileSync(importEntry)).digest("hex"),
+          });
+          resolvers.push(createRequire(path));
+          pending.delete(input.name);
+          break;
+        }
+        const parent = dirname(directory);
+        if (parent === directory) throw new Error(`Cannot identify installed SDK ${input.name}`);
+        directory = parent;
       }
     }
-    if (!entry) throw new Error(`Cannot resolve installed SDK ${input.name}`);
-    let directory = dirname(entry);
-    for (;;) {
-      const path = join(directory, "package.json");
-      const manifest = existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : undefined;
-      if (manifest?.name === input.name) {
-        if (manifest.version !== input.version)
-          throw new Error(`Installed SDK version mismatch: ${input.name}`);
-        const importTarget = manifest.exports?.["."]?.import ?? manifest.module;
-        const importEntry =
-          typeof importTarget === "string" ? join(directory, importTarget) : entry;
-        return {
-          name: input.name,
-          version: manifest.version,
-          entry,
-          entrySha256: createHash("sha256").update(readFileSync(entry)).digest("hex"),
-          importEntry,
-          importEntrySha256: createHash("sha256").update(readFileSync(importEntry)).digest("hex"),
-        };
-      }
-      const parent = dirname(directory);
-      if (parent === directory) throw new Error(`Cannot identify installed SDK ${input.name}`);
-      directory = parent;
-    }
-  });
+  } while (pending.size && pending.size < previousSize);
+  if (pending.size) throw new Error(`Cannot resolve installed SDK ${pending.keys().next().value}`);
+  return packages.map((input) => installed.get(input.name));
+}
+
+function recordConsumer(evidence, packages, entries) {
+  const installed = resolveInstalledSdkPackages(ROOT, packages);
   writeFileSync(
     join(evidence, "consumer.json"),
     JSON.stringify(

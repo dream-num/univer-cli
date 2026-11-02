@@ -1,6 +1,7 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 // @ts-expect-error The development runner is a Node.js maintenance script.
@@ -9,11 +10,118 @@ import {
   assertCompiledSdkEntry,
   captureInstalledLock,
   replaceOwnedConfiguration,
+  resolveInstalledSdkPackages,
   restoreOwnedFile,
   sourceCliRuntime,
 } from "../scripts/dev/verify-board.mjs";
 
+interface ISdkFixturePackage {
+  name: string;
+  version: string;
+  path: string;
+}
+
+interface ISdkFixture {
+  directory: string;
+  packages: ISdkFixturePackage[];
+  child: string;
+  createPackage: (
+    name: string,
+    installed?: string,
+    dependencies?: Record<string, string>,
+  ) => ISdkFixturePackage;
+}
+
+function withSdkFixture(action: (fixture: ISdkFixture) => void): void {
+  const directory = mkdtempSync(join(tmpdir(), "univer-board-dev-sdk-"));
+  if (
+    !resolve(directory).startsWith(resolve(tmpdir()) + sep) ||
+    !basename(directory).startsWith("univer-board-dev-sdk-")
+  )
+    throw new Error("SDK fixture cleanup escaped its temporary root");
+  try {
+    let sequence = 0;
+    const createPackage: ISdkFixture["createPackage"] = (name, installed, dependencies = {}) => {
+      const stage = join(directory, `stage-${++sequence}`);
+      const packageRoot = join(stage, "package");
+      mkdirSync(join(packageRoot, "dist"), { recursive: true });
+      const version = "1.2.0-dev.test";
+      writeFileSync(
+        join(packageRoot, "package.json"),
+        JSON.stringify({
+          name,
+          version,
+          type: "module",
+          dependencies,
+          exports: { ".": { import: "./dist/index.mjs", require: "./dist/index.cjs" } },
+        }),
+      );
+      writeFileSync(
+        join(packageRoot, "dist/index.mjs"),
+        `export const name = ${JSON.stringify(name)};\n`,
+      );
+      writeFileSync(
+        join(packageRoot, "dist/index.cjs"),
+        `module.exports.name = ${JSON.stringify(name)};\n`,
+      );
+      const path = join(directory, `sdk-${sequence}.tgz`);
+      expect(
+        spawnSync("tar", ["-czf", path, "-C", stage, "package"], { windowsHide: true }).status,
+      ).toBe(0);
+      if (installed) cpSync(packageRoot, installed, { recursive: true });
+      return { name, version, path };
+    };
+    const parent = join(directory, "node_modules/@univer-cli/z-parent");
+    const child = join(parent, "node_modules/@univer-cli/a-child");
+    const childPackage = createPackage("@univer-cli/a-child", child);
+    const parentPackage = createPackage("@univer-cli/z-parent", parent, {
+      [childPackage.name]: childPackage.version,
+    });
+    action({ directory, packages: [childPackage, parentPackage], child, createPackage });
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+}
+
 describe("local Board SDK development workflow", () => {
+  it("verifies a real nested SDK dependency even when its map entry precedes its parent", () => {
+    withSdkFixture(({ directory, packages, child }) => {
+      const installed = resolveInstalledSdkPackages(directory, packages);
+      expect(installed.map((entry: { name: string }) => entry.name)).toEqual(
+        packages.map(({ name }) => name),
+      );
+      expect(installed[0].entry).toBe(join(child, "dist/index.cjs"));
+      expect(installed[0].importEntry).toBe(join(child, "dist/index.mjs"));
+      expect(installed[0].importEntrySha256).toMatch(/^[a-f\d]{64}$/u);
+    });
+  });
+
+  it.each(["version", "entry"])("rejects a nested SDK with a stale %s", (kind) => {
+    withSdkFixture(({ directory, packages, child }) => {
+      if (kind === "version") {
+        const manifest = JSON.parse(readFileSync(join(child, "package.json"), "utf8"));
+        writeFileSync(
+          join(child, "package.json"),
+          JSON.stringify({ ...manifest, version: "1.0.0" }),
+        );
+      } else writeFileSync(join(child, "dist/index.mjs"), "export const stale = true;\n");
+      expect(() => resolveInstalledSdkPackages(directory, packages)).toThrow(
+        /version mismatch|differs from its tarball/u,
+      );
+    });
+  });
+
+  it("still rejects a supplied SDK package that is not installed in the consumer graph", () => {
+    withSdkFixture(({ directory, packages, createPackage }) => {
+      expect(() =>
+        resolveInstalledSdkPackages(directory, [
+          ...packages,
+          createPackage("@univer-cli/unreachable"),
+        ]),
+      ).toThrow(/Cannot resolve installed SDK @univer-cli\/unreachable/u);
+    });
+  });
+
   it("loads source daemon and workers with the same loader as the source client", () => {
     const root = fileURLToPath(new URL("../", import.meta.url));
     const runtime = sourceCliRuntime(root, join(tmpdir(), "board dev evidence"), {
