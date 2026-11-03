@@ -4,8 +4,8 @@ import { fileURLToPath } from "node:url";
 
 const clientRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const presetRoot = resolve(clientRoot, "../render-preset");
-const CONTENT_LOCALE_PACKAGE_COUNT = 68;
-const CLIENT_LOCALE_PACKAGE_COUNT = 9;
+const CONTENT_LOCALE_PACKAGE_COUNT = 64;
+const CLIENT_LOCALE_PACKAGE_COUNT = 8;
 const SDK_LOCALE_PACKAGE_COUNT = CONTENT_LOCALE_PACKAGE_COUNT + CLIENT_LOCALE_PACKAGE_COUNT;
 const locales = [
   "en-US",

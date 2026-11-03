@@ -150,7 +150,7 @@ Univer CLI is built on the [Univer SDK](https://docs.univer.ai/). This repositor
 
 A `.univer` file uses SQLite to store Units, revisions, Worktrees, local resources, and a rebuildable History index. Supported earlier formats are upgraded only after read-only identification, a byte-for-byte backup, independent candidate verification, and atomic replacement. A failed upgrade never overwrites the source. Opening the same unchanged file again reuses that backup.
 
-The bundled Univer runtime development license is a localhost application credential authorized for redistribution with this application. It rotates every 90 days and is separate from the repository software license.
+The bundled Univer runtime development license is an application credential for the `localhost`, `app`, and `127.0.0.1` domains, made of a License and the key the server SDKs verify it with, and authorized for redistribution with this application. It rotates every 90 days and is separate from the repository software license.
 
 ## Development
 

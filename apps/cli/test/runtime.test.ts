@@ -6,7 +6,11 @@ import { startServer } from "@univer/collab-gateway";
 import { UniverInstanceType } from "@univerjs/core";
 import { describe, expect, it } from "vitest";
 import { createLocalCollaborationRuntimePool } from "../src/daemon/collaboration-runtime-pool.js";
+import { UNIVER_LICENSE, UNIVER_LICENSE_KEY } from "../src/license.js";
 import { createCurrentFixture } from "./univerfile-fixture.js";
+
+// Mirror the daemon: the Gateway runs on the bundled License, not the free tier's connection limit.
+const credentials = { license: UNIVER_LICENSE, licenseKey: UNIVER_LICENSE_KEY };
 
 const projectRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 
@@ -16,6 +20,7 @@ describe("Local collaboration runtime worker", () => {
     const filename = join(root, "runtime.univer");
     await createCurrentFixture(filename);
     const gateway = await startServer({
+      credentials,
       port: 0,
       viewAssetsRoot: join(projectRoot, "dist", "browser"),
     });
@@ -47,6 +52,7 @@ describe("Local collaboration runtime worker", () => {
     const filename = join(root, "runtime-embed.univer");
     await createCurrentFixture(filename);
     const gateway = await startServer({
+      credentials,
       port: 0,
       viewAssetsRoot: join(projectRoot, "dist", "browser"),
     });
@@ -113,6 +119,7 @@ describe("Local collaboration runtime worker", () => {
     const filename = join(root, "runtime-rename.univer");
     await createCurrentFixture(filename);
     const gateway = await startServer({
+      credentials,
       port: 0,
       viewAssetsRoot: join(projectRoot, "dist", "browser"),
     });

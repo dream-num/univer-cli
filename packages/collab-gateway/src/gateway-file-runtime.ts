@@ -25,6 +25,7 @@ import {
   type UniverfileUpgradeOutcome,
   type UniverfileWorktreeStore,
 } from "@univer/univerfile-sqlite";
+import { GATEWAY_UNIT_RUNTIME } from "./unit-runtime.js";
 import {
   createTrunkUnitNameCommitMiddleware,
   createWorktreeUnitNameCommitMiddleware,
@@ -34,6 +35,17 @@ export interface GatewayFileRuntimeOptions {
   /** `.univer` SQLite filename, or `:memory:` for tests. */
   readonly dbPath?: string;
   readonly create?: boolean;
+  /**
+   * License pair for the Collaboration SDK. When omitted, the SDK reads `UNIVER_LICENSE` and
+   * `UNIVER_LICENSE_KEY` itself and falls back to its free tier.
+   */
+  readonly credentials?: UniverServerCredentials;
+}
+
+/** Contents of license.txt and licenseKey.txt; the Collaboration SDK verifies them together. */
+export interface UniverServerCredentials {
+  readonly license: string;
+  readonly licenseKey: string;
 }
 
 /**
@@ -72,6 +84,8 @@ export class GatewayFileRuntime {
 
       this.trunkService = new UniverCollabService({
         dbAdapter: this.trunkAdapter,
+        runtime: GATEWAY_UNIT_RUNTIME,
+        ...options.credentials,
       });
       this.worktreeService = new UniverCollabWorktreeService({
         trunk: {
@@ -79,6 +93,7 @@ export class GatewayFileRuntime {
           dbAdapter: this.trunkAdapter,
         },
         dbAdapter: this.worktreeAdapter,
+        runtime: GATEWAY_UNIT_RUNTIME,
       });
       this.historyService = new UniverHistoryService({
         collabService: this.trunkService,

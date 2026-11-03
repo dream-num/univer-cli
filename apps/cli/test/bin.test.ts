@@ -204,6 +204,7 @@ describe("built univer executable", () => {
         "screenshot.maxPixels",
         "update.checkOnStartup",
         "univerRuntime.license",
+        "univerRuntime.licenseKey",
       ]);
 
       const created = parseJson(

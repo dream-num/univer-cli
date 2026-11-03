@@ -162,7 +162,10 @@ document 并以非零状态退出。
 - 不复制 SDK 源码或其他 Univer repository implementation。
 - SDK package 使用一致且精确的版本集合，由 workspace manifest、`.npmrc` 和 lockfile 管理。
 - application build 记录真正留在 bundle 外部的 runtime dependency；release manifest 只包含该审计结果。
-- Runtime development license 是 90 天轮换的运行凭据，与 repository software license 分离。
+- Runtime development license 是 90 天轮换的运行凭据，与 repository software license 分离。License 与 key 位于
+  `apps/cli/src/license.ts`，browser 端 `packages/render-preset/src/license.ts` 保持同一 License。daemon 解析
+  License pair 后在进程内调用一次 `configureExchange`，并显式传给 Gateway 的 `UniverCollabService` 和 runtime
+  worker 的环境变量，不依赖子进程继承宿主环境。
 
 ## Quality gate
 
