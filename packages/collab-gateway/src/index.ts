@@ -4,5 +4,6 @@ export { UniverfileManager, UniverfileError } from "./univerfile-manager.js";
 export type { Univerfile, UniverfileManagerOptions } from "./univerfile-manager.js";
 export { CollabService } from "./collab-service.js";
 export type { CollabServiceOptions } from "./collab-service.js";
+export type { UniverServerCredentials } from "./gateway-file-runtime.js";
 export { optimizeUniverfilePath } from "./optimization/univerfile-optimizer.js";
 export type { OptimizeUniverfileCopyInput } from "./optimization/univerfile-optimizer.js";

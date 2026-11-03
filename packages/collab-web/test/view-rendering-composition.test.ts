@@ -186,10 +186,7 @@ describe("authoritative Browser View rendering composition", () => {
       "@univerjs-pro/slides-print/lib/index.css",
       "@univerjs-pro/slides-table-ui/lib/index.css"
     ]);
-    expectInOrder(styles, [
-      "@univerjs-pro/bases-ui/lib/index.css",
-      "@univerjs-pro/bases-exchange-client/lib/index.css"
-    ]);
+    expect(styles).toContain("@univerjs-pro/bases-ui/lib/index.css");
   });
 
   it("registers the standard SDK history UI for every trunk Unit type", async () => {

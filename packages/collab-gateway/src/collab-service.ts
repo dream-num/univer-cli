@@ -46,7 +46,7 @@ import type {
 } from "./compatibility-types.js";
 import { externalizeEmbeddedImages } from "./assets/externalize-embedded-images.js";
 import { CollabGatewayAssetScopeNotFoundError } from "./assets/errors.js";
-import { GatewayFileRuntime } from "./gateway-file-runtime.js";
+import { GatewayFileRuntime, type UniverServerCredentials } from "./gateway-file-runtime.js";
 import type { UniverfileAssetRecord, UniverfileOpenedAsset } from "@univer/univerfile-sqlite";
 import {
   UNIVERFILE_UNIT_METADATA_KEY,
@@ -66,6 +66,8 @@ export interface CollabServiceOptions {
   /** `.univer` file path; ":memory:" (default) for an ephemeral store. */
   readonly dbPath?: string;
   readonly create?: boolean;
+  /** License pair for the Collaboration SDK; see {@link GatewayFileRuntimeOptions.credentials}. */
+  readonly credentials?: UniverServerCredentials;
 }
 
 const INITIAL_REVISION = 1;

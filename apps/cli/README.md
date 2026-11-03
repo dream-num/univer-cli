@@ -139,13 +139,14 @@ univer lint --file ./book.univer --worktree <id> --unit <slide-id> --pages 1,3-5
 - `screenshot.maxPixels`
 - `update.checkOnStartup`
 - `univerRuntime.license`
+- `univerRuntime.licenseKey`
 
 Read commands do not create a configuration file. `set` and `unset` preserve unknown fields.
 
 - Application home is `${UNIVER_HOME:-~/.univer}`, with configuration at `${UNIVER_HOME}/config.json`.
 - `UNIVER_COLLAB_GATEWAY_PORT` overrides the Gateway port; the default is `9123`.
-- `UNIVER_LICENSE` overrides `univerRuntime.license`. If neither is set, the application uses its bundled 90-day runtime development license.
-- The bundled localhost development license is authorized for public redistribution with this application. It rotates every 90 days and is not the repository software license.
+- `UNIVER_LICENSE` overrides `univerRuntime.license`, and `UNIVER_LICENSE_KEY` overrides `univerRuntime.licenseKey`. The Web SDK uses only the License; the daemon's Collaboration SDK and Exchange verify it with its key. A configured License requires its key; if no License is configured, the application uses its bundled 90-day runtime development License and key.
+- The bundled runtime development License covers the `localhost`, `app`, and `127.0.0.1` domains and is authorized for public redistribution with this application. It rotates every 90 days and is not the repository software license.
 - Browser cache is under `${UNIVER_HOME}/browsers`. `UNIVER_RENDER_BROWSER` selects a Chrome/Chromium executable, and `UNIVER_RENDER_BROWSER_CACHE` overrides the cache root.
 - `daemon status` is read-only. The application manages only daemon processes whose identity it verifies as its own.
 - Daemon startup errors retain their original code and detail. Gateway state, origin, and Viewer URL appear in daemon status.

@@ -34,6 +34,7 @@ describe("application config command", () => {
         expect.objectContaining({ key: "screenshot.maxPixels", source: "unset" }),
         expect.objectContaining({ key: "update.checkOnStartup", source: "unset" }),
         expect.objectContaining({ key: "univerRuntime.license", source: "unset" }),
+        expect.objectContaining({ key: "univerRuntime.licenseKey", source: "unset" }),
       ]),
     );
     expect(JSON.stringify(entries)).not.toContain("univerHost");

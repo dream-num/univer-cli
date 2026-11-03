@@ -105,6 +105,7 @@ describe("version-matched Board composition", () => {
     );
     expect(main).toContain("@univerjs-pro/collaboration-client-ui/lib/index.css");
     expect(viewerLocale).toContain("@univerjs-pro/collaboration-client-ui/locale/en-US");
-    expect(viewerLocale).toContain("@univerjs-pro/exchange-client/locale/en-US");
+    // The Exchange client packages no longer ship locales or UI; only their APIs remain.
+    expect(viewerLocale).not.toContain("@univerjs-pro/exchange-client/locale/en-US");
   });
 });

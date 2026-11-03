@@ -6,6 +6,7 @@ import { resolve } from "node:path";
 import sirv from "sirv";
 import { createRequestListener } from "./transport/http.js";
 import { attachGatewayWebSockets } from "./transport/ws.js";
+import type { UniverServerCredentials } from "./gateway-file-runtime.js";
 import type { UniverfileManagerOptions } from "./univerfile-manager.js";
 import { UniverfileManager } from "./univerfile-manager.js";
 
@@ -26,6 +27,12 @@ export interface StartServerOptions {
    * while the root URL still opens the Viewer.
    */
   readonly viewIndexFile?: string;
+  /**
+   * License pair for the Collaboration SDK. When omitted, the SDK reads `UNIVER_LICENSE` and
+   * `UNIVER_LICENSE_KEY` itself. Exchange keeps one credential default per process, so the host
+   * process configures it (`configureExchange`) before the Gateway can run an import or export.
+   */
+  readonly credentials?: UniverServerCredentials;
 }
 
 export interface StartedServer {
@@ -48,6 +55,7 @@ export async function startServer(options: StartServerOptions = {}): Promise<Sta
   const managerOptions: UniverfileManagerOptions = {
     ...(options.allowedRoot === undefined ? {} : { allowedRoot: options.allowedRoot }),
     ...(options.idleTtlMs === undefined ? {} : { idleTtlMs: options.idleTtlMs }),
+    ...(options.credentials === undefined ? {} : { credentials: options.credentials }),
   };
   const manager = new UniverfileManager(managerOptions);
   const apiRequestListener = createRequestListener(manager);

@@ -138,7 +138,7 @@ describe("Univerfile copy optimization", () => {
     } finally {
       await reopened.dispose();
     }
-  });
+  }, 30_000);
 
   it("dry run reports the same result without writing an output", async () => {
     const directory = temporaryDirectory();

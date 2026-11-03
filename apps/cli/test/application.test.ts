@@ -3,13 +3,16 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import type { UniverCollaborationRuntimePool } from "@univer-cli/univer-collaboration-runtime-pool";
+import { CollabService } from "@univer/collab-gateway";
+import { getExportQuota } from "@univerjs-pro/exchange-node";
 import { UniverInstanceType } from "@univerjs/core";
 import {
   createApplicationConfig,
   resolveGatewayPort,
   resolveRuntimeLicense,
+  resolveServerCredentials,
 } from "../src/environment/config.js";
-import { UNIVER_LICENSE } from "../src/license.js";
+import { UNIVER_LICENSE, UNIVER_LICENSE_KEY } from "../src/license.js";
 import { readApplicationDaemonStatus } from "../src/daemon/status.js";
 import { createDaemonControlWithLegacyTakeover } from "../src/daemon/control.js";
 import { resolveApplicationPaths, resolveDaemonSocketPath } from "../src/environment/paths.js";
@@ -53,6 +56,54 @@ describe("Local Univer application adapters", () => {
       future: { flag: true },
     });
     expect(paths.socketPath).toBe(resolveDaemonSocketPath(home));
+  });
+
+  it("resolves the server License pair without mixing sources", async () => {
+    const home = await temporaryDirectory();
+    const config = createApplicationConfig(resolveApplicationPaths({ UNIVER_HOME: home }));
+    const bundled = { license: UNIVER_LICENSE, licenseKey: UNIVER_LICENSE_KEY };
+
+    expect(await resolveServerCredentials(config, {})).toEqual(bundled);
+    expect(
+      await resolveServerCredentials(config, { UNIVER_LICENSE: " ", UNIVER_LICENSE_KEY: " " }),
+    ).toEqual(bundled);
+    await expect(
+      resolveServerCredentials(config, { UNIVER_LICENSE: "env-license" }),
+    ).rejects.toMatchObject({
+      code: "CONFIG_INVALID_VALUE",
+    });
+    expect(
+      await resolveServerCredentials(config, {
+        UNIVER_LICENSE: "env-license",
+        UNIVER_LICENSE_KEY: " env-key ",
+      }),
+    ).toEqual({ license: "env-license", licenseKey: "env-key" });
+
+    await config.setFromText({ key: "univerRuntime.license", text: "config-license" });
+    await expect(resolveServerCredentials(config, {})).rejects.toMatchObject({
+      code: "CONFIG_INVALID_VALUE",
+    });
+    await config.setFromText({ key: "univerRuntime.licenseKey", text: "config-key" });
+    expect(await resolveServerCredentials(config, {})).toEqual({
+      license: "config-license",
+      licenseKey: "config-key",
+    });
+  });
+
+  it("bundles a License pair the Collaboration SDK and Exchange accept", async () => {
+    const credentials = { license: UNIVER_LICENSE, licenseKey: UNIVER_LICENSE_KEY };
+    const collab = new CollabService({ credentials });
+    try {
+      expect(collab.runtime.trunkService.license.status).toBe("valid");
+      expect(collab.runtime.trunkService.license.domains).toEqual([
+        "localhost",
+        "app",
+        "127.0.0.1",
+      ]);
+    } finally {
+      await collab.dispose();
+    }
+    expect((await getExportQuota(credentials)).licenseStatus).toBe("valid");
   });
 
   it("does not rewrite existing cache, update, or telemetry identity state", async () => {

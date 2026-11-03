@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { chmod, cp, readFile, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
 import { EXTERNAL_DEPENDENCY_WHITELIST, externalDependencyAudit } from "./release-dependencies.mjs";
@@ -122,9 +122,14 @@ const nodeBuild = await build({
 for (const entryName of ["bin", "daemon", "runtime-worker"]) {
   await chmod(join(projectRoot, "dist", `${entryName}.js`), 0o755);
 }
+const collabServiceWorkerBuild = await buildCollabServiceUnitRuntimeWorker(nodeBuild.metafile);
 await writeFile(
   join(projectRoot, "dist", "release-dependencies.json"),
-  `${JSON.stringify(externalDependencyAudit([nodeBuild.metafile]), null, 2)}\n`,
+  `${JSON.stringify(
+    externalDependencyAudit([nodeBuild.metafile, collabServiceWorkerBuild.metafile]),
+    null,
+    2,
+  )}\n`,
   "utf8",
 );
 if (process.env["UNIVER_CLI_DUMP_METAFILE"] === "1") {
@@ -147,3 +152,41 @@ await cp(
   join(dirname(poolEntryPath), "worker-child.mjs"),
   join(projectRoot, "dist", "chunks", "worker-child.mjs"),
 );
+
+// The Collaboration Service runs Unit transforms in a worker thread that it starts from
+// `join(__dirname, "unit-runtime-worker.cjs")`. Bundling moves the Service out of its package, so
+// that worker must sit next to whichever output now holds the Service. It requires the SDK
+// packages that the bundle inlines and the release never installs, so it ships as its own
+// self-contained CommonJS bundle.
+async function buildCollabServiceUnitRuntimeWorker(metafile) {
+  const serviceOutputs = Object.entries(metafile.outputs)
+    .filter(([, output]) =>
+      Object.keys(output.inputs).some((input) =>
+        /\/@univerjs-pro\/collaboration-service\/dist\/index\.c?js$/u.test(input),
+      ),
+    )
+    .map(([outputPath]) => outputPath);
+  if (serviceOutputs.length !== 1) {
+    throw new Error(
+      `Expected the Collaboration Service in exactly one output, found ${String(serviceOutputs.length)}`,
+    );
+  }
+  const gatewayRequire = createRequire(
+    join(repositoryRoot, "..", "packages", "collab-gateway", "package.json"),
+  );
+  const serviceEntryPath = gatewayRequire.resolve("@univerjs-pro/collaboration-service");
+  return await build({
+    bundle: true,
+    entryPoints: [join(dirname(serviceEntryPath), "unit-runtime-worker.cjs")],
+    external: EXTERNAL_DEPENDENCY_WHITELIST,
+    format: "cjs",
+    legalComments: "none",
+    metafile: true,
+    minify: true,
+    // Metafile paths are relative to the working directory esbuild ran in.
+    outfile: join(dirname(resolve(serviceOutputs[0])), "unit-runtime-worker.cjs"),
+    platform: "node",
+    sourcemap: false,
+    target: "node22.12",
+  });
+}

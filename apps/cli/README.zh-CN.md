@@ -159,14 +159,17 @@ resource manifest，并将下载缓存写入 `${UNIVER_HOME}/cache/resources`。
 - `screenshot.maxPixels`
 - `update.checkOnStartup`
 - `univerRuntime.license`
+- `univerRuntime.licenseKey`
 
 读取 command 不创建配置文件；`set/unset` 保留未知字段。
 
 - Application home 是 `${UNIVER_HOME:-~/.univer}`，配置文件为 `${UNIVER_HOME}/config.json`。
 - `UNIVER_COLLAB_GATEWAY_PORT` 覆盖 Gateway port，默认值为 `9123`。
-- `UNIVER_LICENSE` 覆盖 `univerRuntime.license`；两者都未设置时使用 application 内置的 90 天 Runtime
-  development license。
-- 内置的 localhost Runtime development license 已获准随本 application 公开再分发，按 90 天周期更新；它不是 repository software license。
+- `UNIVER_LICENSE` 覆盖 `univerRuntime.license`，`UNIVER_LICENSE_KEY` 覆盖 `univerRuntime.licenseKey`。Web SDK
+  只使用 License；daemon 中的 Collaboration SDK 与 Exchange 用对应 key 校验 License。配置了 License 时必须同时
+  配置其 key；未配置 License 时使用 application 内置的 90 天 Runtime development License 与 key。
+- 内置的 Runtime development License 覆盖 `localhost`、`app` 与 `127.0.0.1` domain，已获准随本 application 公开再分发，按 90
+  天周期更新；它不是 repository software license。
 - browser cache 位于 `${UNIVER_HOME}/browsers`；`UNIVER_RENDER_BROWSER` 可指定 Chrome/Chromium，
   `UNIVER_RENDER_BROWSER_CACHE` 可覆盖 cache path。
 - `daemon status` 是只读检查；application 只管理身份验证属于自身的 daemon process。
