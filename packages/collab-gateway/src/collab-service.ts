@@ -61,6 +61,7 @@ import {
 import { unitAdapter } from "./univer/unit-types.js";
 import { KeyedLock } from "./util/lock.js";
 import { GatewayExchangeService } from "./exchange/gateway-exchange-service.js";
+import { GATEWAY_UNIT_RUNTIME } from "./unit-runtime.js";
 
 export interface CollabServiceOptions {
   /** `.univer` file path; ":memory:" (default) for an ephemeral store. */
@@ -174,7 +175,7 @@ export class CollabService {
       throw new Error(`Unit ${unitId} was not found with type ${String(type)}`);
     }
     const loadData = await this._getTrunkLoadDataWithBlocks(unitId, type, 0, "gateway-exchange");
-    const materializer = new UnitSnapshotMaterializer();
+    const materializer = new UnitSnapshotMaterializer(GATEWAY_UNIT_RUNTIME);
     try {
       return await materializer.materializeSnapshot(loadData);
     } finally {
@@ -961,7 +962,7 @@ export class CollabService {
             unit.type,
             unit.revision,
           );
-    const materializer = new UnitSnapshotMaterializer();
+    const materializer = new UnitSnapshotMaterializer(GATEWAY_UNIT_RUNTIME);
     try {
       const materialized = await materializer.materializeSnapshot(loadData);
       return {

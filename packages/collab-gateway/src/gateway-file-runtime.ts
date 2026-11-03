@@ -25,6 +25,7 @@ import {
   type UniverfileUpgradeOutcome,
   type UniverfileWorktreeStore,
 } from "@univer/univerfile-sqlite";
+import { GATEWAY_UNIT_RUNTIME } from "./unit-runtime.js";
 import {
   createTrunkUnitNameCommitMiddleware,
   createWorktreeUnitNameCommitMiddleware,
@@ -83,6 +84,7 @@ export class GatewayFileRuntime {
 
       this.trunkService = new UniverCollabService({
         dbAdapter: this.trunkAdapter,
+        runtime: GATEWAY_UNIT_RUNTIME,
         ...options.credentials,
       });
       this.worktreeService = new UniverCollabWorktreeService({
@@ -91,6 +93,7 @@ export class GatewayFileRuntime {
           dbAdapter: this.trunkAdapter,
         },
         dbAdapter: this.worktreeAdapter,
+        runtime: GATEWAY_UNIT_RUNTIME,
       });
       this.historyService = new UniverHistoryService({
         collabService: this.trunkService,
