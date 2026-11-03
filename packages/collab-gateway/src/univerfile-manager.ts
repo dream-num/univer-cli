@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, realpathSync } from "node:fs";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
 import { CollabService } from "./collab-service.js";
+import type { UniverServerCredentials } from "./gateway-file-runtime.js";
 import { EventHub } from "./transport/events.js";
 
 /** One addressable `.univer` file: its normalized identity plus the resident authority. */
@@ -43,6 +44,8 @@ export interface UniverfileManagerOptions {
   readonly idleTtlMs?: number;
   /** Factory for the per-file authority; injectable so tests can avoid booting real Univer. */
   readonly createCollab?: (dbPath: string, create: boolean) => CollabService;
+  /** License pair handed to every default per-file authority's Collaboration SDK. */
+  readonly credentials?: UniverServerCredentials;
 }
 
 interface UniverfileEntry {
@@ -67,8 +70,15 @@ export class UniverfileManager {
     this._allowedRoot =
       options.allowedRoot === undefined ? undefined : normalizePath(options.allowedRoot);
     this._idleTtlMs = options.idleTtlMs;
+    const credentials = options.credentials;
     this._createCollab =
-      options.createCollab ?? ((dbPath, create) => new CollabService({ dbPath, create }));
+      options.createCollab ??
+      ((dbPath, create) =>
+        new CollabService({
+          dbPath,
+          create,
+          ...(credentials === undefined ? {} : { credentials }),
+        }));
 
     if (this._idleTtlMs !== undefined && this._idleTtlMs > 0) {
       const ttl = this._idleTtlMs;

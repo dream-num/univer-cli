@@ -23,7 +23,7 @@ describe("Unit catalog name commit middleware", () => {
           ...(await service.createUnit(type, { name: `${label} old` })),
         })),
       );
-      const worktree = service.createWorktree("rename-agent");
+      const worktree = await service.createWorktree("rename-agent");
 
       for (const unit of units) {
         await service.submitWorktreeMutations(

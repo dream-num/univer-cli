@@ -32,7 +32,7 @@ describe("Board unit support", () => {
   it("keeps a worktree-created Board outside trunk until merge", async () => {
     const svc = new CollabService();
     try {
-      const worktree = svc.createWorktree("agent-board");
+      const worktree = await svc.createWorktree("agent-board");
       const committed = await changeWorktree(svc, worktree.worktreeId, "add board", {
         create: [{ type: BOARD, name: "Board" }]
       });

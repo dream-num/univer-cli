@@ -1,6 +1,6 @@
 import type { DaemonServer, JsonValue } from "@univer-cli/daemon";
 import type { StartedServer } from "@univer/collab-gateway";
-import type { UniverfileUpgradeResult } from "@univer/univerfile-sqlite";
+import type { UniverfileUpgradeOutcome } from "@univer/univerfile-sqlite";
 import { GATEWAY_INFO_METHOD } from "../../daemon/protocol.js";
 import {
   parsePathRequest,
@@ -80,7 +80,7 @@ export function registerUniverfileHandlers(input: {
     } as unknown as JsonValue;
   });
 
-  function readUpgrade(path: string, upgrade: UniverfileUpgradeResult): UniverfileUpgradeResult {
+  function readUpgrade(path: string, upgrade: UniverfileUpgradeOutcome): UniverfileUpgradeOutcome {
     if (upgrade.status !== "upgraded" || reportedUpgrades.has(path)) {
       return { status: "unchanged", format: "v3" };
     }

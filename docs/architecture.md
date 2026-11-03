@@ -35,7 +35,7 @@ Univer SDK 提供 Unit 数据模型、Facade、formula、render engine、Office 
 
 Collaboration SDK 提供 changeset、Snapshot、Worktree persistence contract、Service、Endpoint、Transport、
 browser client 和 runtime integration。`packages/collab-gateway` 与
-`packages/univerfile-sqlite` 实现本地 transport 和 database adapter，但不重新定义 SDK 的协作语义。
+`packages/univerfile-sqlite` 实现本地 transport 和 persistence store，但不重新定义 SDK 的协作语义。
 
 ### Univer CLI SDK
 
@@ -63,7 +63,7 @@ univer command
        -> Collaboration Gateway
             -> one GatewayFileRuntime per opened .univer
                  -> Collaboration SDK services
-                 -> @univer/univerfile-sqlite adapters
+                 -> @univer/univerfile-sqlite stores
        -> CLI SDK runtime worker pool
             -> headless Univer runtime worker
 
@@ -93,7 +93,7 @@ Gateway 按 `.univer` runtime 隔离 Viewer Ribbon 使用的 `source=1` exchange
 
 Gateway 的 Trunk、Worktree 与 snapshot materialization 显式使用 Collaboration SDK 的 in-process execution，复用 application daemon 的进程边界，避免每个文件嵌套创建 runtime worker pool。CLI Facade 执行仍由独立 runtime worker 承担。
 
-Gateway 为 trunk revision 组合 Collaboration SDK History Service 与 Endpoint。`@univer/univerfile-sqlite` 在共享文件 connection 上实现 History persistence contract；History 表只是由 core Unit/changeset 重建的派生索引：Unit 缺少记录时 History Service 在首次读取时重建，落后于 trunk head 时在下一次提交时追平；文件升级和 optimizer 保证不留下超过 trunk head 的边界。Viewer 按 Unit 类型为 trunk Sheet、Doc、Slide、Base 和 Board 注册各自的标准 SDK History UI 插件；Worktree 与 merge preview 不呈现这项能力。
+Gateway 为 trunk revision 组合 Collaboration SDK History Service 与 Endpoint。`@univer/univerfile-sqlite` 在共享文件 connection 上实现 History persistence contract；History 表只是由 core Unit/changeset 重建的派生索引：Unit 缺少记录时 History Service 在首次读取时重建，落后于 trunk head 时在下一次提交时追平；文件升级保证不留下超过 trunk head 的边界；optimizer 只删除 trunk 中间 snapshot，不改动 History 记录。Viewer 按 Unit 类型为 trunk Sheet、Doc、Slide、Base 和 Board 注册各自的标准 SDK History UI 插件；Worktree 与 merge preview 不呈现这项能力。
 
 Viewer 的 Unit comparison 在创建时固定左右 ref、Unit 集合和各自 head。Gateway 通过 Collaboration SDK
 把每侧物化为最终 snapshot；history 连续时同时返回从共同 Trunk revision 到两侧 head 的 changeset path，
@@ -170,7 +170,10 @@ document 并以非零状态退出。
 - 不复制 SDK 源码或其他 Univer repository implementation。
 - SDK package 使用一致且精确的版本集合，由 workspace manifest、`.npmrc` 和 lockfile 管理。
 - application build 记录真正留在 bundle 外部的 runtime dependency；release manifest 只包含该审计结果。
-- Runtime development license 是 90 天轮换的运行凭据，与 repository software license 分离。
+- Runtime development license 是 90 天轮换的运行凭据，与 repository software license 分离。License 与 key 位于
+  `apps/cli/src/license.ts`，browser 端 `packages/render-preset/src/license.ts` 保持同一 License。daemon 解析
+  License pair 后在进程内调用一次 `configureExchange`，并显式传给 Gateway 的 `UniverCollabService` 和 runtime
+  worker 的环境变量，不依赖子进程继承宿主环境。
 
 ## Quality gate
 

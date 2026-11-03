@@ -27,7 +27,7 @@ describe("Worktree lifecycle", () => {
   it("uses the SDK draft-to-ready transition without a logical commit token", async () => {
     const { svc, unitId } = await withSheet();
     try {
-      const worktree = svc.createWorktree();
+      const worktree = await svc.createWorktree();
       await changeWorktree(svc, worktree.worktreeId, "initial", {
         modify: { [unitId]: mutations(unitId) },
       });
@@ -47,7 +47,7 @@ describe("Worktree lifecycle", () => {
   it("reopen returns a ready Worktree to draft and permits further changes", async () => {
     const { svc, unitId } = await withSheet();
     try {
-      const worktree = svc.createWorktree();
+      const worktree = await svc.createWorktree();
       await svc.ready(worktree.worktreeId);
       expect((await svc.reopen(worktree.worktreeId)).status).toBe("draft");
 
@@ -65,10 +65,10 @@ describe("Worktree lifecycle", () => {
   it("reopen rejects draft and terminal Worktrees", async () => {
     const { svc } = await withSheet();
     try {
-      const draft = svc.createWorktree();
+      const draft = await svc.createWorktree();
       await expect(svc.reopen(draft.worktreeId)).rejects.toThrow(/draft.*cannot reopen/i);
 
-      const discarded = svc.createWorktree();
+      const discarded = await svc.createWorktree();
       await svc.discard(discarded.worktreeId);
       await expect(svc.reopen(discarded.worktreeId)).rejects.toThrow(/discarded.*cannot reopen/i);
     } finally {
@@ -79,7 +79,7 @@ describe("Worktree lifecycle", () => {
   it("discard freezes Worktree data and leaves trunk unchanged", async () => {
     const { svc, unitId } = await withSheet();
     try {
-      const worktree = svc.createWorktree();
+      const worktree = await svc.createWorktree();
       await changeWorktree(svc, worktree.worktreeId, "edit", {
         modify: { [unitId]: mutations(unitId) },
       });
@@ -103,7 +103,7 @@ describe("Worktree lifecycle", () => {
   it("does not change a merged Worktree into discarded", async () => {
     const { svc } = await withSheet();
     try {
-      const worktree = svc.createWorktree();
+      const worktree = await svc.createWorktree();
       await changeWorktree(svc, worktree.worktreeId, "new", {
         create: [{ type: UniverInstanceType.UNIVER_SHEET, name: "X" }],
       });

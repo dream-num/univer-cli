@@ -81,7 +81,7 @@ describe("Slide unit support", () => {
     const svc = new CollabService();
     try {
       await svc.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "S" });
-      const worktree = svc.createWorktree("agent-slide");
+      const worktree = await svc.createWorktree("agent-slide");
       const r = await changeWorktree(svc, worktree.worktreeId, "add deck", {
         create: [{ type: SLIDE, name: "Deck" }]
       });

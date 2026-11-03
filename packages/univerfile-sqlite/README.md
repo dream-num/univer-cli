@@ -1,44 +1,113 @@
-# @univer/univerfile-sqlite
+# univerfile-sqlite
 
-`.univer` 的 SQLite persistence package。它提供：
+[English](README.md) | [简体中文](README.zh-CN.md)
 
-- current v3 schema 与必要 schema 格式识别；
-- Collaboration SDK database adapter；
-- Worktree persistence adapter；
-- History boundary adapter；
-- Asset store；
-- v0/v1/v2 supported input reader；
-- v0/v1 candidate 内的 legacy Base snapshot、block 与 changeset 协同升级；
-- backup、candidate、verification 与 atomic replacement 协调。
+A univerfile (`.univer`) is a local-first container for Univer documents. One SQLite file holds a
+set of Sheet, Doc, Slide, Base, and Board Units, the revision history of each Unit, Worktrees that
+keep draft changes apart from trunk until they are merged, and the embedded assets the content
+uses. An application usually runs the Collaboration SDK services in a local process on top of this
+package to get revisions, History, Worktrees, and merges, while the data stays in a single file
+that can be copied, backed up, or moved. Univer CLI and the DSH Univer Office plugin both work this
+way, with the services hosted by a local Gateway.
 
-调用方通过 `openUniverfileSQLite()` 或 `createUniverfileSQLite()` 获得共享同一 connection 的 adapter。打开 v3
-是无升级副作用的 operation；打开受支持输入格式时，在替换 source 前保留 byte-for-byte backup 并验证
-candidate。再次打开同一份未变化的文件时复用已有的相同字节 backup。Windows 上迁移在 helper 进程中完成，
-持锁的父进程在 helper 退出后替换 source。
+`@univer/univerfile-sqlite` stores `.univer` files in SQLite through the built-in `node:sqlite`
+driver. It owns the current schema, recognizes and upgrades older formats, and gives the
+Collaboration SDK services the stores they persist through.
 
-Windows 的只读格式识别也在 helper 中完成，父进程不为检测 prepare statement。Source／Vitest 开发入口使用本
-package 声明的 `tsx` dev loader，compiled CLI 复用 `upgrade-worker.js`；缺少可用 helper 时明确失败，
-不静默回退为 in-process 迁移。失败 candidate 由父进程在 helper 退出后删除，保留原始迁移错误与完整 source。
-libsql 0.5.29 的 prepared statement 仍可能在普通 connection `dispose()` 后持有 Windows 文件锁；需要删除
-已打开文件时先停止拥有它的 daemon，本 helper 不改变长期 content connection 的生命周期。
+## Usage
 
-存在 `collaboration_schema_versions` 时，component version 是格式识别的权威来源。格式检查只要求对应版本的
-必要表与列；额外 SQLite 对象不会使 current v3 无效。升级只把受支持内容写入 candidate，source-only
-表、索引、trigger 与 view 不进入 current v3；它们仍完整保存在 byte-for-byte backup 中。
+```ts
+import { openUniverfile } from '@univer/univerfile-sqlite'
 
-Base 内容升级只属于 v0/v1 的受控迁移。它不改变 SQLite schema，也不会把 v2 或 v3 文件当作 repair target。
+const file = openUniverfile(path) // or openUniverfile(path, { create: true })
+try {
+  new UniverCollabService({ dbAdapter: file.trunk, runtime, logger })
+  // file.worktree, file.history, and file.assets work the same way
+} finally {
+  await file.close()
+}
+```
 
-Core 与 Worktree adapter 在提交 changeset 时把 `created_at_ms` 写为 Unix 毫秒，payload 的 `createTime` 写为它的
-整秒，并从 Unit record 持久化
-`creatorID` 与 `createdAt`。各版本差异和 v2 到 v3 的迁移规则见
-[`.univer` 数据兼容](../../docs/data-compatibility.md)。
+`openUniverfile` returns a file in the current format (v3) or throws a `UniverfileError`. Opening
+an older file upgrades it first and reports the result in `file.upgrade`. `:memory:` always
+creates an in-memory file.
 
-本 package 不负责 CLI command、Gateway transport、Viewer、daemon 或 headless content runtime。
+The handle exposes one store per functional area, matching the Collaboration SDK:
 
-Worktree Unit 删除仍使用应用现有的 `deleteUnit` 流程。SDK 的可撤销移除接口 `setUnitRemoved`
-在此 adapter 中返回 `INVALID_REQUEST`，不会写入移除状态或改变文件格式。
+| Store      | Interface                                                                                     |
+| ---------- | --------------------------------------------------------------------------------------------- |
+| `trunk`    | `IDatabaseAdapter`, plus `listUnits()`, `listUnitRecords()`, `listSnapshotRevisions()`, and `deleteSnapshots()` |
+| `worktree` | `IWorktreeDatabaseAdapter`, plus `listWorktrees()`, `listWorktreeUnits()`, `listDeletedUnits()`, `deleteUnit()`, and `deleteWorktree()` |
+| `history`  | `IHistoryDatabaseAdapter`                                                                     |
+| `assets`   | `store()`, `open()`, and `publishWorktreeAssets()` for content-addressed embedded assets      |
 
-```bash
+The SDK services call the contract methods; the application calls the extensions directly. A local
+file does not support the SDK's revocable `setUnitRemoved`, which returns `INVALID_REQUEST`;
+`worktree.deleteUnit()` removes a Unit from a Worktree instead. Application metadata reaches the
+stores through the SDK call's `customData` under `UNIVERFILE_UNIT_METADATA_KEY`,
+`UNIVERFILE_WORKTREE_METADATA_KEY`, and `UNIVERFILE_WORKTREE_CHANGE_METADATA_KEY`.
+
+## Maintenance operations
+
+Each operation keeps the file valid on its own; the application decides which ones to combine
+and in what order.
+
+| Operation                                   | Effect                                                                                     |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `copyUniverfile(source, target)`            | Writes a consistent copy through a read-only connection. The source is never upgraded; `target` must not exist |
+| `worktree.deleteWorktree(id)`               | Deletes a Worktree with its Units, changesets, seeds, merge artifacts, scoped assets, and blobs no other asset uses. Refuses a merging Worktree |
+| `trunk.listSnapshotRevisions()`             | Lists the stored snapshot revisions of every Unit, including soft-deleted ones             |
+| `trunk.deleteSnapshots(unitId, revisions)`  | Deletes snapshots and the Sheet blocks only they referenced. Changesets stay, so every revision remains readable; the earliest snapshot cannot be deleted |
+| `file.verify()`                             | Checks integrity and foreign keys, reads every Unit and Worktree back, and checks every asset digest |
+| `file.vacuum()`                             | Rebuilds the file to reclaim the space of deleted rows                                      |
+
+## Behaviour
+
+- All stores of a handle share one SQLite connection. Keep one handle per path in a process.
+- `close()` finalizes every statement before it closes the connection. Once it resolves, the file
+  can be renamed or deleted, including on Windows.
+- Processes that open the same file at once coordinate through SQLite's file locks, waiting up to
+  5 s for a writer, and through an `.upgrade.lock` directory for upgrades. Only one of them upgrades.
+- An upgrade identifies the format read-only, writes a byte-identical backup next to the file,
+  converts a copy, verifies it, checks that the source did not change, and then replaces the
+  source. Any failure before the replacement leaves the source unchanged and the backup in place.
+  Reopening an unchanged file reuses its existing backup.
+- Node 22 and 24 print an `ExperimentalWarning` to stderr when `node:sqlite` first loads. It does
+  not affect behaviour, and the package leaves process warnings alone.
+
+## Formats
+
+| Format | core | worktree | assets       | history      |
+| ------ | ---- | -------- | ------------ | ------------ |
+| v0     | no component version table | | |              |
+| v1     | 1    | 1        | 1 or missing | 1 or missing |
+| v2     | 1    | 2        | 1            | 1 or missing |
+| v3     | 2    | 3        | 1            | 2            |
+
+v3 is current. Unknown components, unknown versions, and mixed combinations are rejected with
+`UNSUPPORTED_SCHEMA`.
+
+## Layout
+
+| Directory  | Responsibility                                                                            |
+| ---------- | ----------------------------------------------------------------------------------------- |
+| `driver/`  | The `node:sqlite` connection and transactions; the only module that imports the driver     |
+| `codec/`   | JSON encoding of payload columns, including binary fields                                  |
+| `schema/`  | The only definition of the current tables, indexes, and component versions                 |
+| `stores/`  | Reads and writes on a current file; they never create tables                               |
+| `upgrade/` | Everything about older formats: detection, readers, backup, lock, verification, replacement |
+
+Dependencies point down this list from `open.ts`: `upgrade/` builds on `schema/` and verifies
+through `stores/`, `stores/` use `driver/` and `codec/`, and `schema/` describes only the current
+format.
+
+## Development
+
+```sh
 pnpm --filter @univer/univerfile-sqlite test
 pnpm --filter @univer/univerfile-sqlite typecheck
 ```
+
+Tests open files only through `openUniverfile`. `test/fixtures/` holds files written by released
+CLIs for every older format, and `test/support/legacy.ts` builds files with precise or broken
+content from frozen schemas; `test/fixtures/README.md` records how each fixture was produced.

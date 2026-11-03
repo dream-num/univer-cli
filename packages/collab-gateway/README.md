@@ -2,7 +2,7 @@
 
 面向多个 `.univer` 文件的本地 Collaboration SDK Gateway。每个已打开文件由 `GatewayFileRuntime` 组合：
 
-- `@univer/univerfile-sqlite` database adapter 与 Asset store；
+- `@univer/univerfile-sqlite` 的 trunk、worktree、history 与 assets store；
 - Collaboration SDK Service、Endpoint 和 Node Transport；
 - Unit/Worktree control plane；
 - lifecycle WebSocket；

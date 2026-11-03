@@ -14,7 +14,7 @@ application 显式打开对应路径时安全升级到 v3。
 - candidate 使用当前 SQLite schema 写入，并通过 storage 与 runtime 的公开读取能力验证。
 - 输入 source 中不属于受支持 schema 的额外表、索引、trigger 与 view 不写入 candidate；byte-for-byte backup
   保留完整 source。current v3 只要求必要 schema，额外 SQLite 对象不会触发升级或清理副作用。
-- replace 前的任何失败都不得改变源路径；失败的 candidate 会被清理，backup 保留。Windows 上 libsql 关闭连接后仍可能占着文件，同一进程内替换会失败，因此迁移放在 helper 进程里，等该进程退出后由持锁的父进程替换原文件。
+- replace 前的任何失败都不得改变源路径；失败的 candidate 会被清理，backup 保留。`node:sqlite` 关闭连接时先 finalize 全部 statement，因此持锁进程关闭 candidate 后即可在同一进程内替换原文件，Windows 上也不例外。
 - v0/v1 candidate 会把 Base 内容 schema v1 同步升级为当前 schema v2，包括 checkpoint、sheet block、
   Worktree seed/merge artifact，以及依赖旧字段位置的 Base changeset。v2 source 的 Base 内容已经是当前
   schema，不作为 repair target。
@@ -51,11 +51,15 @@ v3 与 v2 的差异来自 Collaboration SDK `1.0.0` 的 persistence contract，�
 
 ## 当前格式
 
-`@univer/univerfile-sqlite` 拥有 v3 schema、格式识别、v0/v1/v2 reader、升级协调和验证逻辑。调用方通过统一的
-`openUniverfileSQLite()` seam 获得共享 connection 的 Collaboration SDK database adapters、History adapter
-与 Asset store。`history@2` 是可重建的派生索引：History Service 在 Unit 没有记录时从权威 trunk
-Unit/changeset 初始化，在下一次提交时补齐落后的 Unit。升级和 optimizer 保证不留下超过 core head 的
-记录。这些操作都不改变 core revision。
+`@univer/univerfile-sqlite` 拥有 v3 schema、格式识别、v0/v1/v2 reader、升级协调和验证逻辑，通过内置
+`node:sqlite` 访问文件。调用方通过统一的 `openUniverfile()` 获得共享 connection 的 `trunk`、`worktree`、
+`history` 与 `assets` store；前三者实现 Collaboration SDK 的 persistence contract。`history@2` 是可重建的
+派生索引：History Service 在 Unit 没有记录时从权威 trunk Unit/changeset 初始化，在下一次提交时补齐落后的
+Unit。升级保证不留下超过 core head 的记录。这些操作都不改变 core revision。
+
+`univer optimize` 只组合 package 的原子维护操作：在副本上删除终态 Worktree（`worktree.deleteWorktree`）、删除
+trunk 中间 snapshot（`trunk.deleteSnapshots`，保留每个 Unit 最早与最新的 snapshot 及全部 changeset），
+然后 `verify` 与 `vacuum`。它不改变 core revision、changeset 或 History 记录。
 
 升级结果包含 source/target format、backup path/hash、Unit/Worktree/Asset verification count、无法带入当前
 模型的 logical history，以及 Worktree 状态规范化数量。Gateway、daemon 和 command handler 不直接操作

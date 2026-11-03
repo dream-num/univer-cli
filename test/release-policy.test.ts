@@ -62,7 +62,7 @@ describe("release policy", () => {
   it("validates the reviewed release manifest", () => {
     const manifest = {
       channel: "insiders",
-      dependencies: { conditional: [], required: ["libsql"] },
+      dependencies: { conditional: [], required: ["ws"] },
       integrity: "sha512-dGVzdA==",
       npmTag: "insiders",
       package: RELEASE_PACKAGE_NAME,

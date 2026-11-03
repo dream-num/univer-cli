@@ -11,8 +11,7 @@ export const UNIVERFILE_OPTIMIZE_METHOD = "univer.univerfile.optimize";
 
 export interface UniverfileOptimizeRequest {
   readonly dryRun: boolean;
-  readonly history?: "reset";
-  readonly images?: "externalize";
+  readonly history?: "compact";
   readonly outputPath?: string;
   readonly path: string;
   readonly worktrees?: "clean";
@@ -24,9 +23,8 @@ export function parseUniverfileOptimizeRequest(payload: JsonValue): UniverfileOp
     throw codedError("OPTIMIZE_REQUEST_INVALID", "optimize dryRun must be a boolean");
   }
   const outputPath = optionalString(record["outputPath"], "optimize output path");
-  const images = optionalLiteral(record["images"], "externalize", "optimize images");
   const worktrees = optionalLiteral(record["worktrees"], "clean", "optimize worktrees");
-  const history = optionalLiteral(record["history"], "reset", "optimize history");
+  const history = optionalLiteral(record["history"], "compact", "optimize history");
   if (!record["dryRun"] && outputPath === undefined) {
     throw codedError(
       "OPTIMIZE_OUTPUT_REQUIRED",
@@ -37,7 +35,6 @@ export function parseUniverfileOptimizeRequest(payload: JsonValue): UniverfileOp
     dryRun: record["dryRun"],
     path: requireString(record["path"], "optimize source path"),
     ...(outputPath === undefined ? {} : { outputPath }),
-    ...(images === undefined ? {} : { images }),
     ...(worktrees === undefined ? {} : { worktrees }),
     ...(history === undefined ? {} : { history }),
   };

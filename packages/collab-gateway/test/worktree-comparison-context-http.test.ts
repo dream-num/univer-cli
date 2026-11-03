@@ -30,7 +30,7 @@ describe("agent comparison context HTTP endpoint", () => {
   it("filters and pages a real pinned Sheet comparison", async () => {
     const service = server.manager.resolveByKey(key).collab;
     const sheet = await service.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "Sheet" });
-    const right = service.createWorktree("agent", "Right");
+    const right = await service.createWorktree("agent", "Right");
     await changeWorktree(service, right.worktreeId, "two changes", {
       modify: {
         [sheet.unitId]: [setCell(sheet.unitId, 0, "One"), setCell(sheet.unitId, 1, "Two")].flat(),
@@ -86,7 +86,7 @@ describe("agent comparison context HTTP endpoint", () => {
   it("returns a typed business error for an invalid context query", async () => {
     const service = server.manager.resolveByKey(key).collab;
     const sheet = await service.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "Sheet" });
-    const right = service.createWorktree("agent", "Right");
+    const right = await service.createWorktree("agent", "Right");
     const session = service.createUnitComparison(right.worktreeId);
 
     const response = await fetch(
@@ -102,7 +102,7 @@ describe("agent comparison context HTTP endpoint", () => {
   it("rejects an incomplete scope query", async () => {
     const service = server.manager.resolveByKey(key).collab;
     const sheet = await service.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "Sheet" });
-    const right = service.createWorktree("agent", "Right");
+    const right = await service.createWorktree("agent", "Right");
     const session = service.createUnitComparison(right.worktreeId);
 
     const response = await fetch(
@@ -117,7 +117,7 @@ describe("agent comparison context HTTP endpoint", () => {
   it("rejects a zero page limit instead of silently changing it", async () => {
     const service = server.manager.resolveByKey(key).collab;
     const sheet = await service.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "Sheet" });
-    const right = service.createWorktree("agent", "Right");
+    const right = await service.createWorktree("agent", "Right");
     const session = service.createUnitComparison(right.worktreeId);
 
     const response = await fetch(
@@ -133,7 +133,7 @@ describe("agent comparison context HTTP endpoint", () => {
   it("rejects an unknown detail projection", async () => {
     const service = server.manager.resolveByKey(key).collab;
     const sheet = await service.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "Sheet" });
-    const right = service.createWorktree("agent", "Right");
+    const right = await service.createWorktree("agent", "Right");
     const session = service.createUnitComparison(right.worktreeId);
 
     const response = await fetch(

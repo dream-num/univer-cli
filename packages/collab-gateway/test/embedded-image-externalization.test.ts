@@ -1,7 +1,11 @@
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type { IMutation } from "@univerjs/protocol";
 import { UniverInstanceType } from "@univerjs/core";
 import { describe, expect, it } from "vitest";
 import { CollabService } from "../src/collab-service.js";
+import { countAssetRows } from "./asset-counts.js";
 import { changeWorktree } from "./change-worktree.js";
 
 const PNG_DATA_URI = "data:image/png;base64,iVBORw0KGgo=";
@@ -9,10 +13,12 @@ const SVG_DATA_URI = "data:image/svg+xml;base64,PHN2Zy8+";
 
 describe("embedded image externalization", () => {
   it("stores supported BASE64 bytes once and commits UUID references", async () => {
-    const service = new CollabService();
+    const directory = mkdtempSync(join(tmpdir(), "gw-embedded-images-"));
+    const dbPath = join(directory, "book.univer");
+    const service = new CollabService({ dbPath, create: true });
     try {
       const sheet = await service.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "S" });
-      const worktree = service.createWorktree("agent");
+      const worktree = await service.createWorktree("agent");
       await changeWorktree(service, worktree.worktreeId, "image", {
         modify: {
           [sheet.unitId]: [
@@ -42,14 +48,14 @@ describe("embedded image externalization", () => {
       expect((cell.preservedUrl as Record<string, unknown>).source).toBe(
         "https://example.test/image.png"
       );
-      expect(service.runtime.assetStore.countAssets()).toBe(1);
-      expect(service.runtime.assetStore.countBlobs()).toBe(1);
+      expect(countAssetRows(dbPath)).toEqual({ assets: 1, blobs: 1 });
 
       const merged = await service.merge(worktree.worktreeId);
       expect(merged.ok).toBe(true);
       expect(service.openAsset(String(cell.source))).not.toBeNull();
     } finally {
       await service.dispose();
+      rmSync(directory, { recursive: true, force: true });
     }
   });
 });

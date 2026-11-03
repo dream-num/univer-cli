@@ -46,7 +46,7 @@ import type {
 } from "./compatibility-types.js";
 import { externalizeEmbeddedImages } from "./assets/externalize-embedded-images.js";
 import { CollabGatewayAssetScopeNotFoundError } from "./assets/errors.js";
-import { GatewayFileRuntime } from "./gateway-file-runtime.js";
+import { GatewayFileRuntime, type UniverServerCredentials } from "./gateway-file-runtime.js";
 import type { UniverfileAssetRecord, UniverfileOpenedAsset } from "@univer/univerfile-sqlite";
 import {
   UNIVERFILE_UNIT_METADATA_KEY,
@@ -61,11 +61,14 @@ import {
 import { unitAdapter } from "./univer/unit-types.js";
 import { KeyedLock } from "./util/lock.js";
 import { GatewayExchangeService } from "./exchange/gateway-exchange-service.js";
+import { GATEWAY_UNIT_RUNTIME } from "./unit-runtime.js";
 
 export interface CollabServiceOptions {
   /** `.univer` file path; ":memory:" (default) for an ephemeral store. */
   readonly dbPath?: string;
   readonly create?: boolean;
+  /** License pair for the Collaboration SDK; see {@link GatewayFileRuntimeOptions.credentials}. */
+  readonly credentials?: UniverServerCredentials;
 }
 
 const INITIAL_REVISION = 1;
@@ -172,7 +175,7 @@ export class CollabService {
       throw new Error(`Unit ${unitId} was not found with type ${String(type)}`);
     }
     const loadData = await this._getTrunkLoadDataWithBlocks(unitId, type, 0, "gateway-exchange");
-    const materializer = new UnitSnapshotMaterializer({ execution: { mode: "in-process" } });
+    const materializer = new UnitSnapshotMaterializer(GATEWAY_UNIT_RUNTIME);
     try {
       return await materializer.materializeSnapshot(loadData);
     } finally {
@@ -180,7 +183,7 @@ export class CollabService {
     }
   }
 
-  public createWorktree(agentId = "", name = ""): WorktreeRecord {
+  public async createWorktree(agentId = "", name = ""): Promise<WorktreeRecord> {
     const worktreeId = newWorktreeId();
     const units = this.listUnits();
     const records = new Map(
@@ -194,10 +197,9 @@ export class CollabService {
         unitNames: Object.fromEntries(units.map((unit) => [unit.unitId, unit.name])),
       },
     });
-    // Worktree creation is the sole synchronous compatibility entry; it executes the same
-    // SDK-compatible adapter transaction. Subsequent lifecycle/read/submit/merge semantics are
-    // SDK Service-owned.
-    this.runtime.worktreeAdapter.createWorktreeForGateway(databaseContext(options), {
+    // The Gateway creates the Worktree record through the adapter so the record carries its
+    // metadata; subsequent lifecycle/read/submit/merge semantics are SDK Service-owned.
+    await this.runtime.worktreeAdapter.createWorktree(databaseContext(options), {
       record: {
         worktreeID: worktreeId,
         sid: randomUUID(),
@@ -890,18 +892,6 @@ export class CollabService {
     return opened;
   }
 
-  public getConfirmedChangeset(unitId: string, revision: number): IProtocolChangeset | undefined {
-    return this.runtime.trunkAdapter.getChangeset(unitId, revision);
-  }
-
-  public getConfirmedChangesetBySid(
-    unitId: string,
-    sid: string,
-    reqId: number,
-  ): IProtocolChangeset | undefined {
-    return this.runtime.trunkAdapter.getChangesetBySid(unitId, sid, reqId);
-  }
-
   public hasConnections(): boolean {
     return this.runtime.hasConnections();
   }
@@ -972,7 +962,7 @@ export class CollabService {
             unit.type,
             unit.revision,
           );
-    const materializer = new UnitSnapshotMaterializer({ execution: { mode: "in-process" } });
+    const materializer = new UnitSnapshotMaterializer(GATEWAY_UNIT_RUNTIME);
     try {
       const materialized = await materializer.materializeSnapshot(loadData);
       return {

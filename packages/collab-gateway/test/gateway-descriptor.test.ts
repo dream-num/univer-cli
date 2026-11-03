@@ -165,7 +165,7 @@ describe("gateway file descriptor endpoint", () => {
     const key = Buffer.from(filePath).toString("base64url");
     await postJson(`http://127.0.0.1:${server.port}/uf/${key}`, {});
     const collab = server.manager.resolveByKey(key).collab;
-    const worktree = collab.createWorktree("agent-a", "concurrent-task");
+    const worktree = await collab.createWorktree("agent-a", "concurrent-task");
     const worktreeService = collab.runtime.worktreeService;
     const originalMarkReady = worktreeService.markReady.bind(worktreeService);
     let releaseReady: (() => void) | undefined;

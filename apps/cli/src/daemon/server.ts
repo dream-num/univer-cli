@@ -1,10 +1,11 @@
 import { createDaemonServer, type DaemonServer, type JsonValue } from "@univer-cli/daemon";
 import type { HeadlessUniverFactory } from "@univer-cli/headless-univer";
 import { startServer, type StartedServer } from "@univer/collab-gateway";
+import { ExchangeError, ExchangeErrorCode, configureExchange } from "@univerjs-pro/exchange-node";
 import {
   createApplicationConfig,
   resolveGatewayPort,
-  resolveRuntimeLicense,
+  resolveServerCredentials,
 } from "../environment/config.js";
 import { registerExchangeHandlers } from "../features/exchange/handlers.js";
 import { registerOptimizeHandlers } from "../features/optimize/handlers.js";
@@ -44,14 +45,17 @@ export async function startApplicationDaemon(
   const env = options.env ?? process.env;
   const paths = resolveApplicationPaths(env);
   const config = createApplicationConfig(paths);
+  const credentials = await resolveServerCredentials(config, env);
+  const { license, licenseKey } = credentials;
+  await configureApplicationExchange({ license, licenseKey });
   const gateway = await startServer({
+    credentials,
     port: options.gatewayPort ?? (await resolveGatewayPort(config, env)),
     viewAssetsRoot: options.viewAssetsRoot,
     ...(options.viewIndexFile === undefined ? {} : { viewIndexFile: options.viewIndexFile }),
   });
   const origin = `http://127.0.0.1:${String(gateway.port)}`;
   const info = { origin, port: gateway.port, viewUrl: `${origin}/collab-web/` } as JsonValue;
-  const license = await resolveRuntimeLicense(config, env);
   const runtimes =
     options.runtimePool ??
     createLocalCollaborationRuntimePool({
@@ -59,6 +63,7 @@ export async function startApplicationDaemon(
       env: {
         ...env,
         UNIVER_LICENSE: license,
+        UNIVER_LICENSE_KEY: licenseKey,
       },
       origin,
     });
@@ -97,4 +102,24 @@ export async function startApplicationDaemon(
       await daemon.close();
     },
   };
+}
+
+/**
+ * Exchange keeps one credential default per process; the Gateway and the exchange handlers both
+ * export from this process, so it is configured before either can run. A missing native binding
+ * must not stop the daemon: Office import and export then fail on their own as
+ * `dependency-unavailable`, while every other configuration error still fails startup.
+ */
+async function configureApplicationExchange(credentials: {
+  readonly license: string;
+  readonly licenseKey: string;
+}): Promise<void> {
+  try {
+    await configureExchange(credentials);
+  } catch (error) {
+    if (error instanceof ExchangeError && error.code === ExchangeErrorCode.NATIVE_LOAD_FAILED) {
+      return;
+    }
+    throw error;
+  }
 }

@@ -21,8 +21,6 @@ export const EXTERNAL_DEPENDENCY_WHITELIST = [
   // Keeps optional native accelerators (bufferutil, utf-8-validate) that must remain real
   // installable packages resolved from its own node_modules.
   "ws",
-  // Native SQLite driver with platform binaries.
-  "libsql",
 ];
 
 // Audits the esbuild metafiles against the whitelist. Every non-builtin external import must be
