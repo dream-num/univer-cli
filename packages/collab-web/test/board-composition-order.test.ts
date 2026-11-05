@@ -105,6 +105,22 @@ describe("version-matched Board composition", () => {
     );
     expect(main).toContain("@univerjs-pro/collaboration-client-ui/lib/index.css");
     expect(viewerLocale).toContain("@univerjs-pro/collaboration-client-ui/locale/en-US");
+    expect(viewerLocale).toContain(
+      'import { loadContentLocale, mergeLocalePacks } from "@univer/render-preset"'
+    );
+    expectInOrder(viewerLocale, [
+      'const content = await loadContentLocale("en-US")',
+      "return mergeLocalePacks([",
+      "content,",
+      "collaborationClient,",
+      "collaborationClientUI,"
+    ]);
+    const contentLocale = await readFile(
+      resolve(import.meta.dirname, "../../render-preset/src/locales/generated/en-US.ts"),
+      "utf8"
+    );
+    expect(contentLocale).toContain("@univerjs-pro/boards-ui/locale/en-US");
+    expect(contentLocale).toContain("@univerjs-pro/shape-editor-ui/locale/en-US");
     // The Exchange client packages no longer ship locales or UI; only their APIs remain.
     expect(viewerLocale).not.toContain("@univerjs-pro/exchange-client/locale/en-US");
   });

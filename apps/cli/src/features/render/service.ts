@@ -27,6 +27,8 @@ import {
   resolveUniverRenderBrowser,
   UNIVER_RENDER_BROWSER_CACHE_ENV_VAR,
   type UniverPrintPdfRuntime,
+  type UniverBoardLayoutRuntime,
+  type UniverBoardModelLayoutRuntime,
   type UniverRenderRuntime,
   type UniverSlideLayoutRuntime,
   type UniverRenderUnit,
@@ -150,7 +152,8 @@ export interface CreateLocalRenderApplicationOptions {
     UniverPrintPdfRuntime &
       UniverRenderRuntime &
       UniverSlideLayoutRuntime &
-      UniverTextMeasureRuntime
+      UniverTextMeasureRuntime &
+      Partial<UniverBoardLayoutRuntime>
   >;
 }
 
@@ -172,7 +175,8 @@ export function createLocalRenderApplication(
     UniverPrintPdfRuntime &
       UniverRenderRuntime &
       UniverSlideLayoutRuntime &
-      UniverTextMeasureRuntime
+      UniverTextMeasureRuntime &
+      Partial<UniverBoardLayoutRuntime>
   > {
     try {
       return await runtimeFactory({
@@ -274,9 +278,27 @@ export function createLocalRenderApplication(
     },
     layoutLint: {
       async lint(input) {
+        let modelRuntime: UniverBoardModelLayoutRuntime | undefined;
+        if (input.unitType === "board" && input.mode !== "rendered") {
+          const { createHeadlessBoardLayoutRuntime, createStandardHeadlessUniverFactory } =
+            await import("@univer-cli/headless-univer");
+          modelRuntime = createHeadlessBoardLayoutRuntime({
+            createUniver: createStandardHeadlessUniverFactory({
+              license: await resolveRuntimeLicense(options.config, env),
+            }),
+          });
+        }
+        if (input.unitType === "board" && input.mode === "model") {
+          return await createUnitLayoutLint(
+            modelRuntime === undefined ? {} : { modelRuntime },
+          ).lint(input);
+        }
         const runtime = await openRuntime();
         try {
-          return await createUnitLayoutLint({ runtime }).lint(input);
+          return await createUnitLayoutLint({
+            runtime,
+            ...(modelRuntime === undefined ? {} : { modelRuntime }),
+          }).lint(input);
         } finally {
           await runtime.close();
         }
@@ -324,21 +346,15 @@ export function createLocalRenderApplication(
         ...(input.cwd === undefined ? {} : { cwd: input.cwd }),
         ...(input.worktreeId === undefined ? {} : { worktreeId: input.worktreeId }),
       });
-      if (source.unitType !== "slide") {
+      if (source.unitType !== "slide" && source.unitType !== "board") {
         throw Object.assign(
           new Error(
-            `Unit ${input.unitId} is ${source.unitType}; layout lint requires a Slide Unit`,
+            `Unit ${input.unitId} is ${source.unitType}; layout lint requires a Slide or Board Unit`,
           ),
           { code: "UNIT_LAYOUT_LINT_TYPE_UNSUPPORTED" },
         );
       }
-      return {
-        unitType: "slide",
-        unitData: source.unitData,
-        ...(source.formulaReferenceUnits === undefined
-          ? {}
-          : { formulaReferenceUnits: source.formulaReferenceUnits }),
-      };
+      return source;
     },
   };
 }

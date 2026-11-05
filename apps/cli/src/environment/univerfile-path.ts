@@ -1,4 +1,4 @@
-import { extname, resolve } from "node:path";
+import { extname, isAbsolute, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export function resolveLocalUniverfile(input: string, cwd = process.cwd()): string {
@@ -6,7 +6,7 @@ export function resolveLocalUniverfile(input: string, cwd = process.cwd()): stri
   if (value.length === 0) throw inputError("A .univer file path is required");
 
   let path: string;
-  if (/^[A-Za-z][A-Za-z\d+.-]*:/u.test(value)) {
+  if (!isAbsolute(value) && /^[A-Za-z][A-Za-z\d+.-]*:/u.test(value)) {
     let url: URL;
     try {
       url = new URL(value);

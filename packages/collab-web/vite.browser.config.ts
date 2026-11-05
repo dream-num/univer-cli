@@ -21,7 +21,7 @@ const browserOutDir = join(packagesRoot, "..", "apps", "cli", "dist", "browser")
 function moveRenderPageToTreeRoot(): import("vite").Plugin {
   return {
     name: "move-render-page-to-tree-root",
-    closeBundle() {
+    writeBundle() {
       const nestedPageDir = join(browserOutDir, "render-runtime-client");
       renameSync(join(nestedPageDir, "index.html"), join(browserOutDir, "index.html"));
       // The page moved one level up: its tree-relative asset references lose one "../".
