@@ -83,7 +83,7 @@ a shape drawn inside a box is not necessarily its child.
 Check `univer lint --help` for `--plan` and `univer api show FBoard.planLayout FBoard.applyLayoutPlan` for mode options.
 
 ```bash
-univer lint --file canvas.univer --worktree <id> --unit <board-id> --mode rendered --plan routes --plan-ids edge-a edge-b --json
+univer lint --file canvas.univer --worktree <id> --unit <board-id> --mode rendered --pages <page-id> --plan routes --plan-ids edge-a edge-b --json
 ```
 
 Use `graph` for a new ordinary diagram whose nodes may move. Use `routes` to coordinate paths while keeping frames
