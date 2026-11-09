@@ -75,7 +75,7 @@ string instead of guessing a smaller character-based mask. Empty content should 
 ## Verification and repair
 
 For automatic crossings, excessive detours, or labels reported as `connector-label-distance-exceeded`, inspect
-`FBoard.planRenderedPortLayout` in the installed Boards UI Facade. Its read-only native plan orders automatic
+`FBoard.planLayout({ mode: 'ports' })` in the installed Boards UI Facade. Its read-only native plan orders automatic
 port slots and, when supported, searches bounded exterior routes for distant automatic captions. Preserve node
 frames, label content, fixed placements, authored ports/routes and native ownership. Only explicitly automatic
 ports with finite positions are eligible; never reinterpret missing legacy metadata as permission to move a port.
@@ -107,7 +107,7 @@ class/ER diagram may need more space between nodes. For ordinary automatic endpo
 
 1. Reuse the graph options with the same `elementIds`, `fixedElementIds`, `direction` and other constraints.
    Increase `layerGap` above its previous value; for example, call
-   `board.planGraphLayout({ ...graphOptions, layerGap: 160 })` through `execute` in the existing draft.
+   `board.planLayout({ ...graphOptions, mode: 'graph', layerGap: 160 })` in a rendered Board in the existing draft.
 2. Inspect the new graph plan and apply it only if `ready`, using `board.applyLayoutPlan(plan)`. A graph edit
    invalidates earlier label plans; never replay one against the changed geometry.
 3. Re-run `lint --mode both --plan-labels --json` against that draft. Read the new `analyses[].labelPlan` from

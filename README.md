@@ -80,6 +80,11 @@ Every content type supports isolated draft editing, review, revision, merge, and
 3. The agent imports or creates a `.univer` file and opens an isolated draft Worktree.
 4. It inspects the target Unit, makes the requested changes, and reads the stored model back.
 5. It captures screenshots or runs layout lint when appearance matters.
+
+When installed `univer lint --help` exposes `--plan`, a rendered Board lint can return one read-only
+layout plan per page. Use `graph`, `routes`, `ports`, `labels`, or `text`. The Board skill explains
+how to inspect `analyses[].plan`, apply a ready plan in the same draft, and capture the result.
+
 6. It marks the Worktree `ready` and returns a local Viewer URL.
 7. The user reviews the result and explicitly chooses merge, reopen, or discard.
 

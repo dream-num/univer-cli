@@ -78,6 +78,26 @@ Create known parents before children. Direct insertion into a parent uses parent
 `insertShapeAtPoint()` resolves a Board-world top-left point. Read back `parentId`, `laneId` and world bounds:
 a shape drawn inside a box is not necessarily its child.
 
+## Choose an explicit layout plan
+
+Check `univer lint --help` for `--plan` and `univer api show FBoard.planLayout FBoard.applyLayoutPlan` for mode options.
+
+```bash
+univer lint --file canvas.univer --worktree <id> --unit <board-id> --mode rendered --plan routes --plan-ids edge-a edge-b --json
+```
+
+Use `graph` for a new ordinary diagram whose nodes may move. Use `routes` to coordinate paths while keeping frames
+and ports, `ports` for automatic endpoint positions, `labels` for caption placement, or `text` for measured frame
+growth. Pass generated IDs for the active page. Human editing uses individual routes. Native structured layout
+owners and authored geometry remain authoritative.
+
+Read `analyses[].plan` from the lint report, including the report attached to a lint failure. The plan is read-only
+and needs a render runtime with fonts ready. Apply a ready, non-empty plan in the draft through
+`board.applyLayoutPlan(plan)` after checking the page ID. If the call returns false, obtain a fresh plan.
+For an incomplete plan, resolve the reported IDs, ownership, resource or spacing constraint before retrying.
+Capture a fresh screenshot and lint again. If the installed tool lacks the option, use its documented supported
+planning capabilities and report any mode that is unavailable.
+
 ## Verify in proportion to the change
 
 For a generated diagram, follow intent → spec when useful → layout decisions → Facade calls → check → targeted repair:
@@ -109,7 +129,7 @@ and preserves authored/fixed and endpoint-role labels. Missing native support or
 coverage incomplete; exceeded limits are errors (exit 2). Read the native receipt/status and screenshots;
 the metric is a sampled, marker-trimmed stroke-centerline distance, not raster ink. This check never repairs.
 
-For automatic crossings, excessive detours or distant automatic captions, check `univer lint --help` for
+On installations with the legacy planning flags, for automatic crossings, excessive detours or distant automatic captions, check `univer lint --help` for
 `--plan-ports`. When supported, run
 `univer lint --file <file.univer> --worktree <id> --unit <board-id> --mode both --plan-ports --json`.
 Read `analyses[].portPlan` and the unchanged original findings. Apply only one ready non-empty plan through

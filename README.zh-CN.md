@@ -80,6 +80,11 @@ https://discord.gg/nThHPupraR
 3. Agent 导入或创建 `.univer` 文件，并创建隔离的 draft Worktree。
 4. Agent 检查目标 Unit、完成修改，并回读实际保存的数据模型。
 5. 对视觉敏感的任务，Agent 会生成截图或执行 layout lint。
+
+如果当前版本的 `univer lint --help` 提供 `--plan`，Board 的 rendered lint 可以为每一页返回一份只读布局计划。
+支持 `graph`、`routes`、`ports`、`labels` 和 `text`。Board skill 说明如何读取 `analyses[].plan`、
+在同一草稿应用可用计划并截图复查。
+
 6. Agent 将 Worktree 标记为 `ready`，并返回本地 Viewer URL。
 7. 用户审阅结果，并明确选择合并、重新打开或放弃。
 

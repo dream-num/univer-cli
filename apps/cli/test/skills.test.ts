@@ -44,6 +44,8 @@ describe("application Skill library", () => {
   it("keeps Board references opt-in and delivers every linked reference", async () => {
     const library = createApplicationSkillLibrary(assetsRoot);
     const entry = await library.read({ name: "board" });
+    expect(entry.content).toContain("--plan routes --plan-ids");
+    expect(entry.content).toContain("FBoard.planLayout");
     const full = await library.read({ full: true, name: "board" });
 
     expect(entry.files).toBeUndefined();

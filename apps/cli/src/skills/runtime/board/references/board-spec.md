@@ -127,7 +127,7 @@ lifeline tail height independently of participant shape height, and size caption
 For lane/phase workflows, derive a repeatable grid from semantic column order and measured content sizes. Fit lane
 headers to their longest caption and place wrapping explanation cards below the content when a side column makes the
 whole diagram too wide. Preserve phase order and native group/lane ownership. If those constraints fix node frames,
-`planGraphLayout({ elementIds, fixedElementIds: elementIds, direction })` can still assign automatic ports; apply
+`planLayout({ mode: 'graph', elementIds, fixedElementIds: elementIds, direction })` can still assign automatic ports; apply
 only a ready plan and verify every frame stayed fixed. Preserve authored endpoint sides with fixed endpoint bindings.
 Report this constrained placement separately from a free graph layout; a rejected free plan must remain unapplied.
 
@@ -207,7 +207,7 @@ within the growth budget retains its diagnostics rather than shrinking or deleti
 Apply only a ready plan for the unchanged current Board page with `board.applyLayoutPlan`, verify Undo/Redo
 and stale rejection, then replan the graph, fit generated containers and remeasure. The native planner
 balances width and height; do not replace it with a height-only ratio.
-`FBoard.planRenderedTextLayout` belongs to the browser Boards UI; headless `execute` consumes a lint-produced
+`FBoard.planLayout({ mode: 'text', elementIds })` belongs to the browser Boards UI; headless `execute` consumes a lint-produced
 plan rather than calling this browser-only method. Missing/incomplete support stays unresolved. Keep authored
 custom geometry, native structures, fixed/locked/unselectable/managed owners and manual edits outside this
 generated selection.

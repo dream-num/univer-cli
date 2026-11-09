@@ -73,3 +73,8 @@ Omitting animation preserves it on update; `animation: null` disables it.
 
 Screenshots freeze animation in a detached in-memory copy, without changing saved content. Use an actual viewer
 cycle to verify requested motion; a still image only proves static appearance.
+
+For diagrams that need shared rails or coordinated crossing avoidance, request an explicit `routes` plan after
+the connectors exist. Use `graph` only when node placement may also change. Keep authored and structured routes
+in their owning workflow. Reset routing with `normalizeConnectorRouting()` only when the requested edit calls for
+removing existing route guidance.
