@@ -42,7 +42,6 @@ Use-case reuse and conditional extension remain semantic, without coordinates or
 
 ```json
 {
-  "schemaVersion": 1,
   "diagramType": "uml-use-case",
   "nodes": [
     {
@@ -75,7 +74,6 @@ orientation records ownership, not a call arrow. For example:
 
 ```json
 {
-  "schemaVersion": 1,
   "diagramType": "uml-component",
   "nodes": [
     {

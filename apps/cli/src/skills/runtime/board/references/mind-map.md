@@ -37,7 +37,6 @@ This conceptual progression has stage-local details; the shared order value `1` 
 
 ```json
 {
-  "schemaVersion": 1,
   "diagramType": "timeline",
   "title": "Agent capability progression",
   "nodes": [

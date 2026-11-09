@@ -8,7 +8,6 @@ standalone content do not require it.
 
 ```json
 {
-  "schemaVersion": 1,
   "diagramType": "dataflow",
   "title": "Order event topology",
   "nodes": [
@@ -41,7 +40,7 @@ standalone content do not require it.
 }
 ```
 
-Required fields: `schemaVersion: 1`, `diagramType`, `nodes`, `relations`. Nodes have stable semantic `id`,
+Include `diagramType`, `nodes` and `relations`. Nodes have a stable semantic `id`,
 `label` and `semanticRole`. Roles are descriptive domain vocabulary, not a closed enum or a mandated visual style.
 Use `semanticRole` rather than node `role`, which Board elements reserve for runtime-owned behavior. Add
 `description` when role and label do not convey enough intent, and `content` for meaningful structured payloads.
