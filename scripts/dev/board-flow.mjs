@@ -73,8 +73,8 @@ export function verifyBoardFlow({ root, evidence, env, cliArgs }) {
         "--json",
       ]);
     };
-    const portReference = run(["api", "show", "FBoard.planRenderedPortLayout"], [0], false);
-    assert.ok(portReference.includes("planRenderedPortLayout"));
+    const layoutReference = run(["api", "show", "FBoard.planLayout"], [0], false);
+    assert.ok(layoutReference.includes("planLayout"));
     const authored = execute(
       `
 const names = ["Client", "API", "Database"];
@@ -93,22 +93,57 @@ if (!board.setConnectorLabels(edges[0].id, [
   { id: "request", content: "request", placement: { mode: "fixed", anchor: "path", pathRatio: 0.5 } },
   { id: "response", content: "response", placement: { mode: "fixed", anchor: "path", pathRatio: 0.5 } }
 ])) throw new Error("Cannot create independent labels");
-const stale = board.planGraphLayout({ layerGap: 200 });
+return { connectorId: edges[0].id };`,
+      "author",
+    );
+    const { connectorId } = authored.value;
+    assert.equal(typeof connectorId, "string");
+    assert.ok(connectorId.length);
+    const graphPlan = () => {
+      const report = run(
+        [
+          "lint",
+          "--file",
+          file,
+          "--worktree",
+          worktreeId,
+          "--unit",
+          unitId,
+          "--mode",
+          "rendered",
+          "--plan",
+          "graph",
+          "--plan-options",
+          JSON.stringify({ layerGap: 200 }),
+          "--json",
+        ],
+        [0, 2],
+      );
+      assert.equal(report.analyses.length, 1);
+      const plan = report.analyses[0].plan;
+      assert.equal(plan?.status, "ready", JSON.stringify(plan?.diagnostics));
+      assert.ok(plan.patches.length, "Graph plan must move or route the authored diagram");
+      return plan;
+    };
+    const stale = graphPlan();
+    const staleAttempt = execute(
+      `
 const note = board.insertShape({
   shapeType: api.Enum.ShapeTypeEnum.Rect,
   transform: { left: 1000, top: 1000, width: 120, height: 60 }
 });
 if (!note) throw new Error("Cannot create intervening edit");
 note.getText().setText("Audit");
-const rejected = board.applyLayoutPlan(stale) === false;
-const plan = board.planGraphLayout({ layerGap: 200 });
-return { rejected, applied: board.applyLayoutPlan(plan), status: plan.status, connectorId: edges[0].id };`,
-      "author",
+return board.applyLayoutPlan(${JSON.stringify(stale)});`,
+      "reject-stale-graph-plan",
     );
-    const { connectorId, ...authoredFlags } = authored.value;
-    assert.equal(typeof connectorId, "string");
-    assert.ok(connectorId.length);
-    assert.deepEqual(authoredFlags, { rejected: true, applied: true, status: "ready" });
+    assert.equal(staleAttempt.value, false);
+    const current = graphPlan();
+    const applied = execute(
+      `return board.applyLayoutPlan(${JSON.stringify(current)});`,
+      "apply-graph-plan",
+    );
+    assert.equal(applied.value, true);
     const lint = () =>
       run(
         [
