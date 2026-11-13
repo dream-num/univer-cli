@@ -7,12 +7,32 @@ import { resolveLocalUniverfile } from "../../environment/univerfile-path.js";
 import {
   CONTENT_EXECUTE_METHOD,
   CONTENT_INSPECT_METHOD,
+  CONTENT_READ_METHOD,
+  CONTENT_READ_ASSET_METHOD,
+  parseContentReadAssetResult,
+  type ContentReadAssetResult,
   parseContentExecuteResult,
   parseContentInspectResult,
+  parseContentReadResult,
   type ContentExecuteResult,
+  type ContentReadResult,
 } from "./protocol.js";
 
 export interface LocalUnitContentApplication {
+  readAsset(input: {
+    readonly cwd?: string;
+    readonly path: string;
+    readonly unitId: string;
+    readonly worktreeId: string;
+    readonly reference: string;
+  }): Promise<ContentReadAssetResult>;
+  read(input: {
+    readonly code: string;
+    readonly cwd?: string;
+    readonly path: string;
+    readonly unitId: string;
+    readonly worktreeId: string;
+  }): Promise<ContentReadResult>;
   execute(input: {
     readonly code: string;
     readonly cwd?: string;
@@ -33,6 +53,26 @@ export function createLocalUnitContentApplication(
   daemon: DaemonClient,
 ): LocalUnitContentApplication {
   return {
+    async readAsset(input) {
+      return parseContentReadAssetResult(
+        await daemon.request(CONTENT_READ_ASSET_METHOD, {
+          path: resolveLocalUniverfile(input.path, input.cwd),
+          unitId: input.unitId,
+          worktreeId: input.worktreeId,
+          reference: input.reference,
+        }),
+      );
+    },
+    async read(input) {
+      return parseContentReadResult(
+        await daemon.request(CONTENT_READ_METHOD, {
+          code: input.code,
+          path: resolveLocalUniverfile(input.path, input.cwd),
+          unitId: input.unitId,
+          worktreeId: input.worktreeId,
+        }),
+      );
+    },
     async execute(input) {
       const path = resolveLocalUniverfile(input.path, input.cwd);
       return parseContentExecuteResult(

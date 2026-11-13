@@ -14,6 +14,42 @@ import { parseWorktreePathRequest } from "../worktree/protocol.js";
 
 export const CONTENT_EXECUTE_METHOD = "univer.content.execute";
 export const CONTENT_INSPECT_METHOD = "univer.content.inspect";
+export const CONTENT_READ_METHOD = "univer.content.read";
+export const CONTENT_READ_ASSET_METHOD = "univer.content.read-asset";
+
+export interface ContentReadAssetResult {
+  readonly data: string;
+  readonly mimeType: string;
+}
+
+export function parseReadAssetRequest(payload: JsonValue): {
+  readonly path: string;
+  readonly unitId: string;
+  readonly worktreeId: string;
+  readonly reference: string;
+} {
+  const record = requireRecord(payload, "content asset read request");
+  return {
+    ...parseUnitTargetRequest(payload),
+    reference: requireString(record["reference"], "asset reference"),
+  };
+}
+
+export function parseContentReadAssetResult(value: JsonValue): ContentReadAssetResult {
+  const record = requireRecord(value, "content asset read result");
+  return {
+    data: requireString(record["data"], "asset base64 data"),
+    mimeType: requireString(record["mimeType"], "asset MIME type"),
+  };
+}
+
+export interface ContentReadResult {
+  readonly filePath: string;
+  readonly revision: number;
+  readonly unitId: string;
+  readonly value: JsonValue;
+  readonly worktreeId: string;
+}
 
 export interface ContentExecuteResult {
   readonly committed: boolean;
@@ -69,6 +105,39 @@ export function parseInspectRequest(payload: JsonValue): {
     ...target,
     query: query as unknown as ContentInspectionQuery,
     unitId: requireString(record["unitId"], "content inspection Unit ID"),
+  };
+}
+
+export function parseReadRequest(payload: JsonValue): {
+  readonly code: string;
+  readonly path: string;
+  readonly unitId: string;
+  readonly worktreeId: string;
+} {
+  const record = requireRecord(payload, "content read request");
+  return {
+    ...parseUnitTargetRequest(payload),
+    code: requireString(record["code"], "content read code", true),
+  };
+}
+
+export function parseContentReadResult(value: JsonValue): ContentReadResult {
+  const record = requireRecord(value, "content read result");
+  const revision = record["revision"];
+  if (
+    typeof revision !== "number" ||
+    !Number.isSafeInteger(revision) ||
+    revision < 1 ||
+    !("value" in record)
+  ) {
+    throw invalidResult("content read result is invalid");
+  }
+  return {
+    filePath: requireString(record["filePath"], "content read filePath"),
+    revision,
+    unitId: requireString(record["unitId"], "content read Unit ID"),
+    value: record["value"] as JsonValue,
+    worktreeId: requireString(record["worktreeId"], "content read Worktree ID"),
   };
 }
 

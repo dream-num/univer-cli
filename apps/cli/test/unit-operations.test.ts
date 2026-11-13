@@ -341,6 +341,12 @@ function fakeUnitOperations(
     async execute({ path, unitId, worktreeId }) {
       return { committed: false, filePath: path, unitId, value: null, worktreeId };
     },
+    async read({ path, unitId, worktreeId }) {
+      return { filePath: path, unitId, revision: 1, value: null, worktreeId };
+    },
+    async readAsset() {
+      throw new Error("Unexpected asset read");
+    },
     async inspect() {
       return rangeInspection();
     },

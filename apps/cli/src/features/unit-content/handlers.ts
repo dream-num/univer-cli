@@ -17,8 +17,12 @@ import { unitKindFromType } from "../unit/protocol.js";
 import {
   CONTENT_EXECUTE_METHOD,
   CONTENT_INSPECT_METHOD,
+  CONTENT_READ_METHOD,
+  CONTENT_READ_ASSET_METHOD,
+  parseReadAssetRequest,
   parseExecuteRequest,
   parseInspectRequest,
+  parseReadRequest,
 } from "./protocol.js";
 
 export function registerUnitContentHandlers(input: {
@@ -26,6 +30,59 @@ export function registerUnitContentHandlers(input: {
   readonly gateway: StartedServer;
   readonly runtimes: LocalCollaborationRuntimePool;
 }): void {
+  input.daemon.handle(CONTENT_READ_ASSET_METHOD, async (payload) => {
+    const request = parseReadAssetRequest(payload);
+    const univerfile = input.gateway.manager.openByPath(request.path);
+    requireWorktree(univerfile.collab, request.worktreeId);
+    requireUnit(univerfile.collab, request.worktreeId, request.unitId);
+    const asset = univerfile.collab.openAsset(request.reference, request.worktreeId);
+    if (!asset || asset.record.unitId !== request.unitId) {
+      throw codedError(
+        "CONTENT_ASSET_NOT_FOUND",
+        "Image asset was not found in the selected Doc Unit",
+      );
+    }
+    if (!asset.record.mediaType.startsWith("image/") || asset.bytes.byteLength > 48_000_000) {
+      throw codedError("CONTENT_ASSET_UNSUPPORTED", "Image asset exceeds Markdown export limits");
+    }
+    return { data: Buffer.from(asset.bytes).toString("base64"), mimeType: asset.record.mediaType };
+  });
+  input.daemon.handle(CONTENT_READ_METHOD, async (payload) => {
+    const request = parseReadRequest(payload);
+    const univerfile = input.gateway.manager.openByPath(request.path);
+    requireWorktree(univerfile.collab, request.worktreeId);
+    const unit = requireUnit(univerfile.collab, request.worktreeId, request.unitId);
+    const program = prepareContentExecutionProgram({
+      code: request.code,
+      unitId: unit.unitId,
+      unitType: unitKindFromType(unit.type),
+    });
+    const lease = await input.runtimes.acquire({
+      filePath: univerfile.path,
+      unitId: unit.unitId,
+      unitType: unit.type as UniverInstanceType,
+      worktreeId: request.worktreeId,
+    });
+    let reusable = false;
+    try {
+      await pullCurrent(lease);
+      const execution = await lease.execute({ code: program, mode: "read" });
+      if (execution.state.pendingMutationCount !== 0) {
+        throw codedError("CONTENT_READ_MUTATION", "A read operation attempted to change content");
+      }
+      reusable = true;
+      return {
+        filePath: univerfile.path,
+        revision: execution.state.baseRevision,
+        unitId: request.unitId,
+        value: execution.value,
+        worktreeId: request.worktreeId,
+      } as JsonValue;
+    } finally {
+      if (reusable) await lease.release();
+      else await lease.invalidate();
+    }
+  });
   input.daemon.handle(CONTENT_EXECUTE_METHOD, async (payload) => {
     const request = parseExecuteRequest(payload);
     const univerfile = input.gateway.manager.openByPath(request.path);

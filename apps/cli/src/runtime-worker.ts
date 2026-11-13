@@ -4,6 +4,7 @@ import {
   type UniverFactoryContext,
 } from "@univer-cli/univer-collaboration-runtime";
 import { createStandardHeadlessUniverFactory } from "@univer-cli/headless-univer";
+import { registerDocMarkdownRuntime } from "@univer-cli/doc-markdown-facade/runtime";
 import { defineUniverCollaborationRuntimeWorker } from "@univer-cli/univer-collaboration-runtime-pool";
 import type { LocalRuntimeWorkerInit } from "./daemon/collaboration-runtime-pool.js";
 import { createLocalReferencedUnitProviderRegistration } from "./runtime/local-referenced-unit-provider.js";
@@ -11,6 +12,7 @@ import { LocalSnapshotServerAdapter } from "./runtime/local-snapshot-server-adap
 
 export default defineUniverCollaborationRuntimeWorker({
   async createRuntime(init: LocalRuntimeWorkerInit) {
+    registerDocMarkdownRuntime();
     const snapshotServerService = new LocalSnapshotServerAdapter(init.server.snapshotServerUrl);
     const createUniver = async (context: UniverFactoryContext) => {
       if (context.resolveSnapshotService === undefined) {

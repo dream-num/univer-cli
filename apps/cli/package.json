@@ -60,6 +60,7 @@
     "@univer-cli/content-inspection-command": "1.4.0-insiders.20261111-e492f8d",
     "@univer-cli/daemon": "1.4.0-insiders.20261111-e492f8d",
     "@univer-cli/daemon-command": "1.4.0-insiders.20261111-e492f8d",
+    "@univer-cli/doc-markdown-facade": "1.4.0-insiders.20261111-e492f8d",
     "@univer-cli/doc-typst-facade": "1.4.0-insiders.20261111-e492f8d",
     "@univer-cli/doc-typst-facade-command": "1.4.0-insiders.20261111-e492f8d",
     "@univer-cli/headless-univer": "1.4.0-insiders.20261111-e492f8d",
