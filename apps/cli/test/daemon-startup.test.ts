@@ -75,6 +75,10 @@ if (isMainThread) process.on('uncaughtExceptionMonitor', error => writeFileSync(
       identity: applicationDaemonIdentity(env),
       socketPath: resolveApplicationPaths(env).socketPath,
       requestTimeoutMs: 180_000,
+      // The published daemon defaults to a 10s start. CI runs both cases
+      // beside the rest of the suite, and the source daemon can take longer
+      // than that to accept its socket.
+      startTimeoutMs: 60_000,
     };
     const control = createDaemonControl(options);
     const client = createDaemonClient(options);
