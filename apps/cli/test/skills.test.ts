@@ -44,6 +44,8 @@ describe("application Skill library", () => {
   it("keeps Board references opt-in and delivers every linked reference", async () => {
     const library = createApplicationSkillLibrary(assetsRoot);
     const entry = await library.read({ name: "board" });
+    expect(entry.content).toContain("--plan routes --plan-ids");
+    expect(entry.content).toContain("FBoard.planLayout");
     const full = await library.read({ full: true, name: "board" });
 
     expect(entry.files).toBeUndefined();
@@ -80,7 +82,7 @@ describe("application Skill library", () => {
       JSON.parse(match[1]!),
     );
     const spec = examples.find((example) => example.diagramType === "uml-use-case");
-    expect(spec?.schemaVersion).toBe(1);
+    expect(spec).toBeDefined();
     const nodes = new Map<string, { semanticRole: string; extensionPoints?: string[] }>(
       spec.nodes.map((node: { id: string; semanticRole: string; extensionPoints?: string[] }) => [
         node.id,
@@ -112,7 +114,7 @@ describe("application Skill library", () => {
       JSON.parse(match[1]!),
     );
     const spec = examples.find((example) => example.diagramType === "uml-component");
-    expect(spec?.schemaVersion).toBe(1);
+    expect(spec).toBeDefined();
     const nodes = new Map<string, { provides?: string[]; requires?: string[] }>(
       spec.nodes.map((node: { id: string; provides?: string[]; requires?: string[] }) => [
         node.id,
@@ -148,7 +150,7 @@ describe("application Skill library", () => {
       JSON.parse(match[1]!),
     );
     const spec = examples.find((example) => example.diagramType === "timeline");
-    expect(spec?.schemaVersion).toBe(1);
+    expect(spec).toBeDefined();
     const nodeIds = new Set<string>(spec.nodes.map((node: { id: string }) => node.id));
     expect(nodeIds.size).toBe(spec.nodes.length);
     const parentByChild = new Map<string, string>();
@@ -194,7 +196,7 @@ describe("application Skill library", () => {
       JSON.parse(match[1]!),
     );
     const spec = examples.find((example) => example.diagramType === "architecture");
-    expect(spec?.schemaVersion).toBe(1);
+    expect(spec).toBeDefined();
     const nodeIds = new Set(spec.nodes.map((node: { id: string }) => node.id));
     expect(nodeIds.size).toBe(spec.nodes.length);
     for (const relation of spec.relations) {

@@ -19,7 +19,7 @@ univer worktree add|list|ready|reopen|merge|discard ...
 univer unit add|remove|list ...
 univer execute <file.univer> --worktree <id> --unit <id> -e '<facade-js>'
 univer inspect <target> <selectors...> <file.univer> --unit <id> (--trunk|--worktree <id>)
-univer lint --file <file.univer> --unit <slide-id> [--worktree <id>] [--pages <pages>]
+univer lint --file <file.univer> --unit <slide-or-board-id> [--worktree <id>] [--pages <pages>] [--mode <model|rendered|both>]
 univer screenshot <file.univer> [--worktree <id>] [--unit <id>] [--out <dir>]
 univer screenshot setup [--force]
 univer print-pdf <file.univer> <output.pdf> [--worktree <id>] [--unit <id>]
@@ -29,7 +29,7 @@ univer compile-markdown <source.md> --unit <id> (--out <program.js>|--apply <fil
 univer export-markdown <file.univer> --worktree <id> --unit <id> --blocks <ids> --source-map <map.json> --out <fragment.md>
 univer resources registries|find|export|cache ...
 univer api find|show ...
-univer optimize <file.univer> (--dry-run|--out <copy.univer>)
+univer optimize <file.univer> (--dry-run|--out <copy.univer>) [--worktrees] [--history]
 univer config path|list|get|set|unset ...
 univer doctor [--json]
 univer doctor collect [--last <duration>|--since <time>|--all] [--trace-id <id>] [--output <dir>]
@@ -116,7 +116,15 @@ Sheet/Base → XLSX/CSV/TSV、Doc → DOCX、Slide → PPTX。CSV/TSV 使用 `--
 
 `univer open` 的可编辑 Viewer 支持通过 Ribbon 导入和导出：导入会在当前 `.univer` 中新建 Unit。trunk Sheet、Doc、Slide、Base 和 Board 均提供对应的标准 SDK 版本历史 UI；只读 Viewer 只能查看，可编辑 Viewer 可以显式恢复历史版本。只读 Sheet 中不提供保护和打印。Worktree 与合并预览不提供导入、导出或版本历史；其他受支持的 Unit 仍可打印，Board 仅支持打印。
 
-`optimize` 是 copy-only operation；除 `--dry-run` 外必须提供 `--out`，不会覆盖 source。
+`optimize` 是 copy-only operation；除 `--dry-run` 外必须提供 `--out`，不会覆盖 source。它在 source 的私有副本上
+执行：source 为早期格式时只升级副本，完成验证与压缩后才把副本移到 `--out`。至少选择一项：
+
+- `--worktrees` 删除已合并和已丢弃的 Worktree，连同其 Unit、changeset 与 Worktree 范围的资源；draft、ready
+  与 merging Worktree 保留。
+- `--history` 删除每个 trunk Unit 最早与最新已存 snapshot 之间的 snapshot。changeset 全部保留，因此每个
+  revision 与版本历史仍可读取；活跃 Worktree 不受影响。
+
+`--dry-run` 在临时副本上执行同样的步骤，报告结果大小与删除数量后删除副本。
 
 ## Rendering and authoring helpers
 
@@ -135,10 +143,29 @@ univer screenshot ./book.univer --worktree <id> --unit <slide-id> \
 univer print-pdf ./book.univer ./book.pdf --unit <sheet-id>
 univer print-pdf ./book.univer ./review.pdf --worktree <id> --unit <doc-id>
 univer lint --file ./book.univer --worktree <id> --unit <slide-id> --pages 1,3-5
+univer lint --file ./book.univer --unit <board-id> --mode model --json
+univer lint --file ./book.univer --worktree <id> --unit <board-id> --mode both --json
 ```
 
-`lint` 使用 CLI SDK layout-lint capability，对 browser glyph geometry 执行 `text-off-page`、
-`text-escapes-container` 与 `text-overlaps-text` 检查。finding 是带几何证据的复查建议。
+`lint` 使用 CLI SDK layout-lint capability。Slide 根据 browser glyph geometry 执行 `text-off-page`、
+`text-escapes-container` 与 `text-overlaps-text` 检查。Board 支持 `--mode model|rendered|both`（默认 both），
+`--pages` 可选择从 1 开始的页码或 page ID。Model-only 使用标准 headless factory，不启动浏览器。
+command 默认只读检查 trunk，也可以选择已有 Worktree。
+
+Board report 保留 SDK 原始规则、element/connector/label ID、focus bounds、路线、各阶段分析、snapshot identity
+和 coverage。缺失或未解析的证据会使 coverage 不完整。Model-only 不覆盖最终字体度量和 rendered 自动路线。
+错误或不完整 coverage 以 code 2 退出；`--json` 仅向 stderr 写入一个 machine failure，完整 report 位于
+`error.details.report`，stdout 保持为空。仅有 warning 时成功；Slide finding 保持原有退出行为。
+
+Board 在 rendered 或 both 模式可使用 `--plan-labels`，通过 `analyses[].labelPlan` 返回只读的原生修复 plan。
+在已有草稿中通过 `execute` 调用 `board.applyLayoutPlan(plan)`，仅应用 `ready` plan，然后重新 lint；
+过期 plan 必须重新生成。lint 不修改内容。
+
+生成新图或执行明确要求的修复时，先根据渲染测量扩大形状或表格框。生成的泳道容量可通过原生泳道 API
+扩大后再重新规划；用户指定的容量和固定、锁定的所有者保持不变。每次写入都验证 Undo/Redo，若新 plan
+不完整，则连同容量一起回滚该轮尺寸变化。截图审阅仍是独立步骤。
+
+仅应用当前 Board page 对应的 plan；`applyLayoutPlan` 会拒绝页面不匹配的 plan。
 
 `compile-svg` 默认使用 browser runtime 的真实字体测量；`--estimate-text-size` 才使用确定性估算。
 `compile-typst --apply` 在内存中物化 Doc snapshot，再作为一个 Worktree Unit 写入。`resources` 使用配置的
@@ -166,14 +193,17 @@ revision 来自同一次 runtime 读取；映射默认写入 `<out>.map.json`。
 - `screenshot.maxPixels`
 - `update.checkOnStartup`
 - `univerRuntime.license`
+- `univerRuntime.licenseKey`
 
 读取 command 不创建配置文件；`set/unset` 保留未知字段。
 
 - Application home 是 `${UNIVER_HOME:-~/.univer}`，配置文件为 `${UNIVER_HOME}/config.json`。
 - `UNIVER_COLLAB_GATEWAY_PORT` 覆盖 Gateway port，默认值为 `9123`。
-- `UNIVER_LICENSE` 覆盖 `univerRuntime.license`；两者都未设置时使用 application 内置的 90 天 Runtime
-  development license。
-- 内置的 localhost Runtime development license 已获准随本 application 公开再分发，按 90 天周期更新；它不是 repository software license。
+- `UNIVER_LICENSE` 覆盖 `univerRuntime.license`，`UNIVER_LICENSE_KEY` 覆盖 `univerRuntime.licenseKey`。Web SDK
+  只使用 License；daemon 中的 Collaboration SDK 与 Exchange 用对应 key 校验 License。配置了 License 时必须同时
+  配置其 key；未配置 License 时使用 application 内置的 90 天 Runtime development License 与 key。
+- 内置的 Runtime development License 覆盖 `localhost`、`app` 与 `127.0.0.1` domain，已获准随本 application 公开再分发，按 90
+  天周期更新；它不是 repository software license。
 - browser cache 位于 `${UNIVER_HOME}/browsers`；`UNIVER_RENDER_BROWSER` 可指定 Chrome/Chromium，
   `UNIVER_RENDER_BROWSER_CACHE` 可覆盖 cache path。
 - `daemon status` 是只读检查；application 只管理身份验证属于自身的 daemon process。
@@ -191,8 +221,8 @@ revision 来自同一次 runtime 读取；映射默认写入 `<out>.map.json`。
 
 新 Univerfile 使用 v3。v0、v1 与 v2 是受支持的输入格式，在 application 首次显式打开路径时升级到 v3。升级执行
 只读识别、lock、byte-for-byte backup、独立 candidate、storage/runtime 验证、source hash 复查和 atomic
-replace；失败不会替换 source。再次打开同一份未变化的文件时复用这份 backup。Windows 上迁移在 helper
-进程中完成，原文件在该进程退出后才被替换。v3 再次打开是无副作用 operation。
+replace；失败不会替换 source。再次打开同一份未变化的文件时复用这份 backup。v3 再次打开是无副作用
+operation。
 
 完整合同见 [data compatibility contract](https://github.com/dream-num/univer-cli/blob/main/docs/data-compatibility.md)。
 

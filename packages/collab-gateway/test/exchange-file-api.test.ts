@@ -71,7 +71,7 @@ describe("Universer exchange File API", () => {
 
   it("keeps exchange trunk-only and preserves the 50 MiB protocol limit", async () => {
     expect(MAX_EXCHANGE_FILE_BYTES).toBe(50 * 1024 * 1024);
-    const worktree = server.manager.resolveByKey(key).collab.createWorktree("agent");
+    const worktree = await server.manager.resolveByKey(key).collab.createWorktree("agent");
     const response = await fetch(
       `${base()}/worktrees/${worktree.worktreeId}/universer-api/exchange/2/import`,
       {

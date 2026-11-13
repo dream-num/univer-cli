@@ -18,7 +18,7 @@ univer worktree add|list|ready|reopen|merge|discard ...
 univer unit add|remove|list ...
 univer execute <file.univer> --worktree <id> --unit <id> -e '<facade-js>'
 univer inspect <target> <selectors...> <file.univer> --unit <id> (--trunk|--worktree <id>)
-univer lint --file <file.univer> --unit <slide-id> [--worktree <id>] [--pages <pages>]
+univer lint --file <file.univer> --unit <slide-or-board-id> [--worktree <id>] [--pages <pages>] [--mode <model|rendered|both>]
 univer screenshot <file.univer> [--worktree <id>] [--unit <id>] [--out <dir>]
 univer screenshot setup [--force]
 univer print-pdf <file.univer> <output.pdf> [--worktree <id>] [--unit <id>]
@@ -28,7 +28,7 @@ univer compile-markdown <source.md> --unit <id> (--out <program.js>|--apply <fil
 univer export-markdown <file.univer> --worktree <id> --unit <id> --blocks <ids> --source-map <map.json> --out <fragment.md>
 univer resources registries|find|export|cache ...
 univer api find|show ...
-univer optimize <file.univer> (--dry-run|--out <copy.univer>)
+univer optimize <file.univer> (--dry-run|--out <copy.univer>) [--worktrees] [--history]
 univer config path|list|get|set|unset ...
 univer doctor [--json]
 univer doctor collect [--last <duration>|--since <time>|--all] [--trace-id <id>] [--output <dir>]
@@ -105,7 +105,12 @@ Without `--worktree`, import creates a new Univerfile. With a worktree, it write
 
 The editable `univer open` Viewer can import and export through its Ribbon. Import creates a new Unit in the current Univerfile. Trunk Sheet, Doc, Slide, Base, and Board Units expose their standard SDK version-history UI; read-only viewers can inspect history, while editable viewers can explicitly restore a version. Read-only Sheets do not expose Protect or Print. Worktree and merge-preview views do not expose import, export, or history. Other supported Units remain printable; Board supports printing only.
 
-`optimize` is copy-only. Unless `--dry-run` is used, it requires `--out` and never overwrites the source.
+`optimize` is copy-only. Unless `--dry-run` is used, it requires `--out` and never overwrites the source. It works on a private copy of the source, upgrades that copy when the source uses an earlier format, verifies and compacts it, and only then moves it to `--out`. Select at least one pass:
+
+- `--worktrees` deletes merged and discarded Worktrees together with their Units, changesets, and Worktree-scoped assets. Draft, ready, and merging Worktrees stay.
+- `--history` deletes each trunk Unit's snapshots between its earliest and its latest stored snapshot. Every changeset stays, so every revision and the version history remain readable; active Worktrees are unaffected.
+
+`--dry-run` performs the same steps on a temporary copy, reports the resulting size and removal counts, and deletes the copy.
 
 ## Rendering and authoring helpers
 
@@ -121,9 +126,23 @@ univer screenshot ./book.univer --worktree <id> --unit <slide-id> \
 univer print-pdf ./book.univer ./book.pdf --unit <sheet-id>
 univer print-pdf ./book.univer ./review.pdf --worktree <id> --unit <doc-id>
 univer lint --file ./book.univer --worktree <id> --unit <slide-id> --pages 1,3-5
+univer lint --file ./book.univer --unit <board-id> --mode model --json
+univer lint --file ./book.univer --worktree <id> --unit <board-id> --mode both --json
 ```
 
-`lint` uses the CLI SDK layout-lint capability and browser glyph geometry to detect `text-off-page`, `text-escapes-container`, and `text-overlaps-text` findings. Findings are review suggestions backed by geometry evidence.
+`lint` delegates to the CLI SDK layout-lint capability. Slide uses browser glyph geometry for `text-off-page`, `text-escapes-container`, and `text-overlaps-text` findings. Board supports `--mode model|rendered|both` (default: both), with `--pages` selecting one-based pages or IDs. Model-only analysis uses the standard headless factory and does not start a browser. The command reads trunk by default or the selected Worktree without editing it.
+
+Board reports preserve raw SDK rules, element/connector/label IDs, focus bounds, routes, per-source analyses, snapshot identity, and coverage. Missing or unresolved evidence produces incomplete coverage. Model-only results exclude final font metrics and rendered automatic routes. Errors or incomplete coverage exit with code 2; `--json` writes a single machine failure to stderr with the complete report at `error.details.report`, leaving stdout empty. Warnings alone succeed. Slide findings retain their existing exit behavior.
+
+Board `--plan-labels` with rendered or both mode includes read-only native repair plans in `analyses[].labelPlan`. Apply only a `ready` plan with `board.applyLayoutPlan(plan)` through `execute` in the existing draft, then re-run lint. A stale plan must be regenerated; lint never edits content.
+
+For a new diagram or an explicit repair, use rendered measurements before growing shapes or table frames. Generated lane capacity can be enlarged with the native lane API before replanning; authored capacities and fixed or locked owners stay unchanged. Verify each write with Undo/Redo and roll back the capacity and size changes if the fresh plan is incomplete. Screenshot review remains a separate step.
+
+Apply only a plan for the current Board page; `applyLayoutPlan` rejects a mismatched page.
+
+Rendered `analyses[].rendered.elementTextLayouts` includes native local available/content sizes for shape text
+without overflow. Use ready metrics to fit generated heading frames explicitly, then remeasure and verify history;
+pending fonts remain unresolved and inspection never resizes content.
 
 `compile-svg` uses real browser font measurement by default; `--estimate-text-size` opts into deterministic estimation. `compile-typst --apply` materializes a Doc snapshot in memory and writes it as one Worktree Unit. `resources` uses configured resource manifests and stores downloads under `${UNIVER_HOME}/cache/resources`.
 
@@ -152,13 +171,14 @@ inspection and screenshots do not require follow-up styling mutations.
 - `screenshot.maxPixels`
 - `update.checkOnStartup`
 - `univerRuntime.license`
+- `univerRuntime.licenseKey`
 
 Read commands do not create a configuration file. `set` and `unset` preserve unknown fields.
 
 - Application home is `${UNIVER_HOME:-~/.univer}`, with configuration at `${UNIVER_HOME}/config.json`.
 - `UNIVER_COLLAB_GATEWAY_PORT` overrides the Gateway port; the default is `9123`.
-- `UNIVER_LICENSE` overrides `univerRuntime.license`. If neither is set, the application uses its bundled 90-day runtime development license.
-- The bundled localhost development license is authorized for public redistribution with this application. It rotates every 90 days and is not the repository software license.
+- `UNIVER_LICENSE` overrides `univerRuntime.license`, and `UNIVER_LICENSE_KEY` overrides `univerRuntime.licenseKey`. The Web SDK uses only the License; the daemon's Collaboration SDK and Exchange verify it with its key. A configured License requires its key; if no License is configured, the application uses its bundled 90-day runtime development License and key.
+- The bundled runtime development License covers the `localhost`, `app`, and `127.0.0.1` domains and is authorized for public redistribution with this application. It rotates every 90 days and is not the repository software license.
 - Browser cache is under `${UNIVER_HOME}/browsers`. `UNIVER_RENDER_BROWSER` selects a Chrome/Chromium executable, and `UNIVER_RENDER_BROWSER_CACHE` overrides the cache root.
 - `daemon status` is read-only. The application manages only daemon processes whose identity it verifies as its own.
 - Daemon startup errors retain their original code and detail. Gateway state, origin, and Viewer URL appear in daemon status.
@@ -171,7 +191,7 @@ Read commands do not create a configuration file. `set` and `unset` preserve unk
 
 ## Data compatibility
 
-New Univerfiles use v3. Supported v0, v1, and v2 files upgrade to v3 when the application first explicitly opens their path. Upgrade performs read-only identification, locking, a byte-for-byte backup, an independent candidate, storage and runtime verification, a source-hash recheck, and atomic replacement. A failure never replaces the source. Opening the same unchanged file again reuses that backup. On Windows, migration runs in a helper process and the original is replaced after that process exits. Reopening v3 is side-effect free.
+New Univerfiles use v3. Supported v0, v1, and v2 files upgrade to v3 when the application first explicitly opens their path. Upgrade performs read-only identification, locking, a byte-for-byte backup, an independent candidate, storage and runtime verification, a source-hash recheck, and atomic replacement. A failure never replaces the source. Opening the same unchanged file again reuses that backup. Reopening v3 is side-effect free.
 
 See the [data compatibility contract](https://github.com/dream-num/univer-cli/blob/main/docs/data-compatibility.md) for details.
 

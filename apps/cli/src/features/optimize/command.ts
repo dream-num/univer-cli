@@ -4,7 +4,6 @@ import type { LocalOptimizeApplication } from "./service.js";
 interface OptimizeOptions {
   readonly dryRun?: boolean;
   readonly history?: boolean;
-  readonly images?: boolean;
   readonly json?: boolean;
   readonly out?: string;
   readonly worktrees?: boolean;
@@ -15,9 +14,11 @@ export function createOptimizeCommand(application: LocalOptimizeApplication): Co
     .description("Write a copy-only optimized .univer file")
     .argument("<file.univer>", "source local .univer file")
     .option("--out <file.univer>", "optimized copy path")
-    .option("--images", "externalize embedded images")
     .option("--worktrees", "remove merged and discarded Worktrees")
-    .option("--history", "materialize heads and reset Collaboration history")
+    .option(
+      "--history",
+      "remove trunk snapshots between each Unit's earliest and latest; keep all changesets",
+    )
     .option("--dry-run", "analyze without writing the optimized copy")
     .option("--json", "write structured JSON")
     .action(async (path: string, options: OptimizeOptions) => {
@@ -35,18 +36,16 @@ export function createOptimizeCommand(application: LocalOptimizeApplication): Co
           dryRun: options.dryRun === true,
           path,
           ...(options.out === undefined ? {} : { outputPath: options.out }),
-          ...(options.images === true ? { images: "externalize" as const } : {}),
           ...(options.worktrees === true ? { worktrees: "clean" as const } : {}),
-          ...(options.history === true ? { history: "reset" as const } : {}),
+          ...(options.history === true ? { history: "compact" as const } : {}),
         }),
       );
       const text = [
         `source: ${result.sourcePath}`,
         ...(result.outputPath === undefined ? [] : [`output: ${result.outputPath}`]),
-        `size: ${String(result.beforeBytes)} -> ${String(result.afterBytes ?? result.beforeBytes)} bytes`,
-        `images: ${String(result.images.uniqueBlobs)} blobs`,
+        `size: ${String(result.beforeBytes)} -> ${String(result.afterBytes)} bytes`,
         `worktrees removed: ${String(result.worktrees.removedWorktrees)}`,
-        `changesets removed: ${String(result.history.removedChangesets)}`,
+        `snapshots removed: ${String(result.history.removedSnapshots)}`,
       ];
       command
         .configureOutput()

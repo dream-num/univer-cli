@@ -41,7 +41,7 @@ describe("merge preview HTTP endpoints", () => {
     // Seed in-process via the resident authority, then exercise the HTTP read paths.
     const uf = server.manager.createByKey(key);
     const sheet = await uf.collab.createUnit(UniverInstanceType.UNIVER_SHEET, { name: "S" });
-    const w = uf.collab.createWorktree("agent");
+    const w = await uf.collab.createWorktree("agent");
     await changeWorktree(uf.collab, w.worktreeId, "edit", {
       modify: { [sheet.unitId]: setCell(sheet.unitId, 0, 0, "x") }
     });

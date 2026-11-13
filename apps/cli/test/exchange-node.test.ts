@@ -1,7 +1,7 @@
 import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { ExchangeFormat } from "@univerjs-pro/exchange-node";
+import { ExchangeFormat, configureExchange } from "@univerjs-pro/exchange-node";
 import {
   BaseFieldType,
   BaseViewType,
@@ -10,14 +10,20 @@ import {
   UniverInstanceType,
   type IWorkbookData,
 } from "@univerjs/core";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import {
   exchangeImportFormatOverride,
   exportOfficeFile,
   importOfficeFile,
 } from "../src/features/exchange/exchange-node.js";
+import { UNIVER_LICENSE, UNIVER_LICENSE_KEY } from "../src/license.js";
 
 describe("Exchange Node application adapter", () => {
+  // The daemon configures Exchange once per process; exports here run in the test process.
+  beforeAll(async () => {
+    await configureExchange({ license: UNIVER_LICENSE, licenseKey: UNIVER_LICENSE_KEY });
+  });
+
   it.each([
     [UniverInstanceType.UNIVER_SHEET, ExchangeFormat.XLSX, "sheet.xlsx", workbookData()],
     [UniverInstanceType.UNIVER_BASE, ExchangeFormat.XLSX, "base.xlsx", baseData()],

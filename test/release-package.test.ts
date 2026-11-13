@@ -31,11 +31,11 @@ describe("release package", () => {
         engines: { node: ">=22.12.0" },
         dependencies: {
           bundled: "workspace:*",
-          libsql: "^1.2.3",
+          ws: "^1.2.3",
         },
       },
       "0.5.0-insiders.20260817-374ec99",
-      ["libsql"],
+      ["ws"],
       { registry: RELEASE_REGISTRY, tag: "insiders" },
     );
 
@@ -43,7 +43,7 @@ describe("release package", () => {
       bin: { univer: "dist/bin.js" },
       name: "univer-cli",
       private: false,
-      dependencies: { libsql: "^1.2.3" },
+      dependencies: { ws: "^1.2.3" },
       files: ["dist", "LICENSE", "README.md", "README.zh-CN.md"],
       license: "Apache-2.0",
       publishConfig: { registry: RELEASE_REGISTRY, tag: "insiders" },

@@ -9,7 +9,6 @@ export function registerOptimizeHandlers(daemon: DaemonServer): void {
       dryRun: request.dryRun,
       sourcePath: request.path,
       ...(request.outputPath === undefined ? {} : { outputPath: request.outputPath }),
-      ...(request.images === undefined ? {} : { images: request.images }),
       ...(request.worktrees === undefined ? {} : { worktrees: request.worktrees }),
       ...(request.history === undefined ? {} : { history: request.history }),
     })) as unknown as JsonValue;
