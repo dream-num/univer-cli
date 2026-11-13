@@ -30,7 +30,8 @@ Declare marker type/size/offset; let the renderer calculate paint bounds and ter
 
 ## Rendered evidence
 
-Run model analysis and a full `screenshot --json`; inspect `outputs[0].layoutAnalysis`. An automatic connector
+Run standard Board `lint --mode both --json` and a full `screenshot --json`; inspect the report and
+`outputs[0].layoutAnalysis`. On exit code 2, the report is retained at `error.details.report`. An automatic connector
 without persisted route points can be unresolved in model analysis. Only final rendering establishes its route.
 
 | Finding                                                                                            | Response                                                                                  |
@@ -72,3 +73,8 @@ Omitting animation preserves it on update; `animation: null` disables it.
 
 Screenshots freeze animation in a detached in-memory copy, without changing saved content. Use an actual viewer
 cycle to verify requested motion; a still image only proves static appearance.
+
+For diagrams that need shared rails or coordinated crossing avoidance, request an explicit `routes` plan after
+the connectors exist. Use `graph` only when node placement may also change. Keep authored and structured routes
+in their owning workflow. Reset routing with `normalizeConnectorRouting()` only when the requested edit calls for
+removing existing route guidance.

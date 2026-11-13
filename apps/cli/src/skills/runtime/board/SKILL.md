@@ -69,6 +69,10 @@ return { shapeId: shape.getId(), elements: board.describeElements() };'
 live handle—not top-level `id`, coordinates, or `text`. Retain generated IDs and map semantic IDs to them.
 Await asynchronous operations according to their installed signatures before dependent calls or readback.
 
+Ordinary shapes keep a fixed stroke width when resized. Use the stock outline for native symbols.
+Set `strokeReferenceSize` only when an authored icon needs a proportional outline. See
+[shape outline scaling](references/uml-structure.md#shape-outline-scaling) for the Facade fields.
+
 Create and arrange nodes before their connectors. Use element-bound endpoints; for ordinary automatic connections,
 start with `fromElementId` / `toElementId` and omit sides/routing overrides. Introduce explicit ports or routes for
 diagram semantics or a diagnosed layout problem, not guessed pixel endpoints. Native map branches belong to their
@@ -78,24 +82,83 @@ Create known parents before children. Direct insertion into a parent uses parent
 `insertShapeAtPoint()` resolves a Board-world top-left point. Read back `parentId`, `laneId` and world bounds:
 a shape drawn inside a box is not necessarily its child.
 
+## Choose an explicit layout plan
+
+Check `univer lint --help` for `--plan` and `univer api show FBoard.planLayout FBoard.applyLayoutPlan` for mode options.
+
+```bash
+univer lint --file canvas.univer --worktree <id> --unit <board-id> --mode rendered --pages <page-id> --plan routes --plan-ids edge-a edge-b --json
+```
+
+Use `graph` for a new ordinary diagram whose nodes may move. Use `routes` to coordinate paths while keeping frames
+and ports, `ports` for automatic endpoint positions, `labels` for caption placement, or `text` for measured frame
+growth. Pass generated IDs for the active page. Human editing uses individual routes. Native structured layout
+owners and authored geometry remain authoritative.
+
+Read `analyses[].plan` from the lint report, including the report attached to a lint failure. The plan is read-only
+and needs a render runtime with fonts ready. Apply a ready, non-empty plan in the draft through
+`board.applyLayoutPlan(plan)` after checking the page ID. If the call returns false, obtain a fresh plan.
+For an incomplete plan, resolve the reported IDs, ownership, resource or spacing constraint before retrying.
+Capture a fresh screenshot and lint again. If the installed tool lacks the option, use its documented supported
+planning capabilities and report any mode that is unavailable.
+
 ## Verify in proportion to the change
 
 For a generated diagram, follow intent → spec when useful → layout decisions → Facade calls → check → targeted repair:
 
 1. Read back persisted elements/text, ownership and bindings with `describeElements()`, `getElements()`, or
    type-specific inspection. Check the requested meaning, not only counts.
-2. Run `board.analyzeModelLayout(48)`, then a full `univer screenshot ... --json`. Inspect the image and
-   `outputs[0].layoutAnalysis`; headless analysis cannot establish final font metrics or automatic routes.
-3. Repair implicated elements and recapture. Use [routing](references/connector-routing.md) or
+2. Run `univer lint --file <file.univer> --unit <board-id> --worktree <id> --mode both --json`.
+   It preserves SDK model and rendered diagnostics, routes, labels and coverage. Use `--mode model` for a
+   browser-free structural check; it cannot establish final font metrics or automatic rendered routes.
+   Incomplete coverage is not a pass. Board errors or incomplete coverage exit with code 2; the machine failure
+   retains the report at `error.details.report`. Then take a full screenshot and inspect the image.
+3. For measured label repair, run lint with `--plan-labels` in `both` or `rendered` mode. Read the report
+   directly on success or from `error.details.report` on failure. Inspect `analyses[].labelPlan`, then apply
+   only a `ready` native plan through `board.applyLayoutPlan(plan)` in the existing draft with `execute`.
+   Apply only a plan for the current Board page; `applyLayoutPlan` rejects a mismatched page.
+   A rejected stale plan requires fresh lint. Re-run lint and inspect the screenshot after applying.
+   For endpoint/no-free-position constraints on ordinary automatic connectors with movable nodes, retain the same
+   selection, fixed IDs and direction, increase graph `layerGap` (for example, to 160), then capture a new label plan.
+   Follow the [spacing repair procedure](references/connector-labels.md#spacing-before-label-repair); keep manual,
+   native and hard constraints intact, and report any remaining incomplete plan.
+   Repair implicated elements and recapture. Use [routing](references/connector-routing.md) or
    [label](references/connector-labels.md) guidance for their diagnostics. Never silently discard semantics to pass.
 4. Hand off an overview and any needed readable details. Distinguish clean results, visually reviewed diagnostic
    exceptions, and blockers; command success alone is not visual verification.
+
+For an explicit automatic-label proximity check, add `--maximum-automatic-label-distance 12` to Board
+`univer lint --mode rendered` or `--mode both`. It is opt-in, accepts finite non-negative Board units including zero,
+and preserves authored/fixed and endpoint-role labels. Missing native support or unresolved distance makes
+coverage incomplete; exceeded limits are errors (exit 2). Read the native receipt/status and screenshots;
+the metric is a sampled, marker-trimmed stroke-centerline distance, not raster ink. This check never repairs.
+
+On installations with the legacy planning flags, for automatic crossings, excessive detours or distant automatic captions, check `univer lint --help` for
+`--plan-ports`. When supported, run
+`univer lint --file <file.univer> --worktree <id> --unit <board-id> --mode both --plan-ports --json`.
+Read `analyses[].portPlan` and the unchanged original findings. Apply only one ready non-empty plan through
+`FBoard.applyLayoutPlan` on the same current page; then lint a fresh snapshot before requesting label repairs.
+For a distance finding, also request `--maximum-automatic-label-distance 12` when supported. An empty plan does
+not resolve the finding; report ineligible ownership or missing support rather than forcing ports to automatic.
+Missing/incomplete planning remains incomplete. Preserve authored ports/routes, node frames and native ownership.
+See [port and label repair](references/connector-labels.md#verification-and-repair) and review arrowheads in screenshots.
+
+For new ordinary generated shapes, check `univer lint --help` for `--plan-text`. If present, request only the
+generated shape IDs in rendered/both mode, inspect `analyses[].textPlan`, and apply a ready
+current plan through the headless Facade. Missing or incomplete support remains unresolved. Replan, fit and
+remeasure after sizing; preserve all text, fonts and authored/native ownership. See the
+[native text sizing procedure](references/board-spec.md) before applying a batch.
+
+If the installed help also lists `--text-width-growth`, use it with `--plan-text` to bound horizontal growth from
+1 to 2; 1 keeps the original width. For long or bilingual generated text, start with 1.25 and adjust using complete
+coverage and screenshots. Preserve complete text and font sizes; never send the option to an unsupported version.
 
 For a localized edit, inspect the changed region and affected relationships; do not regenerate the Board or run
 an unrelated profile matrix. Full drag/menu/Undo/Redo testing belongs to explicit interaction or coverage requests,
 not every authoring task. A static screenshot does not prove UI behavior.
 
 ```bash
+univer lint --file canvas.univer --worktree <id> --unit <board-id> --mode both --json
 univer screenshot canvas.univer --worktree <id> --unit <board-id> --out ./board-overview --json
 univer open canvas.univer --worktree <id>
 ```

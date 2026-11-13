@@ -22,6 +22,6 @@ export function createLocalLayoutLintCommand(application: LocalRenderApplication
     },
   });
   return command
-    .requiredOption("--file <file.univer>", "local .univer file containing the Slide Unit")
+    .requiredOption("--file <file.univer>", "local .univer file containing the Slide or Board Unit")
     .option("--worktree <id>", "read a Worktree; defaults to trunk");
 }

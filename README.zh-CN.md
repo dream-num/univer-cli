@@ -69,7 +69,7 @@ https://discord.gg/nThHPupraR
 | Doc      | 段落、富文本、列表、任务、表格、图片、图表、页眉页脚、分页 | Document/Paragraph 回读、逐页截图与 PDF 打印 | `.doc` `.docx`                       | `.docx`               |
 | Slide    | 页面、文字、形状、图片、表格、图表、SVG 布局、转场         | 结构检查、layout lint、截图与 PDF 打印       | `.ppt` `.pptx`                       | `.pptx`               |
 | Base     | 表、字段、记录、视图、公式、筛选、排序、分组               | 结构化数据检查与工作台截图                   | `.xls` `.xlsx` `.xlsm` `.csv` `.tsv` | `.xlsx` `.csv` `.tsv` |
-| Board    | 形状、文字、连接线、图片、原生图表、自动布线               | 元素/连接关系分析、截图与 PDF 打印           | —                                    | —                     |
+| Board    | 形状、文字、连接线、图片、原生图表、自动布线               | Model/rendered layout lint、截图与 PDF 打印  | —                                    | —                     |
 
 所有内容类型都支持隔离草稿、审阅、继续修改、合并和放弃。Board 暂不支持文件导入与导出。
 
@@ -80,6 +80,11 @@ https://discord.gg/nThHPupraR
 3. Agent 导入或创建 `.univer` 文件，并创建隔离的 draft Worktree。
 4. Agent 检查目标 Unit、完成修改，并回读实际保存的数据模型。
 5. 对视觉敏感的任务，Agent 会生成截图或执行 layout lint。
+
+如果当前版本的 `univer lint --help` 提供 `--plan`，Board 的 rendered lint 可以为每一页返回一份只读布局计划。
+支持 `graph`、`routes`、`ports`、`labels` 和 `text`。Board skill 说明如何读取 `analyses[].plan`、
+在同一草稿应用可用计划并截图复查。
+
 6. Agent 将 Worktree 标记为 `ready`，并返回本地 Viewer URL。
 7. 用户审阅结果，并明确选择合并、重新打开或放弃。
 
@@ -117,7 +122,7 @@ Skill 会自动选择这些能力，日常使用通常不需要手动调用。
 | `worktree`                                         | 创建、准备、重新打开、合并或放弃隔离修改                                         |
 | `inspect`                                          | 读取 Workbook、Worksheet、Range、Document、Paragraph、Presentation 或 Slide 数据 |
 | `execute`                                          | 通过可信 Univer Facade code 读取或编辑内容                                       |
-| `screenshot`、`print-pdf`、`lint`                  | 渲染内容、打印 PDF 并诊断 Slide layout 问题                                      |
+| `screenshot`、`print-pdf`、`lint`                  | 渲染内容、打印 PDF 并诊断 Slide 或 Board layout 问题                             |
 | `compile-svg`、`compile-typst`                     | 将 SVG 或 Typst source 转换为可编辑 Univer 内容                                  |
 | `export`、`open`                                   | 导出 Office 文件或返回本地 Viewer URL                                            |
 | `api`、`resources`、`skills`                       | 查找 Facade API、视觉资源与 operational guidance                                 |
@@ -125,10 +130,19 @@ Skill 会自动选择这些能力，日常使用通常不需要手动调用。
 
 完整 command option、selector、环境变量、machine output 与进程行为见 [CLI 完整参考](apps/cli/README.zh-CN.md)。
 
+Board 的 rendered/both `lint` 可显式设置 `--maximum-automatic-label-distance <board-units>`。
+阈值必须有限且非负，含 0。缺少原生支持或距离未解析为 incomplete，超限为 error，两者均以 code 2 退出。
+度量针对原生采样、裁去 marker 的 stroke 中心线，不是 raster ink；保留 fixed/authored 与端点角色标签。
+检查不会移动标签。
+
+Board 的 rendered/both `lint --plan-ports` 通过 `analyses[].portPlan` 返回原生只读端口排序计划。
+请求后计划缺失或不完整会使 coverage 不完整。通过 Board Facade 应用一个 ready 计划后，
+对新 snapshot 重新 lint，再使用其他计划。原始 findings 会保留，直到重新检查。
+
 ## 要求与当前限制
 
 - 支持 Agent Skills 的 Agent，以及 Node.js 24.0 或更高版本和 npm/npx。
-- Screenshot、PDF 打印、Slide layout lint 与浏览器文字度量需要 Chrome、Chromium 或 Edge；Agent 可以通过 `univer screenshot setup` 准备浏览器。
+- Screenshot、PDF 打印、Slide 与 Board rendered layout lint 及浏览器文字度量需要 Chrome、Chromium 或 Edge；Agent 可以通过 `univer screenshot setup` 准备浏览器。
 - `execute` 执行可信 JavaScript，不能作为不受信任代码的 sandbox。
 - `.univer` 文件、Gateway、Viewer、daemon、runtime worker 与 browser cache 保存在本机；显式 HTTP 导入、资源下载与更新检查可能访问网络。
 - Board 支持结构与视觉验证，但暂不支持文件导入或导出。
@@ -163,6 +177,16 @@ pnpm check
 univer daemon stop
 pnpm unlink:cli
 ```
+
+Daemon 启动时初始化本地 Gateway；content worker 或文档创建请求需要时才加载标准 headless Univer composition。
+文档创建实例在每次请求结束后释放。
+
+### 本地 Board 联调
+
+使用 `pnpm dev:board --map <sdk-tarballs.json>`，通过 source CLI、隔离的文件／daemon home 验证未发布的 SDK tarball；
+浏览器 bundle 仅在输入一致时复用。Package 来源、producer dev 打包、临时配置恢复与 CLI／Viewer 交互入口见
+[本地 Board 开发](docs/board-local-development.zh-CN.md)。
+验证会沿间接 SDK 依赖继续查找，并检查已安装 runtime 入口的字节与指定 tarball 一致。
 
 ### SDK 升级
 

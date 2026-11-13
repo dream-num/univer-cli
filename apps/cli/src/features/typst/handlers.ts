@@ -1,8 +1,5 @@
 import type { DaemonServer, JsonValue } from "@univer-cli/daemon";
-import {
-  createStandardHeadlessUniverFacade,
-  type HeadlessUniverFactory,
-} from "@univer-cli/headless-univer";
+import type { HeadlessUniverFactory } from "@univer-cli/headless-univer";
 import type { StartedServer } from "@univer/collab-gateway";
 import { UniverInstanceType, type IDocumentData } from "@univerjs/core";
 import {
@@ -61,6 +58,7 @@ async function materializeDocument(
   unitId: string,
   code: string,
 ): Promise<IDocumentData> {
+  const { createStandardHeadlessUniverFacade } = await import("@univer-cli/headless-univer");
   const univer = await createUniver({ unitId, unitType: UniverInstanceType.UNIVER_DOC });
   try {
     const univerAPI = createStandardHeadlessUniverFacade(univer);
