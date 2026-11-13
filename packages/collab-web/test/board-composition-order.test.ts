@@ -33,7 +33,6 @@ describe("version-matched Board composition", () => {
       'import "@univerjs-pro/boards-chart/facade"',
       'import "@univerjs-pro/boards-mind/facade"',
       'import "@univerjs-pro/boards-table/facade"',
-      'import "@univerjs-pro/ink/facade"',
       'import "@univerjs-pro/exchange-client/facade"',
       'import "@univerjs-pro/docs-latex/facade"'
     ]);
