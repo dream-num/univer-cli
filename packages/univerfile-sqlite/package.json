@@ -16,10 +16,10 @@
     "typecheck": "tsc -p tsconfig.test.json --noEmit --pretty false"
   },
   "dependencies": {
-    "@univerjs-pro/collaboration-history-service": "1.4.0-insiders.20261111-e492f8d",
-    "@univerjs-pro/collaboration-service": "1.4.0-insiders.20261111-e492f8d",
-    "@univerjs-pro/collaboration-worktree-service": "1.4.0-insiders.20261111-e492f8d",
-    "@univerjs/protocol": "1.4.0-insiders.20261111-e492f8d"
+    "@univerjs-pro/collaboration-history-service": "1.5.2",
+    "@univerjs-pro/collaboration-service": "1.5.2",
+    "@univerjs-pro/collaboration-worktree-service": "1.5.2",
+    "@univerjs/protocol": "1.5.2"
   },
   "devDependencies": {
     "esbuild": "^0.28.2"

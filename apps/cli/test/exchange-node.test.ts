@@ -63,7 +63,8 @@ describe("Exchange Node application adapter", () => {
         unitType: UniverInstanceType.UNIVER_SHEET,
       })) as IWorkbookData;
       const cell = imported.sheets[imported.sheetOrder[0]!]!.cellData?.[0]?.[0];
-      expect(cell).toMatchObject({ f: "=1+1", v: "2" });
+      expect(cell).toMatchObject({ f: "=1+1", t: CellValueType.NUMBER });
+      expect(Number(cell?.v)).toBe(2);
     } finally {
       await rm(directory, { force: true, recursive: true });
     }
