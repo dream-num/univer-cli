@@ -7,12 +7,8 @@ import {
   createApplicationSkillLibrary,
 } from "../src/features/skills/library.js";
 
-const testRoot = dirname(fileURLToPath(import.meta.url));
-const assetsRoot = resolve(testRoot, "../src/skills");
-const library = createApplicationSkillLibrary(
-  resolve(testRoot, "../../../skills"),
-  resolve(assetsRoot, "runtime"),
-);
+const assetsRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../src/skills/runtime");
+const library = createApplicationSkillLibrary(assetsRoot);
 
 describe("application Skill library", () => {
   it("exposes the current runtime Skill set in stable routing order", async () => {
@@ -24,18 +20,10 @@ describe("application Skill library", () => {
     );
   });
 
-  it("keeps the discovery Skill addressable but out of runtime list and --all", async () => {
-    const discovery = await library.read({ name: "univer-cli" });
-
-    expect(library.names).not.toContain("univer-cli");
-    expect(discovery.metadata).toMatchObject({ hidden: false, name: "univer-cli" });
-    expect(discovery.content).toContain("univer skills get core");
-  });
-
   it("delivers the Board label reference through the runtime full-skill reader", async () => {
     const board = await library.read({ full: true, name: "board" });
     const path = "references/connector-labels.md";
-    const content = await readFile(resolve(assetsRoot, "runtime/board", path), "utf8");
+    const content = await readFile(resolve(assetsRoot, "board", path), "utf8");
 
     expect(board.files).toEqual(
       expect.arrayContaining([expect.objectContaining({ path, content })]),
@@ -139,7 +127,7 @@ describe("application Skill library", () => {
   it("delivers a connected timeline example with parent-local stage and detail ordering", async () => {
     const board = await library.read({ full: true, name: "board" });
     const path = "references/mind-map.md";
-    const content = await readFile(resolve(assetsRoot, "runtime/board", path), "utf8");
+    const content = await readFile(resolve(assetsRoot, "board", path), "utf8");
     expect(board.files).toEqual(
       expect.arrayContaining([expect.objectContaining({ path, content })]),
     );
@@ -302,14 +290,11 @@ describe("application Skill library", () => {
 
   it("keeps the current Skill corpus aligned with the CLI contract", async () => {
     const snapshots = await Promise.all(
-      [...APPLICATION_SKILL_NAMES, "univer-cli"].map(
-        async (name) => await library.read({ full: true, name }),
-      ),
+      APPLICATION_SKILL_NAMES.map(async (name) => await library.read({ full: true, name })),
     );
     const corpus = snapshots.map((snapshot) => snapshot.content).join("\n");
     const core = snapshots.find((snapshot) => snapshot.metadata.name === "core");
 
-    expect(corpus).toContain("univer update");
     expect(corpus).toContain("A `ready` worktree rejects writes until it is explicitly reopened");
     expect(corpus).toContain("univer lint --file");
     expect(corpus).toContain("with the Lite Interface");

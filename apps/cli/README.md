@@ -187,7 +187,7 @@ Read commands do not create a configuration file. `set` and `unset` preserve unk
 
 `doctor` aggregates configuration, daemon, and browser checks. `doctor collect` creates a `0700` directory containing `0600` JSON files and redacts credentials, tokens, licenses, URL user info/query/fragment, and Bearer values.
 
-`skills` reads version-matched application assets from the packaged `dist/skills` directory and never reads a neighboring checkout.
+Agents install the `univer-cli` discovery Skill directly from the repository. The CLI reads only the version-matched runtime Skills in `dist/skills/runtime`. Running `univer skills path` prints that directory.
 
 ## Data compatibility
 

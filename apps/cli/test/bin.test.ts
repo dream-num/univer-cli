@@ -131,10 +131,14 @@ describe("built univer executable", () => {
     expect(all.skills.map((skill) => skill.name)).toEqual(listed.skills.map((skill) => skill.name));
     expect(all.skills.every((skill) => Array.isArray(skill.files))).toBe(true);
 
-    const discovery = parseJson(
-      (await invoke(["skills", "get", "univer-cli", "--json"])).stdout,
-    ) as { readonly skills: readonly { readonly name: string }[] };
-    expect(discovery.skills).toEqual([expect.objectContaining({ name: "univer-cli" })]);
+    const paths = parseJson((await invoke(["skills", "path", "--json"])).stdout);
+    expect(paths).toEqual({ paths: [join(projectRoot, "dist", "skills", "runtime")] });
+    for (const command of ["get", "path"]) {
+      await expect(invoke(["skills", command, "univer-cli"])).rejects.toMatchObject({
+        code: 1,
+        stderr: expect.stringContaining("SKILL_NOT_FOUND"),
+      });
+    }
 
     const located = parseJson((await invoke(["skills", "path", "core", "--json"])).stdout) as {
       readonly name: string;

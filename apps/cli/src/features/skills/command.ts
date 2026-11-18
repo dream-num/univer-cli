@@ -71,9 +71,7 @@ export function createSkillsCommand(library: SkillLibrary): Command {
     .action(async (name: string | undefined) => {
       const options = path.optsWithGlobals<OutputOptions>();
       if (name === undefined) {
-        const roots = library.roots();
-        const paths = [roots.discoveryRoot, roots.skillDataRoot];
-        writeOutput(path, options, { paths }, paths.join("\n"));
+        writeOutput(path, options, { paths: [library.root] }, library.root);
         return;
       }
       const snapshot = await execute(path, async () => await library.read({ name }));

@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
@@ -16,12 +16,11 @@ describe("Skill distribution", () => {
     expect(RUNTIME_SKILL_NAMES).toEqual(APPLICATION_SKILL_NAMES);
   });
 
-  it("packages the same discovery Skill that users install from the repository", async () => {
-    const source = await readFile(join(process.cwd(), DISCOVERY_SKILL_RELATIVE_PATH));
-    const packaged = await readFile(
-      join(process.cwd(), "apps/cli/dist/skills/discovery/univer-cli/SKILL.md"),
+  it("packages only the runtime Skills", async () => {
+    const skillsRoot = join(process.cwd(), "apps/cli/dist/skills");
+    expect(await readdir(skillsRoot)).toEqual(["runtime"]);
+    expect((await readdir(join(skillsRoot, "runtime"))).sort()).toEqual(
+      [...APPLICATION_SKILL_NAMES].sort(),
     );
-
-    expect(packaged).toEqual(source);
   });
 });

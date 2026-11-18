@@ -23,7 +23,7 @@ export interface SkillLibrary {
   readonly names: readonly string[];
   list(): Promise<readonly SkillMetadata[]>;
   read(input: { readonly full?: boolean; readonly name: string }): Promise<SkillSnapshot>;
-  roots(): { readonly discoveryRoot: string; readonly skillDataRoot: string };
+  readonly root: string;
 }
 
 export type SkillErrorCode =
@@ -52,21 +52,18 @@ export const APPLICATION_SKILL_NAMES = [
   "cross-unit-formula",
 ] as const;
 
-const DISCOVERY_SKILL_NAME = "univer-cli";
 const SUPPLEMENTAL_DIRECTORIES = ["references", "templates"] as const;
 
 /** Read the application-owned, version-matched Skill assets. */
-export function createApplicationSkillLibrary(
-  discoveryRoot: string,
-  skillDataRoot: string,
-): SkillLibrary {
+export function createApplicationSkillLibrary(skillDataRoot: string): SkillLibrary {
   const names = [...APPLICATION_SKILL_NAMES];
 
   return {
     names,
+    root: skillDataRoot,
     async list() {
       const snapshots = await Promise.all(
-        names.map(async (name) => await readSnapshot(name, false, discoveryRoot, skillDataRoot)),
+        names.map(async (name) => await readSnapshot(name, false, skillDataRoot)),
       );
       return snapshots.map((snapshot) => snapshot.metadata);
     },
@@ -74,19 +71,15 @@ export function createApplicationSkillLibrary(
       return await readSnapshot(
         validateRequestedName(input.name, names),
         input.full === true,
-        discoveryRoot,
         skillDataRoot,
       );
-    },
-    roots() {
-      return { discoveryRoot, skillDataRoot };
     },
   };
 }
 
 function validateRequestedName(name: string, runtimeNames: readonly string[]): string {
   const normalized = name.trim();
-  if (normalized !== DISCOVERY_SKILL_NAME && !runtimeNames.includes(normalized)) {
+  if (!runtimeNames.includes(normalized)) {
     throw new SkillError("SKILL_NOT_FOUND", `Unknown Skill: ${name}.`);
   }
   return normalized;
@@ -95,10 +88,9 @@ function validateRequestedName(name: string, runtimeNames: readonly string[]): s
 async function readSnapshot(
   name: string,
   full: boolean,
-  discoveryRoot: string,
   skillDataRoot: string,
 ): Promise<SkillSnapshot> {
-  const directory = join(name === DISCOVERY_SKILL_NAME ? discoveryRoot : skillDataRoot, name);
+  const directory = join(skillDataRoot, name);
   const skillPath = join(directory, "SKILL.md");
   let content: string;
   try {

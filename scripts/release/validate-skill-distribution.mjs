@@ -46,6 +46,7 @@ export function validateDiscoverySkill(content) {
   for (const command of [
     "npm install -g univer-cli",
     "univer doctor",
+    "univer update",
     "univer skills get core",
     "univer skills list",
     ...RUNTIME_SKILL_NAMES.map((name) => `univer skills get ${name}`),

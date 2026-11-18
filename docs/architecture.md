@@ -155,8 +155,7 @@ packages/univerfile-sqlite/         # .univer persistence 与安全升级
 packages/workbook-compare/          # Sheet 只读展示和坐标联动；仅消费 Pro History 的差异与对齐结果，无算法回退
 ```
 
-对外安装的 discovery Skill 由仓库根目录的 `skills/univer-cli/` 提供。构建时将同一目录复制到
-`dist/skills/discovery/univer-cli/`，供已安装的 CLI 按名称读取。各 Unit 和主题的操作指南位于
+Agent 从仓库根目录的 `skills/univer-cli/` 安装 discovery Skill。CLI 只打包和读取 runtime Skills。各 Unit 和主题的操作指南位于
 `apps/cli/src/skills/runtime/`，随 npm 包发布到 `dist/skills/runtime/`，与已安装 CLI 的命令和 Facade API 保持版本匹配。
 
 ## Command composition

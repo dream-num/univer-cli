@@ -215,7 +215,7 @@ revision 来自同一次 runtime 读取；映射默认写入 `<out>.map.json`。
 `doctor` 聚合 config、daemon 与 browser check。`doctor collect` 创建权限为 `0700` 的目录与 `0600` 的 JSON，
 并对 credential、token、license、URL userinfo/query/fragment 和 Bearer value 脱敏。
 
-`skills` 从 build 随包发布的 `dist/skills` 读取 version-matched application assets，不读取相邻 checkout。
+Agent 从本仓库安装 `univer-cli` discovery Skill。CLI 只读取随包发布到 `dist/skills/runtime` 的同版本 runtime Skills。运行 `univer skills path` 可查看该目录。
 
 ## Data compatibility
 
