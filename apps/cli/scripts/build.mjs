@@ -72,9 +72,32 @@ const preferEsmSdkResolution = {
     });
   },
 };
+// These SDK wrappers call createRequire from their own module to load a private native
+// dependency. After bundling, their module URL points into dist instead. Anchor just their
+// loaders to the installed wrappers, preserving pnpm's isolated dependency layout.
+const nativeWrapperResolution = {
+  name: "native-wrapper-resolution",
+  setup(context) {
+    context.onResolve({ filter: /^node:module$/ }, ({ importer }) => {
+      const wrapper = importer
+        .replaceAll("\\", "/")
+        .match(/\/node_modules\/(@univerjs-pro\/(?:exchange-node|engine-formula-rust))\//u)?.[1];
+      return wrapper === undefined ? undefined : { path: wrapper, namespace: "native-wrapper" };
+    });
+    context.onLoad({ filter: /.*/, namespace: "native-wrapper" }, ({ path: wrapper }) => ({
+      contents: [
+        'import { createRequire as nodeCreateRequire } from "node:module";',
+        'export * from "node:module";',
+        `export function createRequire() { return nodeCreateRequire(import.meta.resolve(${JSON.stringify(wrapper)})); }`,
+      ].join("\n"),
+    }));
+  },
+};
+
 const buildVersion = process.env["UNIVER_CLI_BUILD_VERSION"]?.trim();
 const plugins = [
   preferEsmSdkResolution,
+  nativeWrapperResolution,
   ...(buildVersion === undefined || buildVersion.length === 0
     ? []
     : [
