@@ -4,7 +4,7 @@
 
 [English](README.md) · 简体中文
 
-[![Agent Skill](https://img.shields.io/badge/Agent%20Skill-univer--cli-0a7ea4)](https://github.com/dream-num/skills/tree/main/skills/univer-cli)
+[![Agent Skill](https://img.shields.io/badge/Agent%20Skill-univer--cli-0a7ea4)](https://github.com/dream-num/univer-cli/tree/main/skills/univer-cli)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D24.0-339933?logo=node.js&logoColor=white)](apps/cli/package.json)
 [![CI](https://github.com/dream-num/univer-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/dream-num/univer-cli/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
@@ -19,7 +19,7 @@ Agent 会在隔离的 Worktree 中检查内容、通过 Univer Facade 完成编�
 
 ```text
 安装 Univer CLI Skill：
-npx skills add dream-num/skills -s univer-cli -g
+npx skills add dream-num/univer-cli --skill univer-cli -g
 
 将官方示例下载到 ./hello.univer：
 https://univer.ai/cli-assets/hello.univer

@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const DISCOVERY_SKILL_RELATIVE_PATH = "apps/cli/src/skills/discovery/univer-cli/SKILL.md";
+export const DISCOVERY_SKILL_RELATIVE_PATH = "skills/univer-cli/SKILL.md";
 export const DISTRIBUTED_SKILL_NAME = "univer-cli";
 export const RUNTIME_SKILL_NAMES = [
   "core",

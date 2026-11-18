@@ -7,12 +7,15 @@ import {
   createApplicationSkillLibrary,
 } from "../src/features/skills/library.js";
 
-const assetsRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../src/skills");
+const testRoot = dirname(fileURLToPath(import.meta.url));
+const assetsRoot = resolve(testRoot, "../src/skills");
+const library = createApplicationSkillLibrary(
+  resolve(testRoot, "../../../skills"),
+  resolve(assetsRoot, "runtime"),
+);
 
 describe("application Skill library", () => {
   it("exposes the current runtime Skill set in stable routing order", async () => {
-    const library = createApplicationSkillLibrary(assetsRoot);
-
     expect(library.names).toEqual(APPLICATION_SKILL_NAMES);
     await expect(library.list()).resolves.toEqual(
       expect.arrayContaining(
@@ -22,7 +25,6 @@ describe("application Skill library", () => {
   });
 
   it("keeps the discovery Skill addressable but out of runtime list and --all", async () => {
-    const library = createApplicationSkillLibrary(assetsRoot);
     const discovery = await library.read({ name: "univer-cli" });
 
     expect(library.names).not.toContain("univer-cli");
@@ -31,7 +33,6 @@ describe("application Skill library", () => {
   });
 
   it("delivers the Board label reference through the runtime full-skill reader", async () => {
-    const library = createApplicationSkillLibrary(assetsRoot);
     const board = await library.read({ full: true, name: "board" });
     const path = "references/connector-labels.md";
     const content = await readFile(resolve(assetsRoot, "runtime/board", path), "utf8");
@@ -42,7 +43,6 @@ describe("application Skill library", () => {
   });
 
   it("keeps Board references opt-in and delivers every linked reference", async () => {
-    const library = createApplicationSkillLibrary(assetsRoot);
     const entry = await library.read({ name: "board" });
     expect(entry.content).toContain("--plan routes --plan-ids");
     expect(entry.content).toContain("FBoard.planLayout");
@@ -74,7 +74,6 @@ describe("application Skill library", () => {
   });
 
   it("ships a valid use-case example with extension locations owned by the base case", async () => {
-    const library = createApplicationSkillLibrary(assetsRoot);
     const board = await library.read({ full: true, name: "board" });
     const reference = board.files?.find((file) => file.path === "references/uml-structure.md");
     expect(reference).toBeDefined();
@@ -107,7 +106,6 @@ describe("application Skill library", () => {
   });
 
   it("ships component assemblies with matching declared contracts and unbound interfaces", async () => {
-    const library = createApplicationSkillLibrary(assetsRoot);
     const board = await library.read({ full: true, name: "board" });
     const reference = board.files?.find((file) => file.path === "references/uml-structure.md");
     const examples = [...reference!.content.matchAll(/```json\s*\n([\s\S]*?)```/g)].map((match) =>
@@ -139,7 +137,6 @@ describe("application Skill library", () => {
   });
 
   it("delivers a connected timeline example with parent-local stage and detail ordering", async () => {
-    const library = createApplicationSkillLibrary(assetsRoot);
     const board = await library.read({ full: true, name: "board" });
     const path = "references/mind-map.md";
     const content = await readFile(resolve(assetsRoot, "runtime/board", path), "utf8");
@@ -189,7 +186,6 @@ describe("application Skill library", () => {
   });
 
   it("ships consistent chart and table data with an Ink annotation targeting the comparison", async () => {
-    const library = createApplicationSkillLibrary(assetsRoot);
     const board = await library.read({ full: true, name: "board" });
     const reference = board.files?.find((file) => file.path === "references/content-selection.md");
     const examples = [...reference!.content.matchAll(/```json\s*\n([\s\S]*?)```/g)].map((match) =>
@@ -232,7 +228,6 @@ describe("application Skill library", () => {
   });
 
   it("keeps native Chart guidance on the direct host and live Chart contract", async () => {
-    const library = createApplicationSkillLibrary(assetsRoot);
     const contracts = [
       {
         insertion: "await board.insertChart(info)",
@@ -279,7 +274,6 @@ describe("application Skill library", () => {
   });
 
   it("keeps Base inspection guidance aligned with its object model", async () => {
-    const library = createApplicationSkillLibrary(assetsRoot);
     const base = await library.read({ full: true, name: "base" });
     expect(base.content).toContain("FBaseTableField");
     expect(base.content).toContain("FBaseTableRecord");
@@ -307,7 +301,6 @@ describe("application Skill library", () => {
   });
 
   it("keeps the current Skill corpus aligned with the CLI contract", async () => {
-    const library = createApplicationSkillLibrary(assetsRoot);
     const snapshots = await Promise.all(
       [...APPLICATION_SKILL_NAMES, "univer-cli"].map(
         async (name) => await library.read({ full: true, name }),
@@ -315,7 +308,6 @@ describe("application Skill library", () => {
     );
     const corpus = snapshots.map((snapshot) => snapshot.content).join("\n");
     const core = snapshots.find((snapshot) => snapshot.metadata.name === "core");
-    const skillReadme = await readFile(resolve(assetsRoot, "README.md"), "utf8");
 
     expect(corpus).toContain("univer update");
     expect(corpus).toContain("A `ready` worktree rejects writes until it is explicitly reopened");
@@ -328,6 +320,5 @@ describe("application Skill library", () => {
     expect(core?.content).toContain("`show` accepts one or more exact symbols");
     expect(core?.content).toContain("Do not pass `--unit` to `show`");
     expect(corpus).not.toContain("search by intent");
-    expect(skillReadme).toContain("`src/skills` 是 source of truth");
   });
 });

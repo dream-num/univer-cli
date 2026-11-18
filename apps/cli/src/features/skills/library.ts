@@ -56,9 +56,10 @@ const DISCOVERY_SKILL_NAME = "univer-cli";
 const SUPPLEMENTAL_DIRECTORIES = ["references", "templates"] as const;
 
 /** Read the application-owned, version-matched Skill assets. */
-export function createApplicationSkillLibrary(assetsRoot: string): SkillLibrary {
-  const discoveryRoot = join(assetsRoot, "discovery");
-  const skillDataRoot = join(assetsRoot, "runtime");
+export function createApplicationSkillLibrary(
+  discoveryRoot: string,
+  skillDataRoot: string,
+): SkillLibrary {
   const names = [...APPLICATION_SKILL_NAMES];
 
   return {

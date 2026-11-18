@@ -141,7 +141,8 @@ revision 作为读取版本元信息保留；编辑后的片段按原生块映�
 apps/cli/src/environment/           # Home、config 与本地路径
 apps/cli/src/daemon/                # daemon、Gateway 与 runtime composition
 apps/cli/src/features/              # application feature 与 Local adapter
-apps/cli/src/skills/                # build 随包发布的 Skill assets
+skills/univer-cli/                   # 可从本仓库安装的 discovery Skill
+apps/cli/src/skills/runtime/        # 随 CLI 发布的 runtime Skills
 apps/cli/src/runtime-worker.ts      # headless collaboration worker composition
 packages/collab-gateway/            # Collaboration SDK Gateway adapter
 packages/collab-gateway-contract/   # Gateway/Viewer control-plane contract
@@ -154,10 +155,9 @@ packages/univerfile-sqlite/         # .univer persistence 与安全升级
 packages/workbook-compare/          # Sheet 只读展示和坐标联动；仅消费 Pro History 的差异与对齐结果，无算法回退
 ```
 
-Skill Markdown 是 application asset，保持在 `apps/cli/src/skills`；build 将其复制到 `dist/skills`，runtime 不读取
-相邻目录。`discovery/univer-cli` 同时是对外 discovery Skill 的唯一 source；正式 stable latest release
-将它自动同步到 `dream-num/skills` distribution mirror。`runtime/*` 只随 npm package 发布，确保操作指导与
-已安装 application version 匹配。
+对外安装的 discovery Skill 由仓库根目录的 `skills/univer-cli/` 提供。构建时将同一目录复制到
+`dist/skills/discovery/univer-cli/`，供已安装的 CLI 按名称读取。各 Unit 和主题的操作指南位于
+`apps/cli/src/skills/runtime/`，随 npm 包发布到 `dist/skills/runtime/`，与已安装 CLI 的命令和 Facade API 保持版本匹配。
 
 ## Command composition
 
