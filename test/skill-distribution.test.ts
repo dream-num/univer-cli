@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
@@ -16,18 +16,11 @@ describe("Skill distribution", () => {
     expect(RUNTIME_SKILL_NAMES).toEqual(APPLICATION_SKILL_NAMES);
   });
 
-  it("syncs only the source-owned discovery Skill after a stable latest release", async () => {
-    const workflow = await readFile(
-      join(process.cwd(), ".github", "workflows", "sync-skills-release.yml"),
-      "utf8",
+  it("packages only the runtime Skills", async () => {
+    const skillsRoot = join(process.cwd(), "apps/cli/dist/skills");
+    expect(await readdir(skillsRoot)).toEqual(["runtime"]);
+    expect((await readdir(join(skillsRoot, "runtime"))).sort()).toEqual(
+      [...APPLICATION_SKILL_NAMES].sort(),
     );
-
-    expect(workflow).toContain("^v(0|[1-9][0-9]*)");
-    expect(workflow).toContain('releases/latest"');
-    expect(workflow).toContain(
-      'source_skill_dir="$GITHUB_WORKSPACE/apps/cli/src/skills/discovery/univer-cli"',
-    );
-    expect(workflow).toContain('target_skill_dir="$target_dir/skills/univer-cli"');
-    expect(workflow).not.toContain("src/skills/runtime");
   });
 });

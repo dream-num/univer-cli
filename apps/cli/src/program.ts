@@ -192,7 +192,8 @@ export function createProgram(options: UniverLocalProgramOptions = {}): Command 
       version,
     });
   const skillLibrary =
-    options.skillLibrary ?? createApplicationSkillLibrary(defaultSkillAssetRoot());
+    options.skillLibrary ??
+    createApplicationSkillLibrary(fileURLToPath(new URL("./skills/runtime", import.meta.url)));
   const updateApplication =
     options.updateApplication ??
     createLocalUpdateApplication({
@@ -319,10 +320,6 @@ function defaultResourceManifestPath(): string {
 
 function defaultApplicationPackageRoot(): string {
   return fileURLToPath(new URL("../", import.meta.url));
-}
-
-function defaultSkillAssetRoot(): string {
-  return fileURLToPath(new URL("./skills/", import.meta.url));
 }
 
 function defaultBrowserRuntimeRoot(): string {

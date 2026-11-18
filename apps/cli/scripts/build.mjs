@@ -160,9 +160,11 @@ if (process.env["UNIVER_CLI_DUMP_METAFILE"] === "1") {
     "utf8",
   );
 }
-await cp(join(projectRoot, "src", "skills"), join(projectRoot, "dist", "skills"), {
-  recursive: true,
-});
+await cp(
+  join(projectRoot, "src", "skills", "runtime"),
+  join(projectRoot, "dist", "skills", "runtime"),
+  { recursive: true },
+);
 // The collaboration pool spawns its worker bootstrap relative to its own module URL. Code
 // splitting places the pool in a shared chunk under dist/chunks/, so the bootstrap file must
 // ship there for the runtime URL resolution to find it.

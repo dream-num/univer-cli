@@ -4,7 +4,7 @@
 
 English · [简体中文](README.zh-CN.md)
 
-[![Agent Skill](https://img.shields.io/badge/Agent%20Skill-univer--cli-0a7ea4)](https://github.com/dream-num/skills/tree/main/skills/univer-cli)
+[![Agent Skill](https://img.shields.io/badge/Agent%20Skill-univer--cli-0a7ea4)](https://github.com/dream-num/univer-cli/tree/main/skills/univer-cli)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D24.0-339933?logo=node.js&logoColor=white)](apps/cli/package.json)
 [![CI](https://github.com/dream-num/univer-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/dream-num/univer-cli/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
@@ -19,7 +19,7 @@ Copy the entire prompt below into the agent you use:
 
 ```text
 Install the Univer CLI Skill:
-npx skills add dream-num/skills -s univer-cli -g
+npx skills add dream-num/univer-cli -g
 
 Download the official sample to ./hello.univer:
 https://univer.ai/cli-assets/hello.univer
