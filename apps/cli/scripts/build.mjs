@@ -72,9 +72,8 @@ const preferEsmSdkResolution = {
     });
   },
 };
-// These SDK wrappers call createRequire from their own module to load a private native
-// dependency. After bundling, their module URL points into dist instead. Anchor just their
-// loaders to the installed wrappers, preserving pnpm's isolated dependency layout.
+// Keep the SDK JavaScript bundled. When the formula engine is loaded as an external package,
+// the bundled injector fails to supply the plugin's config service during worker startup.
 const nativeWrapperResolution = {
   name: "native-wrapper-resolution",
   setup(context) {
@@ -85,6 +84,10 @@ const nativeWrapperResolution = {
       return wrapper === undefined ? undefined : { path: wrapper, namespace: "native-wrapper" };
     });
     context.onLoad({ filter: /.*/, namespace: "native-wrapper" }, ({ path: wrapper }) => ({
+      // Bundling makes the wrapper's __filename or import.meta.url point into CLI dist.
+      // npm may hoist the native binding where dist can see it; pnpm exposes it to the
+      // wrapper that declares it. Resolve that wrapper's installed entry at runtime so
+      // its binding loads from the same starting point in either layout.
       contents: [
         'import { createRequire as nodeCreateRequire } from "node:module";',
         'export * from "node:module";',
