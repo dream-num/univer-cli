@@ -19,7 +19,7 @@ Copy the entire prompt below into the agent you use:
 
 ```text
 Install the Univer CLI Skill:
-npx skills add dream-num/univer-cli --skill univer-cli -g
+npx skills add dream-num/univer-cli -g
 
 Download the official sample to ./hello.univer:
 https://univer.ai/cli-assets/hello.univer

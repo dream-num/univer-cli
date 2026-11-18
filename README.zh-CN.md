@@ -19,7 +19,7 @@ Agent 会在隔离的 Worktree 中检查内容、通过 Univer Facade 完成编�
 
 ```text
 安装 Univer CLI Skill：
-npx skills add dream-num/univer-cli --skill univer-cli -g
+npx skills add dream-num/univer-cli -g
 
 将官方示例下载到 ./hello.univer：
 https://univer.ai/cli-assets/hello.univer
