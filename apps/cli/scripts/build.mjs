@@ -72,9 +72,35 @@ const preferEsmSdkResolution = {
     });
   },
 };
+// Keep the SDK JavaScript bundled. When the formula engine is loaded as an external package,
+// the bundled injector fails to supply the plugin's config service during worker startup.
+const nativeWrapperResolution = {
+  name: "native-wrapper-resolution",
+  setup(context) {
+    context.onResolve({ filter: /^node:module$/ }, ({ importer }) => {
+      const wrapper = importer
+        .replaceAll("\\", "/")
+        .match(/\/node_modules\/(@univerjs-pro\/(?:exchange-node|engine-formula-rust))\//u)?.[1];
+      return wrapper === undefined ? undefined : { path: wrapper, namespace: "native-wrapper" };
+    });
+    context.onLoad({ filter: /.*/, namespace: "native-wrapper" }, ({ path: wrapper }) => ({
+      // Bundling makes the wrapper's __filename or import.meta.url point into CLI dist.
+      // npm may hoist the native binding where dist can see it; pnpm exposes it to the
+      // wrapper that declares it. Resolve that wrapper's installed entry at runtime so
+      // its binding loads from the same starting point in either layout.
+      contents: [
+        'import { createRequire as nodeCreateRequire } from "node:module";',
+        'export * from "node:module";',
+        `export function createRequire() { return nodeCreateRequire(import.meta.resolve(${JSON.stringify(wrapper)})); }`,
+      ].join("\n"),
+    }));
+  },
+};
+
 const buildVersion = process.env["UNIVER_CLI_BUILD_VERSION"]?.trim();
 const plugins = [
   preferEsmSdkResolution,
+  nativeWrapperResolution,
   ...(buildVersion === undefined || buildVersion.length === 0
     ? []
     : [

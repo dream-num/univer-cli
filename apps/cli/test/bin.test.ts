@@ -269,6 +269,9 @@ describe("built univer executable", () => {
       ...process.env,
       UNIVER_HOME: home,
     };
+    // The globally linked executable must resolve native SDK dependencies outside pnpm.
+    delete env.NODE_PATH;
+    delete env.UNIVER_NODE_SDK_RUNTIME_DIR_OVERRIDE;
     delete env.UNIVER_COLLAB_GATEWAY_PORT;
     const currentFile = join(root, "current.univer");
     const importedFile = join(root, "imported.univer");
