@@ -34,3 +34,39 @@ describe("release workflow contract", () => {
     expect(releaseWorkflow).not.toMatch(/Promotion|registry\.npmjs\.org/u);
   });
 });
+
+const publicPromotionWorkflow = await readFile(
+  new URL("../.github/workflows/promote-cli-public.yml", import.meta.url),
+  "utf8",
+);
+
+describe("public promotion workflow contract", () => {
+  it("preserves the aligned manual parameters and uses the same inputs in validation and submit", () => {
+    const schema = publicPromotionWorkflow.split("    inputs:\n")[1].split("\npermissions:")[0];
+    expect([...schema.matchAll(/^      ([^:\n ]+):/gmu)].map((match) => match[1])).toEqual([
+      "package",
+      "latest",
+      "version",
+      "dry_run",
+    ]);
+    expect(schema).toMatch(/options:\s+- univer-cli/u);
+    expect(schema).toMatch(/latest:[\s\S]*type: boolean\s+default: true/u);
+    expect(schema).toMatch(/dry_run:[\s\S]*type: boolean\s+default: true/u);
+    expect(publicPromotionWorkflow).toMatch(/inputs\.latest && 'latest' \|\| 'promoted'/u);
+    expect(publicPromotionWorkflow).toMatch(/inputs\.dry_run && 'validate' \|\| 'submit'/u);
+  });
+
+  it("uses shared metadata and promotion actions without moving the Insider publisher", () => {
+    expect(publicPromotionWorkflow).toMatch(/github.event_name == 'workflow_dispatch'/u);
+    expect(publicPromotionWorkflow).toMatch(/github.event.repository.default_branch/u);
+    expect(publicPromotionWorkflow).toMatch(/id-token: write/u);
+    expect(publicPromotionWorkflow).toMatch(
+      /assemble-npm-batch@([0-9a-f]{40})[\s\S]*promote-npm@\1/u,
+    );
+    expect(publicPromotionWorkflow).toMatch(/batch: \$\{\{ steps.resolve.outputs.batch \}\}/u);
+    expect(publicPromotionWorkflow).not.toMatch(
+      /push:|allowed_packages|reviewed_batch|node scripts/u,
+    );
+    expect(releaseWorkflow).not.toMatch(/registry\.npmjs\.org/u);
+  });
+});
