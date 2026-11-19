@@ -97,7 +97,9 @@ Gateway 为 trunk revision 组合 Collaboration SDK History Service 与 Endpoint
 
 Viewer 的 Unit comparison 在创建时固定左右 ref、Unit 集合和各自 head。Gateway 通过 Collaboration SDK
 把每侧物化为最终 snapshot；history 连续时同时返回从共同 Trunk revision 到两侧 head 的 changeset path，
-否则显式降级为 snapshot fidelity。比较只读且不生成 mutation。语义计算归属 Univer Pro 的现有 History
+否则显式降级为 snapshot fidelity。比较只读且不生成 mutation。Gateway 与 Viewer 通过 Gateway contract 的
+`snapshot-data` 入口调用 Collaboration SDK 解码 Base 和 Board。该入口兼容旧快照的元数据和 block 表示，
+并保留 Board 的资源、Unit ID 和版本号。语义计算归属 Univer Pro 的现有 History
 模块，由其 Facade 和可复用 service 提供，不依赖 CLI SDK。Sheet 的双侧 changeset 坐标对齐、Doc 的段落
 与文字对齐，以及 Slide、Base、Board 的稳定 ID/属性差异均由 SDK 计算。后续 head 或 Unit presence 变化只将 session 标为
 stale，不会改变已固定的结果。

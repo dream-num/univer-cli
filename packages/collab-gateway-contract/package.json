@@ -9,6 +9,10 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./snapshot-data": {
+      "types": "./src/snapshot-data.ts",
+      "default": "./src/snapshot-data.ts"
     }
   },
   "scripts": {
@@ -18,7 +22,10 @@
     "typecheck": "tsc -p tsconfig.test.json --noEmit --pretty false"
   },
   "dependencies": {
+    "@univerjs-pro/boards": "1.5.2",
+    "@univerjs-pro/collaboration": "1.5.2",
     "@univerjs-pro/edit-history": "1.5.2",
-    "@univerjs/core": "1.5.2"
+    "@univerjs/core": "1.5.2",
+    "@univerjs/protocol": "1.5.2"
   }
 }

@@ -1,6 +1,6 @@
 import type { IMutation } from "@univerjs/protocol";
 import { UniverInstanceType } from "@univerjs/core";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { CollabService } from "../src/collab-service.js";
 import { changeWorktree } from "./change-worktree.js";
 
@@ -24,6 +24,29 @@ async function withSheet(): Promise<{ svc: CollabService; unitId: string }> {
 }
 
 describe("Worktree lifecycle", () => {
+  it("publishes the created Worktree with its name and trunk baseline", async () => {
+    const { svc, unitId } = await withSheet();
+    try {
+      const created = vi.fn();
+      svc.runtime.worktreeService.on("worktreeCreated", created);
+      const worktree = await svc.createWorktree("agent", "Review tasks");
+      expect(worktree).toMatchObject({
+        agentId: "agent",
+        name: "Review tasks",
+        status: "draft",
+        baseline: { [unitId]: 1 },
+      });
+      expect(svc.worktreeUnits(worktree.worktreeId)).toMatchObject([
+        { unitId, name: "S", headRev: 1 },
+      ]);
+      expect(created.mock.calls).toMatchObject([
+        [{ userID: "agent", worktree: { worktreeID: worktree.worktreeId } }],
+      ]);
+    } finally {
+      await svc.dispose();
+    }
+  });
+
   it("uses the SDK draft-to-ready transition without a logical commit token", async () => {
     const { svc, unitId } = await withSheet();
     try {
