@@ -2,13 +2,12 @@ import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { access, mkdir, mkdtemp, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
 import { createServer as createHttpServer } from "node:http";
-import { createServer } from "node:net";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { promisify } from "node:util";
 import { GATEWAY_DESCRIPTOR_MEDIA_TYPE } from "@univer/collab-gateway-contract";
 import { describe, expect, it } from "vitest";
+import { executable, freePort, invoke, projectRoot } from "./built-cli.js";
 import {
   V2_AUTHORING_FIXTURE,
   createV1ActiveWorktreeFixture,
@@ -17,8 +16,6 @@ import {
 } from "./univerfile-fixture.js";
 
 const execFileAsync = promisify(execFile);
-const projectRoot = dirname(dirname(fileURLToPath(import.meta.url)));
-const executable = join(projectRoot, "dist", "bin.js");
 
 describe("built univer executable", () => {
   it("runs the real packaged entrypoint", async () => {
@@ -1423,18 +1420,6 @@ describe("built univer executable", () => {
   }, 180_000);
 });
 
-async function invoke(
-  argv: readonly string[],
-  env: NodeJS.ProcessEnv = process.env,
-): Promise<{ readonly stderr: string; readonly stdout: string }> {
-  return await execFileAsync(process.execPath, [executable, ...argv], {
-    cwd: projectRoot,
-    encoding: "utf8",
-    env,
-    timeout: 180_000,
-  });
-}
-
 async function serveRemoteCsv(): Promise<{
   readonly close: () => Promise<void>;
   readonly url: string;
@@ -1473,23 +1458,6 @@ function parseJson(text: string): unknown {
 async function expectPng(filename: string): Promise<void> {
   const bytes = await readFile(filename);
   expect(bytes.subarray(0, 8)).toEqual(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
-}
-
-async function freePort(): Promise<number> {
-  const server = createServer();
-  await new Promise<void>((resolve, reject) => {
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", resolve);
-  });
-  const address = server.address();
-  if (address === null || typeof address === "string") {
-    server.close();
-    throw new Error("Failed to allocate a loopback port");
-  }
-  await new Promise<void>((resolve, reject) => {
-    server.close((error) => (error === undefined ? resolve() : reject(error)));
-  });
-  return address.port;
 }
 
 async function sha256(filename: string): Promise<string> {
