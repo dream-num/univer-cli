@@ -28,14 +28,12 @@ import type {
   IChangeset as IProtocolChangeset,
   IDeserializedSheetBlock,
   ISheetBlock,
-  IMutation,
   ISnapshot,
 } from "@univerjs/protocol";
 import { UniverType } from "@univerjs/protocol";
 import type { Duplex } from "node:stream";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type {
-  ApplyResult,
   CreateUnitInput,
   CreateUnitResult,
   MergeOutcome,
@@ -125,7 +123,6 @@ export interface UnitComparisonData {
  */
 export class CollabService {
   public readonly runtime: GatewayFileRuntime;
-  public readonly storage: TrunkStorageCompatibility;
   public readonly worktrees: WorktreeCatalogCompatibility;
   public readonly exchange: GatewayExchangeService;
 
@@ -139,7 +136,6 @@ export class CollabService {
 
   public constructor(options: CollabServiceOptions = {}) {
     this.runtime = new GatewayFileRuntime(options);
-    this.storage = new TrunkStorageCompatibility(this.runtime);
     this.worktrees = new WorktreeCatalogCompatibility(this.runtime);
     this.exchange = new GatewayExchangeService(this);
   }
@@ -240,28 +236,6 @@ export class CollabService {
     } catch (error) {
       return { changesets: [], error: asMessage(error) };
     }
-  }
-
-  public async worktreeFetchMissing(
-    worktreeId: string,
-    unitId: string,
-    from: number,
-    to: number,
-  ): Promise<{ changesets: IProtocolChangeset[] }> {
-    const unit = this._requireWorktreeUnit(worktreeId, unitId);
-    const result = await this.runtime.worktreeService.getChangesets(
-      {
-        worktreeID: worktreeId,
-        unitID: unitId,
-        type: unit.type,
-        from,
-        to,
-      },
-      callOptions("local"),
-    );
-    return {
-      changesets: [...result.changesets],
-    };
   }
 
   public createUnitComparison(
@@ -489,40 +463,6 @@ export class CollabService {
       }),
     );
     return { unitId, type, name };
-  }
-
-  public async submitWorktreeMutations(
-    worktreeId: string,
-    unitId: string,
-    mutations: readonly IMutation[],
-  ): Promise<IProtocolChangeset> {
-    const unit = this._requireWorktreeUnit(worktreeId, unitId);
-    const worktree = requireWorktree(this.runtime, worktreeId);
-    const changeset: IProtocolChangeset = {
-      unitID: unitId,
-      type: unit.type,
-      baseRev: unit.headRev,
-      revision: unit.headRev + 1,
-      userID: worktree.agentId || "local",
-      memberID: "",
-      sid: `gateway:${worktreeId}`,
-      reqId: unit.headRev,
-      mutations: mutations.map((mutation) =>
-        toProtocolMutation(mutation, (params) =>
-          this._externalizeImages(params, unitId, worktreeId),
-        ),
-      ),
-    };
-    const result = await this.runtime.worktreeService.submitChangeset(
-      { worktreeID: worktreeId, changeset },
-      callOptions(worktree.agentId || "local", {
-        [UNIVERFILE_WORKTREE_CHANGE_METADATA_KEY]: {
-          createdAtMs: Date.now(),
-        },
-      }),
-    );
-    if (result.status === "rejected" || result.status === "retry") throw result.error;
-    return result.changeset;
   }
 
   public deleteWorktreeUnit(worktreeId: string, unitId: string): void {
@@ -763,39 +703,6 @@ export class CollabService {
       ...(sheetBlocks === undefined ? {} : { sheetBlocks }),
       changesets: [...result.changesets],
     };
-  }
-
-  public async submit(
-    _unitId: string,
-    _type: number,
-    changeset: IProtocolChangeset,
-  ): Promise<ApplyResult> {
-    const result = await this.runtime.trunkService.submitChangeset(
-      { changeset },
-      callOptions(changeset.userID || "local"),
-    );
-    if (result.status === "committed") {
-      return {
-        success: true,
-        currentRevision: result.changeset.revision,
-      };
-    }
-    if (result.status === "already-committed") {
-      return {
-        success: false,
-        currentRevision: result.changeset.revision,
-        isCsDeduplicate: true,
-      };
-    }
-    if ("error" in result) {
-      return {
-        success: false,
-        currentRevision: changeset.baseRev,
-        isConflictError: result.error.code === "OT_CONFLICT",
-        error: result.error,
-      };
-    }
-    throw new Error(`unknown changeset result: ${result.status}`);
   }
 
   public handleSdkRequest(
@@ -1100,7 +1007,6 @@ export class CollabService {
   }
 
   private _externalizeImages(value: object, unitId: string, worktreeId?: string): object;
-  private _externalizeImages(value: unknown, unitId: string, worktreeId?: string): unknown;
   private _externalizeImages(value: unknown, unitId: string, worktreeId?: string): unknown {
     return externalizeEmbeddedImages(value, {
       store: ({ bytes, filename, mediaType }) =>
@@ -1163,135 +1069,6 @@ export class CollabService {
   }
 }
 
-class TrunkStorageCompatibility {
-  public constructor(private readonly _runtime: GatewayFileRuntime) {}
-
-  public async getUnitOnRev(
-    _context: unknown,
-    request: {
-      readonly unitID: string;
-      readonly type: number;
-      readonly revision: number;
-    },
-  ): Promise<{
-    error: { code: number; message: string };
-    snapshot?: ISnapshot;
-    changesets: readonly IProtocolChangeset[];
-  }> {
-    try {
-      const result = await this._runtime.trunkService.getUnitLoadData(
-        {
-          unitID: request.unitID,
-          type: request.type as UniverType,
-          revision: request.revision,
-        },
-        callOptions("local"),
-      );
-      return {
-        error: { code: 1, message: "" },
-        snapshot: result.snapshot,
-        changesets: result.changesets,
-      };
-    } catch (error) {
-      return {
-        error: { code: 0, message: asMessage(error) },
-        changesets: [],
-      };
-    }
-  }
-
-  public async fetchMissingChangesets(
-    _context: unknown,
-    request: {
-      readonly unitID: string;
-      readonly type: number;
-      readonly from: number;
-      readonly to: number;
-    },
-  ): Promise<{
-    error: { code: number; message: string };
-    changesets: readonly IProtocolChangeset[];
-    latestRevision?: number;
-  }> {
-    try {
-      const result = await this._runtime.trunkService.getChangesets(
-        {
-          unitID: request.unitID,
-          type: request.type as UniverType,
-          from: request.from,
-          to: request.to,
-        },
-        callOptions("local"),
-      );
-      return {
-        error: { code: 1, message: "" },
-        changesets: result.changesets,
-      };
-    } catch (error) {
-      return {
-        error: { code: 0, message: asMessage(error) },
-        changesets: [],
-      };
-    }
-  }
-
-  public async getSheetBlock(
-    _context: unknown,
-    request: {
-      readonly unitID: string;
-      readonly type: number;
-      readonly blockID: string;
-    },
-  ): Promise<{
-    error: { code: number; message: string };
-    block?: unknown;
-  }> {
-    try {
-      const result = await this._runtime.trunkService.getSheetBlock(
-        {
-          unitID: request.unitID,
-          type: request.type as UniverType,
-          blockID: request.blockID,
-        },
-        callOptions("local"),
-      );
-      return {
-        error: { code: 1, message: "" },
-        ...(result.block === null ? {} : { block: result.block }),
-      };
-    } catch (error) {
-      return { error: { code: 0, message: asMessage(error) } };
-    }
-  }
-
-  public async getDeserializedSheetBlock(
-    context: unknown,
-    request: {
-      readonly unitID: string;
-      readonly type: number;
-      readonly blockID: string;
-    },
-  ): Promise<{
-    error: { code: number; message: string };
-    block?: unknown;
-  }> {
-    const result = await this.getSheetBlock(context, request);
-    const block = result.block as { readonly data?: Uint8Array } | undefined;
-    if (!block?.data) return result;
-    try {
-      return {
-        ...result,
-        block: {
-          ...block,
-          data: JSON.parse(new TextDecoder().decode(block.data)),
-        },
-      };
-    } catch {
-      return result;
-    }
-  }
-}
-
 class WorktreeCatalogCompatibility {
   public constructor(private readonly _runtime: GatewayFileRuntime) {}
 
@@ -1320,24 +1097,6 @@ function databaseContext(options: CollabMemberContext): DatabaseContext {
     customData: options.customData ?? {},
     request: {},
   };
-}
-
-function toProtocolMutation(
-  mutation: IMutation,
-  rewriteParams: (params: unknown) => unknown = (params) => params,
-): IMutation {
-  const input = mutation as IMutation & { readonly params?: unknown };
-  if (typeof input.data === "string") {
-    try {
-      return {
-        id: input.id,
-        data: JSON.stringify(rewriteParams(JSON.parse(input.data) as unknown)),
-      };
-    } catch {
-      return { id: input.id, data: input.data };
-    }
-  }
-  return { id: input.id, data: JSON.stringify(rewriteParams(input.params ?? input.data ?? {})) };
 }
 
 function withInitialIdentity(raw: object, unitId: string): CreateUnitFromDataInput["data"] {

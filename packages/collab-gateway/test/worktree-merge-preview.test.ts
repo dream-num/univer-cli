@@ -1,11 +1,8 @@
-import type { ILogContext } from "@univerjs-pro/collaboration";
 import type { IMutation } from "@univerjs/protocol";
 import { UniverInstanceType } from "@univerjs/core";
 import { describe, expect, it } from "vitest";
 import { CollabService } from "../src/collab-service.js";
 import { changeWorktree } from "./change-worktree.js";
-
-const CTX: ILogContext = { metadata: {} };
 
 /** A real sheet set-range-values mutation in protocol wire form (params JSON-stringified into `data`). */
 function setCell(unitId: string, row: number, col: number, v: string): IMutation[] {
@@ -228,11 +225,10 @@ describe("getMergePreviewUnit: per-unit render data", () => {
       // Now actually merge and read the trunk that results.
       const out = await svc.merge(w.worktreeId);
       expect(out.ok).toBe(true);
-      const postMerge = await svc.storage.getUnitOnRev(CTX, {
-        unitID: sheet.unitId,
-        type: UniverInstanceType.UNIVER_SHEET,
-        revision: 0
-      });
+      const postMerge = await svc.runtime.trunkService.getUnitLoadData(
+        { unitID: sheet.unitId, type: UniverInstanceType.UNIVER_SHEET, revision: 0 },
+        { userID: "local" },
+      );
 
       expect(preview.changesets).toHaveLength(1);
       expect(postMerge.changesets).toHaveLength(2);

@@ -26,11 +26,18 @@ describe("Unit catalog name commit middleware", () => {
       const worktree = await service.createWorktree("rename-agent");
 
       for (const unit of units) {
-        await service.submitWorktreeMutations(
-          worktree.worktreeId,
-          unit.unitId,
-          renameMutation(unit.type, unit.unitId, `${unit.label} old`, `${unit.label} new`),
+        const result = await service.runtime.worktreeService.submitChangeset(
+          {
+            worktreeID: worktree.worktreeId,
+            changeset: changeset(
+              unit.type,
+              unit.unitId,
+              renameMutation(unit.type, unit.unitId, `${unit.label} old`, `${unit.label} new`),
+            ),
+          },
+          { userID: "local", memberID: "rename-test" },
         );
+        expect(result.status).toBe("committed");
       }
 
       expect(catalogNames(service.worktreeUnits(worktree.worktreeId))).toEqual(

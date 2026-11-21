@@ -1,11 +1,8 @@
-import type { ILogContext } from "@univerjs-pro/collaboration";
 import type { IMutation } from "@univerjs/protocol";
 import { UniverInstanceType } from "@univerjs/core";
 import { describe, expect, it } from "vitest";
 import { CollabService } from "../src/collab-service.js";
 import { changeWorktree } from "./change-worktree.js";
-
-const CTX: ILogContext = { metadata: {} };
 
 /**
  * A real sheet set-range-values mutation in protocol wire form: params are JSON-stringified
@@ -35,11 +32,10 @@ function setWorkbookName(unitId: string, name: string): IMutation[] {
 }
 
 async function trunkChangesetCount(svc: CollabService, unitId: string): Promise<number> {
-  const r = await svc.storage.getUnitOnRev(CTX, {
-    unitID: unitId,
-    type: UniverInstanceType.UNIVER_SHEET,
-    revision: 0
-  });
+  const r = await svc.runtime.trunkService.getUnitLoadData(
+    { unitID: unitId, type: UniverInstanceType.UNIVER_SHEET, revision: 0 },
+    { userID: "local" },
+  );
   return r.changesets.length;
 }
 

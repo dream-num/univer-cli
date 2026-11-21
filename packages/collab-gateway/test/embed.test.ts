@@ -212,14 +212,14 @@ describe("Embed mutation support", () => {
       const host = await svc.createUnit(DOC, { name: "Host doc" });
       const child = await svc.createUnit(SHEET, { name: "Embedded sheet" });
 
-      const result = await svc.submit(
-        host.unitId,
-        DOC,
-        embedChangeset(host.unitId, DOC, 1, setEmbedDescriptorMutation(host.unitId, child.unitId))
+      const result = await svc.runtime.trunkService.submitChangeset(
+        {
+          changeset: embedChangeset(host.unitId, DOC, 1, setEmbedDescriptorMutation(host.unitId, child.unitId)),
+        },
+        { userID: "u1", memberID: "m1" },
       );
 
-      expect(result.success).toBe(true);
-      expect(result.error).toBeUndefined();
+      expect(result.status).toBe("committed");
       expect(svc.getCurrentRev(host.unitId)).toBe(2);
     } finally {
       svc.dispose();
@@ -232,26 +232,26 @@ describe("Embed mutation support", () => {
       const host = await svc.createUnit(SHEET, { name: "Host sheet" });
       const child = await svc.createUnit(SHEET, { name: "Embedded sheet" });
 
-      const result = await svc.submit(
-        host.unitId,
-        SHEET,
-        embedChangeset(
-          host.unitId,
-          SHEET,
-          1,
-          sheetFloatingEmbedMutations(host.unitId, child.unitId)
-        )
+      const result = await svc.runtime.trunkService.submitChangeset(
+        {
+          changeset: embedChangeset(
+            host.unitId,
+            SHEET,
+            1,
+            sheetFloatingEmbedMutations(host.unitId, child.unitId),
+          ),
+        },
+        { userID: "u1", memberID: "m1" },
       );
 
-      expect(result.success).toBe(true);
-      expect(result.error).toBeUndefined();
+      expect(result.status).toBe("committed");
       expect(svc.getCurrentRev(host.unitId)).toBe(2);
     } finally {
       svc.dispose();
     }
   });
 
-  it("rejects a malformed handcrafted doc rich-text changeset", async () => {
+  it("reports an error and preserves the revision for a malformed Doc changeset", async () => {
     const svc = new CollabService();
     try {
       const doc = await svc.createUnit(DOC, {
@@ -272,14 +272,12 @@ describe("Embed mutation support", () => {
         }
       });
 
-      const result = await svc.submit(
-        doc.unitId,
-        DOC,
-        embedChangeset(doc.unitId, DOC, 1, [richTextEditMutation(doc.unitId)])
+      const result = await svc.runtime.trunkService.submitChangeset(
+        { changeset: embedChangeset(doc.unitId, DOC, 1, [richTextEditMutation(doc.unitId)]) },
+        { userID: "u1", memberID: "m1" },
       );
 
-      expect(result.success).toBe(false);
-      expect(result.error).toBeDefined();
+      expect(result).toMatchObject({ error: expect.any(Error) });
       expect(svc.getCurrentRev(doc.unitId)).toBe(1);
     } finally {
       svc.dispose();
