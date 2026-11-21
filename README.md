@@ -162,6 +162,8 @@ Univer CLI is built on the [Univer SDK](https://docs.univer.ai/). This repositor
 
 `apps/cli` is the only public application, and `univer` is its only program and binary. Private `packages/*` projects support the application and are not parallel products.
 
+See the [architecture guide](docs/architecture.md) for SDK boundaries, runtime processes, and package responsibilities.
+
 ## Data and security
 
 A `.univer` file uses SQLite to store Units, revisions, Worktrees, local resources, and a rebuildable History index. Supported earlier formats are upgraded only after read-only identification, a byte-for-byte backup, independent candidate verification, and atomic replacement. A failed upgrade never overwrites the source. Opening the same unchanged file again reuses that backup.

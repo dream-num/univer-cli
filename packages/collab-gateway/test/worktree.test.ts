@@ -1,11 +1,9 @@
-import type { ILogContext } from "@univerjs-pro/collaboration";
 import type { IMutation } from "@univerjs/protocol";
 import { UniverInstanceType } from "@univerjs/core";
 import { describe, expect, it } from "vitest";
 import { CollabService } from "../src/collab-service.js";
 import { changeWorktree } from "./change-worktree.js";
 
-const CTX: ILogContext = { metadata: {} };
 function mutations(unitId: string): IMutation[] {
   return [
     {
@@ -52,11 +50,10 @@ describe("SDK-backed Worktree via CollabService", () => {
 
       // Trunk is unaffected by the worktree commit.
       expect(svc.getCurrentRev(sheet.unitId)).toBe(1);
-      const tr = await svc.storage.getUnitOnRev(CTX, {
-        unitID: sheet.unitId,
-        type: UniverInstanceType.UNIVER_SHEET,
-        revision: 0
-      });
+      const tr = await svc.runtime.trunkService.getUnitLoadData(
+        { unitID: sheet.unitId, type: UniverInstanceType.UNIVER_SHEET, revision: 0 },
+        { userID: "local" },
+      );
       expect(tr.changesets).toHaveLength(0);
     } finally {
       svc.dispose();

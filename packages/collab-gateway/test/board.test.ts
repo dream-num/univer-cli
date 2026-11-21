@@ -1,11 +1,9 @@
-import type { ILogContext } from "@univerjs-pro/collaboration";
 import { getBoardsEmptySnapshot } from "@univerjs-pro/boards";
 import { UniverInstanceType } from "@univerjs/core";
 import { describe, expect, it } from "vitest";
 import { CollabService } from "../src/collab-service.js";
 import { changeWorktree } from "./change-worktree.js";
 
-const CTX: ILogContext = { metadata: {} };
 const BOARD = UniverInstanceType.UNIVER_BOARD;
 
 describe("Board unit support", () => {
@@ -16,11 +14,10 @@ describe("Board unit support", () => {
       data.resources = [{ name: "UNIVER_TEST_PLUGIN", data: '{"enabled":true}' }];
       const created = await svc.createUnit(BOARD, { unitId: data.id, name: data.name, data });
 
-      const read = await svc.storage.getUnitOnRev(CTX, {
-        unitID: created.unitId,
-        type: BOARD,
-        revision: 0
-      });
+      const read = await svc.runtime.trunkService.getUnitLoadData(
+        { unitID: created.unitId, type: BOARD, revision: 0 },
+        { userID: "local" },
+      );
       expect(read.snapshot?.board).toBeDefined();
       expect(read.snapshot?.type).toBe(BOARD);
       expect(read.snapshot?.board?.resources).toEqual(data.resources);

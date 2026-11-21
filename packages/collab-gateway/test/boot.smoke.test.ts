@@ -2,8 +2,6 @@ import { UniverInstanceType } from "@univerjs/core";
 import { describe, expect, it } from "vitest";
 import { CollabService } from "../src/collab-service.js";
 
-const CTX = { metadata: {} } as unknown as Parameters<CollabService["storage"]["getUnitOnRev"]>[0];
-
 describe("SDK-backed CollabService create + read (sheet + doc)", () => {
   it("boots headless Univer and creates + reads a sheet unit", async () => {
     const svc = new CollabService(); // :memory:
@@ -14,11 +12,10 @@ describe("SDK-backed CollabService create + read (sheet + doc)", () => {
       expect(svc.hasUnit(created.unitId)).toBe(true);
       expect(svc.getCurrentRev(created.unitId)).toBe(1);
 
-      const res = await svc.storage.getUnitOnRev(CTX, {
-        unitID: created.unitId,
-        type: UniverInstanceType.UNIVER_SHEET,
-        revision: 0
-      });
+      const res = await svc.runtime.trunkService.getUnitLoadData(
+        { unitID: created.unitId, type: UniverInstanceType.UNIVER_SHEET, revision: 0 },
+        { userID: "local" },
+      );
       expect(res.snapshot).toBeDefined();
       expect(res.snapshot?.unitID).toBe(created.unitId);
     } finally {
@@ -33,11 +30,10 @@ describe("SDK-backed CollabService create + read (sheet + doc)", () => {
       expect(created.unitId).toBeTruthy();
       expect(svc.getCurrentRev(created.unitId)).toBe(1);
 
-      const res = await svc.storage.getUnitOnRev(CTX, {
-        unitID: created.unitId,
-        type: UniverInstanceType.UNIVER_DOC,
-        revision: 0
-      });
+      const res = await svc.runtime.trunkService.getUnitLoadData(
+        { unitID: created.unitId, type: UniverInstanceType.UNIVER_DOC, revision: 0 },
+        { userID: "local" },
+      );
       expect(res.snapshot).toBeDefined();
       expect(res.snapshot?.unitID).toBe(created.unitId);
     } finally {

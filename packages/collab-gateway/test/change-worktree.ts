@@ -47,13 +47,28 @@ export async function changeWorktree(
   }
 
   for (const [unitId, mutations] of Object.entries(operations.modify ?? {})) {
-    const changeset = await service.submitWorktreeMutations(
-      worktreeId,
-      unitId,
-      mutations,
+    const unit = service.worktreeUnits(worktreeId).find((candidate) => candidate.unitId === unitId);
+    if (!unit) throw new Error(`Missing Unit ${unitId} in Worktree ${worktreeId}`);
+    const result = await service.runtime.worktreeService.submitChangeset(
+      {
+        worktreeID: worktreeId,
+        changeset: {
+          unitID: unitId,
+          type: unit.type,
+          baseRev: unit.headRev,
+          revision: 0,
+          userID: "local",
+          memberID: "test",
+          sid: `test:${worktreeId}:${unitId}`,
+          reqId: unit.headRev,
+          mutations: [...mutations],
+        },
+      },
+      { userID: "local", memberID: "test" },
     );
+    if (result.status === "rejected" || result.status === "retry") throw result.error;
     modified.push(unitId);
-    units[unitId] = changeset.revision;
+    units[unitId] = result.changeset.revision;
   }
 
   for (const unitId of operations.delete ?? []) {

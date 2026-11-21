@@ -1,11 +1,9 @@
-import type { ILogContext } from "@univerjs-pro/collaboration";
 import type { IChangeset as IProtocolChangeset, IMutation } from "@univerjs/protocol";
 import { UniverInstanceType } from "@univerjs/core";
 import { describe, expect, it } from "vitest";
 import { CollabService } from "../src/collab-service.js";
 import { changeWorktree } from "./change-worktree.js";
 
-const CTX: ILogContext = { metadata: {} };
 const SLIDE = UniverInstanceType.UNIVER_SLIDE;
 
 /**
@@ -48,11 +46,10 @@ describe("Slide unit support", () => {
       const slide = await svc.createUnit(SLIDE, { name: "Deck" });
       expect(svc.listUnits().find((u) => u.unitId === slide.unitId)?.type).toBe(SLIDE);
 
-      const read = await svc.storage.getUnitOnRev(CTX, {
-        unitID: slide.unitId,
-        type: SLIDE,
-        revision: 0
-      });
+      const read = await svc.runtime.trunkService.getUnitLoadData(
+        { unitID: slide.unitId, type: SLIDE, revision: 0 },
+        { userID: "local" },
+      );
       expect(read.snapshot).toBeDefined();
       expect(read.changesets).toHaveLength(0);
     } finally {
@@ -65,12 +62,11 @@ describe("Slide unit support", () => {
     try {
       const slide = await svc.createUnit(SLIDE, { name: "Deck" });
       // submit -> ensureUnit(loadSlide) -> apply the slide mutation -> persist + bump rev.
-      const result = await svc.submit(
-        slide.unitId,
-        SLIDE,
-        slideChangeset(slide.unitId, 1, setPageSize(slide.unitId, 1280, 720))
+      const result = await svc.runtime.trunkService.submitChangeset(
+        { changeset: slideChangeset(slide.unitId, 1, setPageSize(slide.unitId, 1280, 720)) },
+        { userID: "u1", memberID: "m1" },
       );
-      expect(result.success).toBe(true);
+      expect(result.status).toBe("committed");
       expect(svc.getCurrentRev(slide.unitId)).toBe(2);
     } finally {
       svc.dispose();

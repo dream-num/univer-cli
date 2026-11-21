@@ -20,14 +20,6 @@ export interface CreateUnitResult {
   readonly sheetOrder?: string[];
 }
 
-export interface ApplyResult {
-  success: boolean;
-  currentRevision: number;
-  isConflictError?: boolean;
-  isCsDeduplicate?: boolean;
-  error?: Error;
-}
-
 export interface WorktreeCreatedUnit {
   unitId: string;
   type: number;
