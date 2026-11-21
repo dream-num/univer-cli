@@ -244,7 +244,7 @@ argv 已识别 `--json` 后发生失败时，stderr 输出一个 JSON document �
 - Univer CLI SDK 提供标准 command、通用 capability、Commander preset、daemon、runtime pool、inspection、execution、exchange、render、lint、authoring helper、config 与 API reference；这些 package 随 application 安装，并由 composition root 显式装配。
 - application-specific 能力由本仓库实现，包括 path、Home、daemon/Gateway composition、数据升级、browser packaging、Local I/O 和诊断。
 
-详细 ownership 和 dependency rule 见 [architecture document](https://github.com/dream-num/univer-cli/blob/main/docs/architecture.md)。
+详细 ownership 和 dependency rule 见 [架构文档](https://github.com/dream-num/univer-cli/blob/main/docs/architecture.zh-CN.md)。
 
 ## Verification
 

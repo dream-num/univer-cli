@@ -154,6 +154,8 @@ Univer CLI 基于 [Univer SDK](https://docs.univer.ai/zh-CN/) 构建。本仓库
 
 `apps/cli` 是唯一公开 application，`univer` 是唯一 program 与 bin。私有 `packages/*` project 仅支撑 application，不是平行产品。
 
+SDK 边界、运行时进程和各包的职责见[架构文档](docs/architecture.zh-CN.md)。
+
 ## 数据与安全
 
 `.univer` 是使用 SQLite 保存 Unit、revision、Worktree、本地资源与可重建 History index 的文件。受支持的早期格式只有在只读识别、byte-for-byte backup、独立 candidate 验证和原子替换后才会升级。升级失败不会覆盖源文件。再次打开同一份未变化的文件时复用这份 backup。

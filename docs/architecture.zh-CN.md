@@ -1,0 +1,197 @@
+# 架构
+
+[English](architecture.md) | [简体中文](architecture.zh-CN.md)
+
+Univer CLI 是一个单一 Lite application。npm package 名为 `univer-cli`，唯一 program/bin 为 `univer`。application 基于 Univer CLI SDK 开发：标准 command 与通用能力由 CLI SDK package 提供并随 application 安装，`apps/cli` 负责显式装配；业务和本地环境相关的 application-specific 能力由本仓库实现。
+
+## 分层
+
+```text
+univer process
+  -> Commander composition root
+       -> CLI SDK standard feature
+            -> command preset
+            -> capability
+       -> application-specific feature
+            -> application use case
+                 -> Univer SDK
+                 -> Collaboration SDK
+                 -> local storage, process or browser adapter
+```
+
+- CLI SDK standard feature 以 application dependency 的形式安装，并由 composition root 逐项注册。
+- CLI SDK command preset 是原生 Commander `Command`，负责 argv、help 和 presentation；对应 capability 提供通用业务规则。
+- application-specific feature 把路径、环境变量、Application home 和本地输出映射到 capability input/output，或实现本地产品独有的 use case。
+- application use case 协调本地文件、daemon、Gateway、browser 与 SDK，不复制 SDK 实现。
+- composition root 是唯一装配位置；仓库不建立额外 command registry framework 或 IoC container。
+
+## SDK 边界
+
+### Univer SDK
+
+Univer SDK 提供 Unit 数据模型、Facade、formula、render engine、Office exchange、Sheet、Doc、Slide、Base、Board
+及其 UI/runtime plugin。application 和 browser composition 只通过已发布 package 与 API 使用这些能力，不读取
+其他 checkout 或复制 SDK 源码。
+
+### Collaboration SDK
+
+Collaboration SDK 提供 changeset、Snapshot、Worktree persistence contract、Service、Endpoint、Transport、
+browser client 和 runtime integration。`packages/collab-gateway` 与
+`packages/univerfile-sqlite` 实现本地 transport 和 persistence store，但不重新定义 SDK 的协作语义。
+
+### Univer CLI SDK
+
+Univer CLI SDK 提供标准 capability、Commander preset、daemon control、content execution、content inspection、layout lint、screenshot、Unit PDF print、SVG/Typst facade、resource library、configuration、API reference，以及 collaboration runtime/pool。这些 package 随 application 安装，`apps/cli` 在 composition root 中显式装配，并按需提供 application-specific adapter。
+
+### 应用负责的能力
+
+本仓库实现业务和本地环境相关的 application-specific 能力：
+
+- `.univer` path normalization、格式识别、安全升级和 SQLite connection lifecycle；
+- `${UNIVER_HOME:-~/.univer}`、config path、browser cache 与 daemon socket；
+- daemon identity、Gateway address mapping、runtime worker 和本地进程生命周期；
+- HTTP(S) import 下载、临时文件与 credential-safe error；
+- Exchange Node 的格式、公式、selector、错误与本地 Unit persistence 映射；
+- browser runtime 的构建、复制和本地图片投影；
+- application Skill assets、诊断信息与脱敏规则。
+
+只有出现第二个真实 adapter 时才新增 port；测试替身本身不构成 architecture seam。
+
+## 运行时拓扑
+
+```text
+univer command
+  -> application daemon
+       -> Collaboration Gateway
+            -> one GatewayFileRuntime per opened .univer
+                 -> Collaboration SDK services
+                 -> @univer/univerfile-sqlite stores
+       -> CLI SDK runtime worker pool
+            -> headless Univer runtime worker
+
+univer open
+  -> Gateway-hosted Viewer
+       -> Collaboration SDK browser client
+       -> read-only pinned Unit comparison (Trunk or Worktree <-> current Worktree)
+       -> trunk-only Universer exchange tasks + all-scope print plugins
+
+univer lint --mode model (Board)
+  -> CLI SDK layout lint
+       -> standard headless Univer factory
+            -> Board model Facade analysis
+
+univer screenshot / print-pdf / lint (Slide / Board rendered) / compile-svg
+  -> CLI SDK browser orchestration
+       -> packaged render-runtime-client
+            -> CLI SDK univer-render-page
+                 -> standard Univer SDK render composition
+```
+
+daemon 启动时初始化 Gateway，标准 headless Univer composition 延迟到 content worker 或文档创建请求中加载；文档创建实例在请求结束时释放。
+daemon 只管理本地服务和 runtime lifecycle。它为 render operation 物化 UnitData、解析同文件依赖并投影本地
+图片资产；PNG/PDF 输出、layout analysis 和文本测量由 CLI SDK capability 与其 runtime 完成。Board model-only lint 使用标准 headless factory，不启动浏览器；rendered 与 both 模式使用 browser runtime。两阶段分析同一份独立 snapshot；应用仅传递来源与本地资源，规则和几何检查留在 SDK。
+
+Gateway 按 `.univer` runtime 隔离 Viewer Ribbon 使用的 `source=1` exchange 上传、异步 import/export task 与临时 artifact；导入在当前 trunk 创建新 Unit，导出物化 trunk head。Worktree 路径不暴露 exchange。嵌入资源继续使用按 Unit/worktree 授权的 `source=3` 文件协议，不能与 exchange artifact 混用。
+
+CLI 与 Gateway 的 Unit 导出共用 Exchange 的 `files.load`。CLI 按选定的 trunk 或 worktree 读取当前 Unit 的嵌入图片，Gateway 按 trunk 读取。PPTX、DOCX 和 XLSX 均保留原始图片字节，URL 图片使用透明占位图。Gateway 导出上传的 JSON 快照时不提供本地资源读取能力。
+
+Gateway 的 Trunk、Worktree 与 snapshot materialization 显式使用 Collaboration SDK 的 in-process execution，复用 application daemon 的进程边界，避免每个文件嵌套创建 runtime worker pool。CLI Facade 执行仍由独立 runtime worker 承担。
+
+Gateway 为 trunk revision 组合 Collaboration SDK History Service 与 Endpoint。`@univer/univerfile-sqlite` 在共享文件 connection 上实现 History persistence contract；History 表只是由 core Unit/changeset 重建的派生索引：Unit 缺少记录时 History Service 在首次读取时重建，落后于 trunk head 时在下一次提交时追平；文件升级保证不留下超过 trunk head 的边界；optimizer 只删除 trunk 中间 snapshot，不改动 History 记录。Viewer 按 Unit 类型为 trunk Sheet、Doc、Slide、Base 和 Board 注册各自的标准 SDK History UI 插件；Worktree 与 merge preview 不呈现这项能力。
+
+Viewer 的 Unit comparison 在创建时固定左右 ref、Unit 集合和各自 head。Gateway 通过 Collaboration SDK
+把每侧物化为最终 snapshot；history 连续时同时返回从共同 Trunk revision 到两侧 head 的 changeset path，
+否则显式降级为 snapshot fidelity。比较只读且不生成 mutation。Gateway 与 Viewer 通过 Gateway contract 的
+`snapshot-data` 入口调用 Collaboration SDK 解码 Base 和 Board。该入口兼容旧快照的元数据和 block 表示，
+并保留 Board 的资源、Unit ID 和版本号。语义计算归属 Univer Pro 的现有 History
+模块，由其 Facade 和可复用 service 提供，不依赖 CLI SDK。Sheet 的双侧 changeset 坐标对齐、Doc 的段落
+与文字对齐，以及 Slide、Base、Board 的稳定 ID/属性差异均由 SDK 计算。后续 head 或 Unit presence 变化只将 session 标为
+stale，不会改变已固定的结果。
+
+Sheet 公式原文显示由应用通过已发布 SDK 的 `SheetInterceptorService` 与 `FormulaDataModel` 实现，
+适配器返回可释放的渲染覆盖。Viewer 同步两侧的开关状态，
+不改写 snapshot、mutation 或公式结果，也不为显示切换重建 Unit。此显示能力不属于 History 的语义差异计算。
+
+同一 session 通过 `WorktreeControlClient.getUnitComparisonContext()` 和对应的 `/diff` route 暴露
+`schemaVersion: 1` 的 UI-independent context。Gateway 只在首次请求时准备 pinned diff，之后在同一固定结果上做
+filter、search 与 paging。item 使用统一的 insert/delete/update 语义、稳定 ID/path、左右 location；内部
+`changes` 再以相对语义 path、value type、before/after 和可选文本/公式 segment 描述 leaf difference。
+`summary | changes | full` projection 只改变 payload 详情，不改变 item identity。Compare UI 的紧凑差异导航
+直接消费同一 changes 语义；coverage 与 diagnostics 明确声明当前 product family 支持范围和降级原因。这个
+contract 是 CLI SDK / Agent 入口的复用边界，不能从 Viewer DOM 反向提取差异。Doc 对齐行和普通 item
+分别分页；Sheet 用紧凑行列区间返回映射，避免按整张表的尺寸展开。Pro History 同时返回 `scopes` 和
+`item.scope`，统一描述有变化的工作表、幻灯片、Base 表与 Board 页；应用用 `query.scope` 驱动当前页，
+不再解析 snapshot 重建页签或范围关系。物化状态在 session 内共享，向消费者
+返回副本，防止解码或展示阶段影响后续分页。应用只映射 i18n、树形菜单、原生画布着色与联动，不重复计算差异。
+
+headless collaboration runtime 只拥有一个可写 Host Unit。Embed 遇到 `self` ResourceRef 时，application-owned
+Local provider 通过当前 `.univer` 与 Worktree 已限定的 Snapshot endpoint 按需物化 child Unit，并透传 Embed
+child create options；child 只作为同一 Univer instance 中的只读依赖，不进入 Host 的 changeset 状态机，也不触发
+Worktree 全量 Unit 预加载。
+
+## 源码职责
+
+`apps/cli/src/program.ts` 是 composition root。源码按用户能力划分为 `univerfile`、`exchange`、`optimize`、
+`worktree`、`unit`、`unit-content`、`render`、`lint`、`svg`、`typst`、`markdown`、`doctor`、`skills` 和 `update`。
+每个 feature 并置自己的 command、application service、handler 与私有 protocol；command handler 保持轻薄。
+
+Modern Doc 的 Markdown 解析、扩展指令、资源校验、源码映射和按 ID 替换由 CLI SDK 的
+`doc-markdown-facade` capability 提供。application 复用内存文档物化路径创建 Worktree Unit，接收程序
+返回的原生 ID 映射；局部更新通过 content execution，在编辑前校验原生块 ID 与边界。文档仍以
+Univer SDK 原生模型持久化，继承 SDK Modern 默认排版；Markdown 不替代协作数据或建立隐式双向同步。
+局部编辑通过同一 capability 生成只读 Facade 程序，从当前原生块导出 Markdown、资源与刷新后的映射。
+content read 允许读取 ready Worktree，按同一 runtime lease 返回内容和 revision，不提交 mutation；
+revision 作为读取版本元信息保留；编辑后的片段按原生块映射替换写回。不可保真的结构返回诊断，不退回旧 Markdown。
+
+```text
+apps/cli/src/environment/           # Home、config 与本地路径
+apps/cli/src/daemon/                # daemon、Gateway 与 runtime composition
+apps/cli/src/features/              # application feature 与 Local adapter
+skills/univer-cli/                   # 可从本仓库安装的 discovery Skill
+apps/cli/src/skills/runtime/        # 随 CLI 发布的 runtime Skills
+apps/cli/src/runtime-worker.ts      # headless collaboration worker composition
+packages/collab-gateway/            # Collaboration SDK Gateway adapter
+packages/collab-gateway-contract/   # Gateway/Viewer control-plane contract
+packages/collab-web/                # Collaboration browser application
+packages/importrange-formula/       # cross-unit formula plugin
+packages/render-preset/             # shared browser Univer composition
+packages/render-runtime-client/     # CLI SDK Render Page bundle entry
+packages/unit-comparison-viewer/    # 只读 Unit 比较界面和 Sheet 坐标联动；消费 Pro History 的差异与对齐结果
+packages/univerfile-sqlite/         # .univer persistence 与安全升级
+```
+
+Agent 从仓库根目录的 `skills/univer-cli/` 安装 discovery Skill。CLI 只打包和读取 runtime Skills。各 Unit 和主题的操作指南位于
+`apps/cli/src/skills/runtime/`，随 npm 包发布到 `dist/skills/runtime/`，与已安装 CLI 的命令和 Facade API 保持版本匹配。
+
+## 命令装配
+
+根 help 使用 Commander 原生 `helpGroup()`，按 Univerfile、Data Exchange、Collaboration、Unit Operations、
+Rendering、Authoring、Resources & Reference、Data Maintenance 与 System 展示。help group 是用户导航，不决定
+源码 ownership。
+
+公共 command、option、machine output、exit code 或数据合同变化必须同步更新测试与 README/docs。`--json`
+成功时 stdout 只包含一个 command-specific JSON document；已识别 JSON 模式的失败在 stderr 输出一个 JSON
+document 并以非零状态退出。
+
+## 依赖规则
+
+- 标准 CLI command 和通用 capability 由 Univer CLI SDK 提供并在 composition root 显式装配；不得在 application 中重复实现。
+- application-specific 能力由本仓库实现，并通过 Univer SDK 与 Collaboration SDK 完成 runtime 和协作工作。
+- Univer 能力只能来自 Univer SDK、Collaboration SDK 或 Univer CLI SDK 的正式 package/API。
+- Workspace package 通过 `workspace:*` 依赖；application 不依赖相邻 checkout。
+- 不复制 SDK 源码或其他 Univer repository implementation。
+- SDK package 使用一致且精确的版本集合，由 workspace manifest、`.npmrc` 和 lockfile 管理。
+- application build 记录真正留在 bundle 外部的 runtime dependency；release manifest 只包含该审计结果。
+- Runtime development license 是 90 天轮换的运行凭据，与 repository software license 分离。License 与 key 位于
+  `apps/cli/src/license.ts`，browser 端 `packages/render-preset/src/license.ts` 保持同一 License。daemon 解析
+  License pair 后在进程内调用一次 `configureExchange`，并显式传给 Gateway 的 `UniverCollabService` 和 runtime
+  worker 的环境变量，不依赖子进程继承宿主环境。
+
+## 质量检查
+
+```bash
+pnpm check
+```
+
+质量门依次验证 format、lint、typecheck、locale freshness、build、workspace tests、built executable、
+Gateway/Viewer/runtime worker、browser render smoke 和 package dry-run。
