@@ -1117,8 +1117,9 @@ export class CollabService {
   private _externalizeImages(value: object, unitId: string, worktreeId?: string): object;
   private _externalizeImages(value: unknown, unitId: string, worktreeId?: string): unknown;
   private _externalizeImages(value: unknown, unitId: string, worktreeId?: string): unknown {
-    return externalizeEmbeddedImages(value, {
-      store: ({ bytes, filename, mediaType }) =>
+    return externalizeEmbeddedImages(
+      value,
+      ({ bytes, filename, mediaType }) =>
         this.runtime.assetStore.store({
           unitId,
           ...(worktreeId === undefined ? {} : { worktreeId }),
@@ -1127,7 +1128,7 @@ export class CollabService {
           bytes,
           reuseInScope: true,
         }).assetId,
-    });
+    );
   }
 
   private async _readWorktreeSheetBlocks(

@@ -136,7 +136,7 @@ export class GatewayExchangeService {
         importOptions.type === UniverInstanceType.UNIVER_BASE
           ? { ...importOptions, unitId: files.unitId }
           : { ...importOptions, unitId: files.unitId, files };
-      const data = await importUnitData(artifact.bytes, options);
+      const data = await importBuffer(artifact.bytes, options);
       const name = importedName(data, artifact.filename);
       const created = await this._collab.createUnit(
         unitType,
@@ -455,23 +455,6 @@ function exchangeExportOptions(
   return { type: UniverInstanceType.UNIVER_SLIDE, format: ExchangeFormat.PPTX };
 }
 
-async function importUnitData(
-  buffer: Buffer,
-  options: BufferImportOptions,
-): Promise<Readonly<Record<string, unknown>>> {
-  switch (options.type) {
-    case UniverInstanceType.UNIVER_SHEET:
-      return { ...(await importBuffer(buffer, options)) };
-    case UniverInstanceType.UNIVER_BASE:
-      return { ...(await importBuffer(buffer, options)) };
-    case UniverInstanceType.UNIVER_DOC:
-      return { ...(await importBuffer(buffer, options)) };
-    case UniverInstanceType.UNIVER_SLIDE:
-      return { ...(await importBuffer(buffer, options)) };
-  }
-  throw new Error("Unsupported import unit type.");
-}
-
 function snapshotToJson(input: ISnapshotWithBlocks): {
   readonly snapshot: ISnapshot;
   readonly sheetBlocks: Readonly<Record<string, ISheetBlock>>;
@@ -595,7 +578,7 @@ function mediaType(format: ExchangeFormat): string {
   }
 }
 
-function importedName(data: Readonly<Record<string, unknown>>, filename: string): string {
+function importedName(data: { name?: string; title?: string }, filename: string): string {
   const candidate =
     (typeof data.name === "string" && data.name.trim()) ||
     (typeof data.title === "string" && data.title.trim()) ||

@@ -3,8 +3,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { IMutation } from "@univerjs/protocol";
 import { UniverInstanceType } from "@univerjs/core";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { CollabService } from "../src/collab-service.js";
+import { externalizeEmbeddedImages } from "../src/assets/externalize-embedded-images.js";
 import { countAssetRows } from "./asset-counts.js";
 import { changeWorktree } from "./change-worktree.js";
 
@@ -12,6 +13,24 @@ const PNG_DATA_URI = "data:image/png;base64,iVBORw0KGgo=";
 const SVG_DATA_URI = "data:image/svg+xml;base64,PHN2Zy8+";
 
 describe("embedded image externalization", () => {
+  it("reuses the result of each asset write without mutating the source snapshot", () => {
+    const picture = { fillImageSource: PNG_DATA_URI, fillImageSourceType: "BASE64" };
+    const snapshot = { drawings: [picture, picture] };
+    const store = vi.fn(() => "asset-id");
+    const converted = externalizeEmbeddedImages(snapshot, store);
+    expect(converted).toEqual({
+      drawings: Array(2).fill({ fillImageSource: "asset-id", fillImageSourceType: "UUID" }),
+    });
+    expect(store).toHaveBeenCalledTimes(1);
+    expect(picture.fillImageSource).toBe(PNG_DATA_URI);
+
+    store.mockImplementation(() => {
+      throw new Error("asset write failed");
+    });
+    expect(externalizeEmbeddedImages(snapshot, store)).toBe(snapshot);
+    expect(store).toHaveBeenCalledTimes(2);
+  });
+
   it("stores supported BASE64 bytes once and commits UUID references", async () => {
     const directory = mkdtempSync(join(tmpdir(), "gw-embedded-images-"));
     const dbPath = join(directory, "book.univer");

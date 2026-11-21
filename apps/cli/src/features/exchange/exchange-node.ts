@@ -25,10 +25,6 @@ export type ExchangeUnitType =
   | UniverInstanceType.UNIVER_DOC
   | UniverInstanceType.UNIVER_SLIDE;
 
-const importUnitData = importFile as unknown as (
-  path: string,
-  options: ImportOptions,
-) => Promise<object>;
 const exportUnitData = exportToFile as unknown as (
   data: object,
   path: string,
@@ -55,7 +51,7 @@ export async function importOfficeFile(input: {
         }
       : {}),
   } as ImportOptions;
-  return await withExchangeError(() => importUnitData(input.sourcePath, options));
+  return await withExchangeError(() => importFile(input.sourcePath, options));
 }
 
 export async function exportOfficeFile(input: {
