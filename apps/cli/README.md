@@ -193,8 +193,6 @@ Agents install the `univer-cli` discovery Skill directly from the repository. Th
 
 New Univerfiles use v3. Supported v0, v1, and v2 files upgrade to v3 when the application first explicitly opens their path. Upgrade performs read-only identification, locking, a byte-for-byte backup, an independent candidate, storage and runtime verification, a source-hash recheck, and atomic replacement. A failure never replaces the source. Opening the same unchanged file again reuses that backup. Reopening v3 is side-effect free.
 
-See the [data compatibility contract](https://github.com/dream-num/univer-cli/blob/main/packages/univerfile-sqlite/data-compatibility.md) for details.
-
 ## Machine output
 
 A successful command with `--json` writes exactly one command-specific JSON document to stdout, without a global success envelope. When argv has already established JSON mode, a failure writes one JSON document to stderr and exits nonzero:

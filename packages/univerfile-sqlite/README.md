@@ -78,8 +78,6 @@ and in what order.
 
 ## Formats
 
-See the [file format compatibility contract](data-compatibility.md) for upgrade guarantees and migration rules.
-
 | Format | core | worktree | assets       | history      |
 | ------ | ---- | -------- | ------------ | ------------ |
 | v0     | no component version table | | |              |

@@ -69,8 +69,6 @@ v3 适配器在主干和 Worktree 上返回的 SDK Unit 与 changeset 的 `metad
 
 ## 格式
 
-升级保证与各版本的迁移规则见[文件格式兼容性约定](data-compatibility.md)。
-
 | 格式 | core | worktree | assets   | history  |
 | ---- | ---- | -------- | -------- | -------- |
 | v0   | 无组件版本表 | | |                     |
