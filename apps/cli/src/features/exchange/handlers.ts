@@ -1,6 +1,6 @@
 import type { DaemonServer, JsonValue } from "@univer-cli/daemon";
 import type { CollaborationUnitData } from "@univer-cli/univer-collaboration-runtime";
-import type { StartedServer } from "@univer/collab-gateway";
+import type { OfficeExportScope, StartedServer } from "@univer/collab-gateway";
 import { ExchangeFormat } from "@univerjs-pro/exchange-node";
 import { UniverInstanceType } from "@univerjs/core";
 import { extname } from "node:path";
@@ -92,7 +92,11 @@ export function registerExchangeHandlers(input: {
     try {
       await pullCurrent(lease);
       const unitData = await lease.exportUnitData();
-      await exportUnit(unit.type, unitData, request);
+      await exportUnit(unit.type, unitData, request, {
+        collab: univerfile.collab,
+        unitId: unit.unitId,
+        ...(request.worktreeId === undefined ? {} : { worktreeId: request.worktreeId }),
+      });
       reusable = true;
       return {
         filePath: univerfile.path,
@@ -148,9 +152,11 @@ async function exportUnit(
   type: number,
   unitData: CollaborationUnitData,
   request: ContentExportRequest,
+  scope: OfficeExportScope,
 ): Promise<void> {
   const extension = extname(request.outputPath).toLowerCase();
   const options = {
+    scope,
     ...(request.formulaCalculationMode === undefined
       ? {}
       : { formulaCalculationMode: request.formulaCalculationMode }),

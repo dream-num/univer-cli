@@ -19,6 +19,7 @@ import {
 } from "@univerjs-pro/exchange-node";
 import { ErrorCode, UniverType, type ISheetBlock, type ISnapshot } from "@univerjs/protocol";
 import type { CollabService } from "../collab-service.js";
+import { withOfficeExportFiles } from "./office-export-files.js";
 
 export const MAX_EXCHANGE_FILE_BYTES = 50 * 1024 * 1024;
 const ARTIFACT_TTL_MS = 2 * 60 * 60 * 1000;
@@ -157,9 +158,11 @@ export class GatewayExchangeService {
       this._requireArtifact(input.jsonID!);
     }
     const taskID = this._startTask("export", async () => {
+      let options = exchangeExportOptions(unitType, input.format, input.options);
       let aggregate: ISnapshotWithBlocks;
       let name = "univer-export";
       if (input.unitID !== null) {
+        options = withOfficeExportFiles(options, { collab: this._collab, unitId: input.unitID });
         aggregate = await this._collab.materializeUnit(input.unitID, unitType);
         name =
           this._collab.listUnits().find((candidate) => candidate.unitId === input.unitID)?.name ??
@@ -169,10 +172,7 @@ export class GatewayExchangeService {
         aggregate = snapshotFromJson(JSON.parse(artifact.bytes.toString("utf8")) as unknown);
         name = stripExtension(artifact.filename);
       }
-      const output = await exportSnapshotToBuffer(
-        aggregate,
-        exchangeExportOptions(unitType, input.format, input.options),
-      );
+      const output = await exportSnapshotToBuffer(aggregate, options);
       const artifact = this._saveArtifact({
         filename: `${safeFilename(name)}.${input.format}`,
         mediaType: mediaType(input.format),

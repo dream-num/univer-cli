@@ -1,3 +1,4 @@
+import { withOfficeExportFiles, type OfficeExportScope } from "@univer/collab-gateway";
 import type { CollaborationUnitData } from "@univer-cli/univer-collaboration-runtime";
 import {
   ExchangeError,
@@ -52,6 +53,7 @@ export async function importOfficeFile(input: {
 
 export async function exportOfficeFile(input: {
   readonly data: CollaborationUnitData;
+  readonly scope?: OfficeExportScope;
   readonly format: ExchangeFormat;
   readonly formulaCalculationMode?: FormulaCalculationMode;
   readonly outputPath: string;
@@ -69,7 +71,8 @@ export async function exportOfficeFile(input: {
       : {}),
     ...csvExportOptions(input),
   } as ExportOptions;
-  await withExchangeError(() => exportUnitData(input.data, input.outputPath, options));
+  const scopedOptions = input.scope ? withOfficeExportFiles(options, input.scope) : options;
+  await withExchangeError(() => exportUnitData(input.data, input.outputPath, scopedOptions));
 }
 
 export function exchangeImportFormatOverride(extension: string): ExchangeFormat | undefined {

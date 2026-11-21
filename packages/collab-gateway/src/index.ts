@@ -7,3 +7,4 @@ export type { CollabServiceOptions } from "./collab-service.js";
 export type { UniverServerCredentials } from "./gateway-file-runtime.js";
 export { optimizeUniverfilePath } from "./optimization/univerfile-optimizer.js";
 export type { OptimizeUniverfileCopyInput } from "./optimization/univerfile-optimizer.js";
+export { withOfficeExportFiles, type OfficeExportScope } from "./exchange/office-export-files.js";
