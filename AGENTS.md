@@ -26,6 +26,8 @@
 
 ## Development
 
+- 可先阅读 `docs/` 了解项目架构和设计，从[中文架构文档](docs/architecture.zh-CN.md)或[英文版](docs/architecture.md)入手。
+- `docs/` 与代码必须同步维护。代码变更影响文档描述的架构、设计或行为时，在同一 PR 中更新相关文档；有中英文版本的，两版一并更新。
 - 使用 single-context glossary：根目录 `CONTEXT.md`。
 - strict ESM、named exports、两空格缩进，导出函数显式返回类型。
 - Git commit message 必须使用英文。
