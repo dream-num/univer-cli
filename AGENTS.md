@@ -26,6 +26,7 @@
 
 ## Development
 
+- 使用 single-context glossary：根目录 `CONTEXT.md`。
 - strict ESM、named exports、两空格缩进，导出函数显式返回类型。
 - Git commit message 必须使用英文。
 - 使用 Vitest、oxlint、oxfmt；CLI 测试放在 `apps/cli/test/*.test.ts`，package 测试放在各自的 `test/`。
@@ -34,21 +35,6 @@
   `pnpm-lock.yaml`，不得手工只更新其中一部分。
 - Runtime development license 是 90 天轮换的运行凭据；不得将其描述为 repository software license。
 - 完成前运行 `pnpm check`。
-
-## Agent skills
-
-### Issue tracker
-
-Issues 和 specs 使用不进入 repository history 的 `.scratch/` 本地 Markdown tracker。详见
-`docs/agents/issue-tracker.md`。
-
-### Triage labels
-
-使用默认五态 vocabulary。详见 `docs/agents/triage-labels.md`。
-
-### Domain docs
-
-使用 single-context glossary：根目录 `CONTEXT.md`。详见 `docs/agents/domain.md`。
 
 ## Shared packages
 
