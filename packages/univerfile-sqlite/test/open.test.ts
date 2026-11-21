@@ -10,7 +10,7 @@ import { promisify } from 'node:util'
 import type { ISheetBlock, ISnapshot } from '@univerjs/protocol'
 import { build } from 'esbuild'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { openUniverfile, type Univerfile } from '../src/index.ts'
+import { openUniverfile, UNIVERFILE_INITIAL_ASSETS, type Univerfile } from '../src/index.ts'
 import {
   V3_VERSIONS,
   backupsOf,
@@ -36,8 +36,12 @@ afterAll(async () => {
 // Stores keep snapshots as opaque JSON, so the fixture only needs the identity fields.
 const unitSnapshot = (unitID: string) => ({ ...snapshot, unitID }) as unknown as ISnapshot
 
-async function createUnit(file: Univerfile, unitID: string): Promise<void> {
-  const result = await file.trunk.createUnit(context, {
+async function createUnit(
+  file: Univerfile,
+  unitID: string,
+  creationContext = context
+): Promise<void> {
+  const result = await file.trunk.createUnit(creationContext, {
     record: {
       unitID,
       type: 2,
@@ -51,6 +55,42 @@ async function createUnit(file: Univerfile, unitID: string): Promise<void> {
   expect(result.status).toBe('created')
   expect(result.record.metadata).toEqual({})
 }
+
+it('rolls back the Unit, asset records and blobs if a later initial asset fails', async () => {
+  const path = join(workspace, 'rollback-assets.univer')
+  const file = openUniverfile(path, { create: true })
+  const first = {
+    assetId: 'asset-1',
+    originalFilename: 'one.png',
+    mediaType: 'image/png',
+    bytes: new Uint8Array([1])
+  }
+  const invalid = { ...first, assetId: 'asset-2', originalFilename: '' }
+  try {
+    await expect(
+      createUnit(file, 'unit', {
+        ...context,
+        customData: { [UNIVERFILE_INITIAL_ASSETS]: [first, invalid] }
+      })
+    ).rejects.toThrow('Asset filename')
+    expect(file.verify()).toEqual({ units: 0, worktrees: 0, assets: 0 })
+    const db = new DatabaseSync(path, { readOnly: true })
+    try {
+      expect(
+        db.prepare('SELECT COUNT(*) AS count FROM collaboration_asset_blobs').get()?.count
+      ).toBe(0)
+    } finally {
+      db.close()
+    }
+    await createUnit(file, 'unit', {
+      ...context,
+      customData: { [UNIVERFILE_INITIAL_ASSETS]: [first] }
+    })
+    expect(file.assets.open(first.assetId)?.bytes).toEqual(first.bytes)
+  } finally {
+    await file.close()
+  }
+})
 
 describe('open and create', () => {
   it('creates a v3 file and reopens it unchanged', async () => {

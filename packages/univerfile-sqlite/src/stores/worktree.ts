@@ -34,7 +34,7 @@ import type { UniverfileSQLiteConnection } from '../driver/connection.ts'
 import { runUniverfileSQLiteTransaction } from '../driver/transaction.ts'
 import { protocolChangeset, readChangeset } from '../codec/changeset.ts'
 import { decodeStoredJson, encodeStoredJson } from '../codec/stored-json.ts'
-import { deleteWorktreeAssets } from './assets.ts'
+import { AssetStore, deleteWorktreeAssets } from './assets.ts'
 
 const SUPPORTED_UNIT_TYPES = new Set<UniverType>([
   UniverType.UNIVER_SHEET,
@@ -168,11 +168,13 @@ export interface UniverfileWorktreeStore extends IWorktreeDatabaseAdapter {
 }
 
 export class WorktreeStore implements UniverfileWorktreeStore {
+  private readonly _assets: AssetStore
   private readonly _database: DatabaseSync
   private _disposed = false
 
   constructor(options: WorktreeStoreOptions) {
     validateOptions(options)
+    this._assets = new AssetStore(options)
     this._database = options.connection.database
   }
 
@@ -455,6 +457,7 @@ export class WorktreeStore implements UniverfileWorktreeStore {
           encodeStoredJson(seed.snapshot),
           seed.sheetBlocks === undefined ? null : encodeStoredJson(seed.sheetBlocks)
         )
+      this._assets.storeInitialAssets(context.customData, unit.unitID, unit.worktreeID)
       return {
         status: 'created',
         aggregate: this._requireAggregate(unit.worktreeID)

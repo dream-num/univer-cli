@@ -19,6 +19,7 @@ import {
 } from "@univerjs-pro/exchange-node";
 import { ErrorCode, UniverType, type ISheetBlock, type ISnapshot } from "@univerjs/protocol";
 import type { CollabService } from "../collab-service.js";
+import { OfficeImportFiles } from "./office-import-files.js";
 import { withOfficeExportFiles } from "./office-export-files.js";
 
 export const MAX_EXCHANGE_FILE_BYTES = 50 * 1024 * 1024;
@@ -130,9 +131,18 @@ export class GatewayExchangeService {
         };
       }
 
-      const data = await importUnitData(artifact.bytes, importOptions);
+      const files = new OfficeImportFiles();
+      const options =
+        importOptions.type === UniverInstanceType.UNIVER_BASE
+          ? { ...importOptions, unitId: files.unitId }
+          : { ...importOptions, unitId: files.unitId, files };
+      const data = await importUnitData(artifact.bytes, options);
       const name = importedName(data, artifact.filename);
-      const created = await this._collab.createUnit(unitType, { data, name });
+      const created = await this._collab.createUnit(
+        unitType,
+        { data, name, unitId: files.unitId },
+        files.assets,
+      );
       onUnitCreated({ unitId: created.unitId, type: unitType, name });
       return {
         kind: "import",

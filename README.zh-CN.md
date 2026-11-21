@@ -39,7 +39,7 @@ https://discord.gg/nThHPupraR
 - **搭建多维表格**：创建 Base 表、字段、记录和视图，使用公式、筛选、排序、分组与 Sheet 数据引用。
 - **绘制可编辑画布**：创建 Board 形状、文本、连接线、图片、原生图表和流程图，并检查连接关系与布局。
 - **组合多种内容**：在一个 `.univer` 文件中保存 Sheet、Doc、Slide、Base 与 Board Unit，并支持跨 Unit 引用内容。
-- **处理 Office 文件**：导入 Excel、CSV、TSV、Word 和 PowerPoint 文件，再将受支持的内容导出为标准 Office 格式。
+- **处理 Office 文件**：导入 Excel、CSV、TSV、Word 和 PowerPoint 文件，再将受支持的内容导出为标准 Office 格式。导入和导出 DOCX、XLSX、PPTX 时会保留内嵌图片。
 - **安全审阅 Agent 修改**：所有写入先进入隔离草稿，只有用户明确决定后才会合并或放弃。
 
 ### 试试这些任务

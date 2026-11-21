@@ -1,4 +1,5 @@
 import { mkdtemp, readFile, realpath, rm } from "node:fs/promises";
+import { DatabaseSync } from "node:sqlite";
 import { tmpdir } from "node:os";
 import { join, posix } from "node:path";
 import { FileSource, UniverType } from "@univerjs/protocol";
@@ -8,7 +9,7 @@ import { freePort, invoke } from "./built-cli.js";
 
 const fixtures = join(import.meta.dirname, "fixtures", "exchange");
 
-describe("embedded images in Office exports", () => {
+describe("embedded images in Office exchange", () => {
   let root: string;
   let env: NodeJS.ProcessEnv;
   let origin: string;
@@ -130,24 +131,11 @@ describe("embedded images in Office exports", () => {
       expectPicture(await readFile(trunkOut), folder, png);
 
       const exchange = base + "/universer-api";
-      const started = await fetch(`${exchange}/exchange/${type}/export`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ unitID: unitId, format }),
-      });
-      expect(started.ok).toBe(true);
-      const { taskID } = (await started.json()) as { taskID: string };
-      const readTask = async () =>
-        (await (await fetch(`${exchange}/exchange/task/${taskID}`)).json()) as {
-          status: string;
-          error: { message: string };
-          export: { fileID: string };
-        };
-      await expect
-        .poll(async () => (await readTask()).status, { timeout: 15_000 })
-        .not.toBe("pending");
-      const task = await readTask();
-      expect(task.status, task.error.message).toBe("done");
+      const task = await runExchangeTask<{ export: { fileID: string } }>(
+        exchange,
+        `${type}/export`,
+        { unitID: unitId, format },
+      );
       const signed = (await (
         await fetch(`${exchange}/file/${task.export.fileID}/sign-url`)
       ).json()) as { url: string };
@@ -157,7 +145,141 @@ describe("embedded images in Office exports", () => {
     },
     45_000,
   );
+  it.each([
+    {
+      filename: "layout-picture.pptx",
+      type: UniverType.UNIVER_SLIDE,
+      facade: "presentation",
+      folder: "ppt/slideLayouts",
+    },
+    { filename: "picture.docx", type: UniverType.UNIVER_DOC, facade: "doc", folder: "word" },
+    {
+      filename: "picture.xlsx",
+      type: UniverType.UNIVER_SHEET,
+      facade: "workbook",
+      folder: "xl/drawings",
+    },
+  ])(
+    "imports $filename with scoped file references through the CLI and Gateway",
+    async ({ filename, type, facade, folder }) => {
+      const file = join(root, filename + ".univer");
+      const input = join(fixtures, filename);
+      const first = await cli<{ unitId: string }>("import", file, "--file", input);
+      const exchange = origin + "/uf/" + Buffer.from(file).toString("base64url") + "/universer-api";
+      const bytes = await readFile(input);
+      const form = new FormData();
+      form.append("file", new Blob([Uint8Array.from(bytes)]), filename);
+      const upload = await fetch(
+        `${exchange}/stream/file/upload?source=${FileSource.HttpImport}&size=${bytes.length}`,
+        { method: "POST", body: form },
+      );
+      expect(upload.status).toBe(201);
+      const { FileId } = (await upload.json()) as { FileId: string };
+      const imported = await runExchangeTask<{ import: { unitID: string } }>(
+        exchange,
+        `${type}/import`,
+        { fileID: FileId, outputType: 1 },
+      );
+      const { worktreeId } = await cli<{ worktreeId: string }>(
+        "worktree",
+        "add",
+        file,
+        "--name",
+        "images",
+      );
+      const draft = await cli<{ unitId: string }>(
+        "import",
+        file,
+        "--file",
+        input,
+        "--worktree",
+        worktreeId,
+      );
+
+      const db = new DatabaseSync(file, { readOnly: true });
+      try {
+        for (const [unitId, scope] of [
+          [first.unitId, null],
+          [imported.import.unitID, null],
+          [draft.unitId, worktreeId],
+        ] as const) {
+          const rows = db
+            .prepare(
+              "SELECT asset_id, worktree_id, original_filename, media_type, bytes FROM collaboration_assets JOIN collaboration_asset_blobs USING (digest) WHERE unit_id = ?",
+            )
+            .all(unitId);
+          expect(rows).toHaveLength(1);
+          expect(rows[0]).toMatchObject({
+            worktree_id: scope,
+            original_filename: "image1.png",
+            media_type: "image/png",
+            bytes: png,
+          });
+          const { value } = await cli<{ value: string }>(
+            "execute",
+            file,
+            "--unit",
+            unitId,
+            "--worktree",
+            worktreeId,
+            "-e",
+            `return JSON.stringify(${facade}.save())`,
+          );
+          expect(value).toContain(rows[0]!.asset_id);
+          // XLSX can retain original OOXML parts separately from drawing sources.
+          expect(value).not.toContain(
+            "data:image/png;base64," + Buffer.from(png).toString("base64"),
+          );
+          const out = join(root, unitId + "-" + filename);
+          await cli("export", file, out, "--unit", unitId, ...(scope ? ["--worktree", scope] : []));
+          expectPicture(await readFile(out), folder, png);
+        }
+        // A JSON-only conversion has no Unit to own assets. Its snapshot must export on its own.
+        const json = await runExchangeTask<{ import: { jsonID: string } }>(
+          exchange,
+          `${type}/import`,
+          { fileID: FileId, outputType: 2 },
+        );
+        const result = await runExchangeTask<{ export: { fileID: string } }>(
+          exchange,
+          `${type}/export`,
+          { jsonID: json.import.jsonID, format: filename.split(".").pop() },
+        );
+        const downloaded = await fetch(`${exchange}/file/${result.export.fileID}/content`);
+        expect(downloaded.ok).toBe(true);
+        expectPicture(new Uint8Array(await downloaded.arrayBuffer()), folder, png);
+        expect(
+          db.prepare("SELECT COUNT(*) AS assets FROM collaboration_assets").get()?.assets,
+        ).toBe(3);
+        expect(
+          db.prepare("SELECT COUNT(*) AS blobs FROM collaboration_asset_blobs").get()?.blobs,
+        ).toBe(1);
+      } finally {
+        db.close();
+      }
+    },
+    45_000,
+  );
 });
+
+async function runExchangeTask<T>(exchange: string, action: string, body: object): Promise<T> {
+  const started = await fetch(`${exchange}/exchange/${action}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  expect(started.ok).toBe(true);
+  const { taskID } = (await started.json()) as { taskID: string };
+  const readTask = async () =>
+    (await (await fetch(`${exchange}/exchange/task/${taskID}`)).json()) as T & {
+      status: string;
+      error: { message: string };
+    };
+  await expect.poll(async () => (await readTask()).status, { timeout: 15_000 }).not.toBe("pending");
+  const task = await readTask();
+  expect(task.status, task.error.message).toBe("done");
+  return task;
+}
 
 // Follow the drawing's relationship so orphaned media or a layout picture moved to a slide fails.
 function expectPicture(archive: Uint8Array, folder: string, png: Uint8Array): void {
@@ -172,7 +294,7 @@ function expectPicture(archive: Uint8Array, folder: string, png: Uint8Array): vo
         ?.find((tag) => tag.includes(` Id="${id}"`));
       const target = rel?.match(/ Target="([^"]+)"/u)?.[1];
       expect(target).toBeDefined();
-      images.push(parts[posix.join(folder, target!)]);
+      images.push(parts[posix.resolve("/", folder, target!).slice(1)]);
     }
   }
   expect(images).toEqual([png]);

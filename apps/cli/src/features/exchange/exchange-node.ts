@@ -1,4 +1,8 @@
-import { withOfficeExportFiles, type OfficeExportScope } from "@univer/collab-gateway";
+import {
+  withOfficeExportFiles,
+  type OfficeExportScope,
+  type OfficeImportFiles,
+} from "@univer/collab-gateway";
 import type { CollaborationUnitData } from "@univer-cli/univer-collaboration-runtime";
 import {
   ExchangeError,
@@ -34,6 +38,7 @@ const exportUnitData = exportToFile as unknown as (
 export async function importOfficeFile(input: {
   readonly formulaCalculationMode?: FormulaCalculationMode;
   readonly sourcePath: string;
+  readonly files?: OfficeImportFiles;
   readonly unitType: ExchangeUnitType;
 }): Promise<object> {
   const extension = extname(input.sourcePath).toLowerCase();
@@ -41,6 +46,8 @@ export async function importOfficeFile(input: {
   const options = {
     type: input.unitType,
     ...(format === undefined ? {} : { format }),
+    ...(input.files && { unitId: input.files.unitId }),
+    ...(input.files && input.unitType !== UniverInstanceType.UNIVER_BASE && { files: input.files }),
     ...(input.unitType === UniverInstanceType.UNIVER_SHEET &&
     (extension === ".xlsx" || extension === ".xlsm")
       ? {

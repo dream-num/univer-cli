@@ -1,6 +1,8 @@
 import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { OfficeImportFiles } from "@univer/collab-gateway";
+import { MAX_UNIVERFILE_ASSET_BYTES } from "@univer/univerfile-sqlite";
 import { ExchangeFormat, configureExchange } from "@univerjs-pro/exchange-node";
 import {
   BaseFieldType,
@@ -22,6 +24,15 @@ describe("Exchange Node application adapter", () => {
   // The daemon configures Exchange once per process; exports here run in the test process.
   beforeAll(async () => {
     await configureExchange({ license: UNIVER_LICENSE, licenseKey: UNIVER_LICENSE_KEY });
+  });
+
+  it("keeps an imported file inline when it exceeds the Univerfile asset limit", async () => {
+    const files = new OfficeImportFiles();
+    const bytes = new Uint8Array(MAX_UNIVERFILE_ASSET_BYTES + 1);
+    await expect(
+      files.store({ name: "large.png", mimeType: "image/png", size: bytes.length, bytes }),
+    ).resolves.toEqual({ mode: "inline" });
+    expect(files.assets).toHaveLength(0);
   });
 
   it.each([

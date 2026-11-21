@@ -105,7 +105,7 @@ detail 使用 `id:` selector。每次 inspection 必须通过 `--trunk` 或 `--w
 
 ## Import and export
 
-`import` 使用 Univer SDK Exchange Node 导入本地或 HTTP(S) XLS/XLSX/XLSM/CSV/TSV、DOC/DOCX 与 PPT/PPTX。
+`import` 使用 Univer SDK Exchange Node 导入本地或 HTTP(S) XLS/XLSX/XLSM/CSV/TSV、DOC/DOCX 与 PPT/PPTX。导入 Sheet、Doc、Slide 时，内嵌图片和附件随新 Unit 一同保存。
 HTTP(S) source 由 Local adapter 流式写入保留原后缀的临时文件，完成或失败后清理；error message 会移除 URL
 credential、query 和 fragment。
 

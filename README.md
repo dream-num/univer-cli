@@ -39,7 +39,7 @@ https://discord.gg/nThHPupraR
 - **Build multidimensional tables** — create Base tables, fields, records, views, formulas, filters, sorting, grouping, and Sheet-backed references.
 - **Draw editable canvases** — create Board shapes, text, connectors, images, native charts, and diagrams, with connector and layout analysis.
 - **Compose several content types** — keep Sheet, Doc, Slide, Base, and Board Units in one `.univer` file and reference content across Units.
-- **Work with Office files** — import Excel, CSV, TSV, Word, and PowerPoint files, then export supported content to standard Office formats.
+- **Work with Office files** — import Excel, CSV, TSV, Word, and PowerPoint files, then export supported content to standard Office formats. Embedded pictures are preserved when importing and exporting DOCX, XLSX, and PPTX files.
 - **Review agent changes safely** — keep every write in an isolated draft until the user explicitly decides to merge or discard it.
 
 ### Example requests

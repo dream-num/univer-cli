@@ -50,6 +50,8 @@ import { CollabGatewayAssetScopeNotFoundError } from "./assets/errors.js";
 import { GatewayFileRuntime, type UniverServerCredentials } from "./gateway-file-runtime.js";
 import type { UniverfileAssetRecord, UniverfileOpenedAsset } from "@univer/univerfile-sqlite";
 import {
+  UNIVERFILE_INITIAL_ASSETS,
+  type UniverfileInitialAsset,
   UNIVERFILE_UNIT_METADATA_KEY,
   type UniverfileUnitSummary,
 } from "@univer/univerfile-sqlite";
@@ -59,7 +61,7 @@ import {
   type UniverfileWorktreeSummary,
   type UniverfileWorktreeUnitSummary,
 } from "@univer/univerfile-sqlite";
-import { unitAdapter } from "./univer/unit-types.js";
+import { newUnitId, unitAdapter } from "./univer/unit-types.js";
 import { KeyedLock } from "./util/lock.js";
 import { GatewayExchangeService } from "./exchange/gateway-exchange-service.js";
 import { GATEWAY_UNIT_RUNTIME } from "./unit-runtime.js";
@@ -144,12 +146,19 @@ export class CollabService {
     this.exchange = new GatewayExchangeService(this);
   }
 
-  public async createUnit(type: number, input: CreateUnitInput = {}): Promise<CreateUnitResult> {
+  public async createUnit(
+    type: number,
+    input: CreateUnitInput = {},
+    initialAssets?: readonly UniverfileInitialAsset[],
+  ): Promise<CreateUnitResult> {
     const unitId = input.unitId ?? newUnitId();
     const name = input.name ?? unitId;
     const adapter = unitAdapter(type);
     const raw = input.data ?? adapter.defaultData(unitId, name);
-    const data = withInitialIdentity(this._externalizeImages(raw, unitId), unitId);
+    const data = withInitialIdentity(
+      initialAssets === undefined ? this._externalizeImages(raw, unitId) : raw,
+      unitId,
+    );
     await this.runtime.trunkService.createUnitFromData(
       {
         type: type as UniverType,
@@ -157,6 +166,7 @@ export class CollabService {
       } as CreateUnitFromDataInput,
       callOptions("local", {
         [UNIVERFILE_UNIT_METADATA_KEY]: { name },
+        [UNIVERFILE_INITIAL_ASSETS]: initialAssets,
       }),
     );
     const sheetOrder = adapter.sheetOrder(data);
@@ -476,16 +486,21 @@ export class CollabService {
     name: string,
     unitId = newUnitId(),
     snapshot?: object,
+    initialAssets?: readonly UniverfileInitialAsset[],
   ): Promise<WorktreeCreatedUnit> {
     const adapter = unitAdapter(type);
     const raw = snapshot ?? adapter.defaultData(unitId, name);
-    const data = withInitialIdentity(this._externalizeImages(raw, unitId, worktreeId), unitId);
+    const data = withInitialIdentity(
+      initialAssets === undefined ? this._externalizeImages(raw, unitId, worktreeId) : raw,
+      unitId,
+    );
     await this.runtime.worktreeService.createUnitFromData(
       { worktreeID: worktreeId, type: type as UniverType, data } as Parameters<
         typeof this.runtime.worktreeService.createUnitFromData
       >[0],
       callOptions("local", {
         [UNIVERFILE_WORKTREE_METADATA_KEY]: { unitNames: { [unitId]: name } },
+        [UNIVERFILE_INITIAL_ASSETS]: initialAssets,
       }),
     );
     return { unitId, type, name };
@@ -1368,10 +1383,6 @@ function toWorktreeRecord(row: UniverfileWorktreeSummary): WorktreeRecord {
     createdAt: row.createdAt,
     ...(row.mergedAt === undefined ? {} : { mergedAt: row.mergedAt }),
   };
-}
-
-function newUnitId(): string {
-  return `u-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function readSnapshotUnitName(snapshot: ISnapshot | undefined): string | undefined {

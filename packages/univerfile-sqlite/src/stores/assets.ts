@@ -55,6 +55,17 @@ export interface UniverfileAssetStore {
   publishWorktreeAssets(worktreeId: string, unitIds: readonly string[]): number
 }
 
+/** Initial asset references are allocated during conversion and committed with the new Unit. */
+export interface UniverfileInitialAsset {
+  readonly assetId: string
+  readonly originalFilename: string
+  readonly mediaType: string
+  readonly bytes: Uint8Array
+}
+
+// Only in-process Unit creation can attach pending assets to the SDK's database context.
+export const UNIVERFILE_INITIAL_ASSETS = Symbol('univerfile initial assets')
+
 export interface AssetStoreOptions {
   readonly connection: UniverfileSQLiteConnection
 }
@@ -72,6 +83,26 @@ export class AssetStore implements UniverfileAssetStore {
   }
 
   public store(input: UniverfileStoreAssetInput): UniverfileAssetRecord {
+    return this._store(input)
+  }
+
+  public storeInitialAssets(
+    customData: Record<string, unknown>,
+    unitId: string,
+    worktreeId?: string
+  ): void {
+    const files = (
+      customData as { [UNIVERFILE_INITIAL_ASSETS]?: readonly UniverfileInitialAsset[] }
+    )[UNIVERFILE_INITIAL_ASSETS]
+    for (const file of files ?? []) {
+      this._store(
+        { ...file, unitId, ...(worktreeId === undefined ? {} : { worktreeId }) },
+        file.assetId
+      )
+    }
+  }
+
+  private _store(input: UniverfileStoreAssetInput, initialId?: string): UniverfileAssetRecord {
     validateStoredAsset(input)
     const bytes = Uint8Array.from(input.bytes)
     const digest = createHash('sha256').update(bytes).digest('hex')
@@ -97,7 +128,7 @@ export class AssetStore implements UniverfileAssetStore {
         throw new Error('Stored asset digest has conflicting byte length')
       }
 
-      const assetId = randomUUID()
+      const assetId = initialId ?? randomUUID()
       const createdAtMs = Date.now()
       this._database
         .prepare(

@@ -32,10 +32,11 @@ export type {
 
 export type { UniverfileHistoryStore } from './stores/history.ts'
 
-export { MAX_UNIVERFILE_ASSET_BYTES } from './stores/assets.ts'
+export { MAX_UNIVERFILE_ASSET_BYTES, UNIVERFILE_INITIAL_ASSETS } from './stores/assets.ts'
 export type {
   UniverfileAssetRecord,
   UniverfileAssetStore,
+  UniverfileInitialAsset,
   UniverfileOpenedAsset,
   UniverfileStoreAssetInput
 } from './stores/assets.ts'

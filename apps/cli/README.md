@@ -99,7 +99,7 @@ scope through `--trunk` or `--worktree <id>`.
 
 ## Import and export
 
-`import` uses Univer SDK Exchange Node to import local or HTTP(S) XLS, XLSX, XLSM, CSV, TSV, DOC, DOCX, PPT, and PPTX inputs. The local HTTP adapter streams remote input into a suffix-preserving temporary file, removes it after success or failure, and strips credentials, query strings, and fragments from errors.
+`import` uses Univer SDK Exchange Node to import local or HTTP(S) XLS, XLSX, XLSM, CSV, TSV, DOC, DOCX, PPT, and PPTX inputs. The local HTTP adapter streams remote input into a suffix-preserving temporary file, removes it after success or failure, and strips credentials, query strings, and fragments from errors. Embedded pictures and attachments in Sheet, Doc, and Slide imports are stored with the new Unit.
 
 Without `--worktree`, import creates a new Univerfile. With a worktree, it writes into that draft. `export` supports Sheet/Base to XLSX, CSV, or TSV; Doc to DOCX; and Slide to PPTX. CSV and TSV use `--sheet` or `--table` to select one output object. `--formula-calculation forced|when_empty|no` controls the Sheet converter formula policy; the compatibility default is `forced`.
 

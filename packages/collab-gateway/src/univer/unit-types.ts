@@ -20,6 +20,10 @@ import {
   type UnitType,
 } from "@univer/collab-gateway-contract";
 
+export function newUnitId(): string {
+  return `u-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 const DEFAULT_SHEET_ID = "sheet-1";
 const DEFAULT_ROW_COUNT = 1000;
 const DEFAULT_COLUMN_COUNT = 26;

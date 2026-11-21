@@ -41,6 +41,7 @@ SDK Service 调用契约方法，应用直接调用扩展方法。本地文件�
 `INVALID_REQUEST`；从 Worktree 移除 Unit 使用 `worktree.deleteUnit()`。应用 metadata 通过 SDK 调用的
 `customData` 传给 store，键为 `UNIVERFILE_UNIT_METADATA_KEY`、`UNIVERFILE_WORKTREE_METADATA_KEY` 与
 `UNIVERFILE_WORKTREE_CHANGE_METADATA_KEY`。
+进程内调用方创建 Unit 时可通过 `UNIVERFILE_INITIAL_ASSETS` 符号传入待保存的文件。store 在创建主干或 Worktree Unit 的同一事务中写入预分配的资产 ID 和文件字节。
 v3 适配器在主干和 Worktree 上返回的 SDK Unit 与 changeset 的 `metadata` 均为 `{}`，传入该字段的值会被忽略。
 
 ## 维护操作

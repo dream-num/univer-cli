@@ -19,6 +19,7 @@ import {
 import type { IChangeset, ISheetBlock, ISnapshot, UniverType } from '@univerjs/protocol'
 import type { UniverfileSQLiteConnection } from '../driver/connection.ts'
 import { runUniverfileSQLiteTransaction } from '../driver/transaction.ts'
+import { AssetStore } from './assets.ts'
 import { protocolChangeset, readChangeset } from '../codec/changeset.ts'
 import { decodeStoredJson, encodeStoredJson } from '../codec/stored-json.ts'
 
@@ -100,11 +101,13 @@ export interface UniverfileTrunkStore extends IDatabaseAdapter {
 }
 
 export class TrunkStore implements UniverfileTrunkStore {
+  private readonly _assets: AssetStore
   private readonly _database: DatabaseSync
   private _disposed = false
 
   constructor(options: TrunkStoreOptions) {
     validateOptions(options)
+    this._assets = new AssetStore(options)
     this._database = options.connection.database
   }
 
@@ -362,6 +365,7 @@ export class TrunkStore implements UniverfileTrunkStore {
         )
         .run(input.record.unitID, input.record.type, snapshotPayload)
 
+      this._assets.storeInitialAssets(context.customData, input.record.unitID)
       return { status: 'created', record: { ...input.record, metadata: {} } }
     })
   }

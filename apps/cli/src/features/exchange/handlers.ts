@@ -1,6 +1,10 @@
 import type { DaemonServer, JsonValue } from "@univer-cli/daemon";
 import type { CollaborationUnitData } from "@univer-cli/univer-collaboration-runtime";
-import type { OfficeExportScope, StartedServer } from "@univer/collab-gateway";
+import {
+  OfficeImportFiles,
+  type OfficeExportScope,
+  type StartedServer,
+} from "@univer/collab-gateway";
 import { ExchangeFormat } from "@univerjs-pro/exchange-node";
 import { UniverInstanceType } from "@univerjs/core";
 import { extname } from "node:path";
@@ -9,7 +13,6 @@ import {
   pullCurrent,
   requireDraftWorktree,
   requireWorktree,
-  type LocalCollaboration,
   type UnitSummary,
 } from "../../daemon/collaboration-access.js";
 import type { LocalCollaborationRuntimePool } from "../../daemon/collaboration-runtime-pool.js";
@@ -35,7 +38,9 @@ export function registerExchangeHandlers(input: {
     if (request.worktreeId === undefined) {
       input.gateway.manager.prepareNewUniverfilePath(request.path);
     }
+    const files = new OfficeImportFiles();
     const imported = await importOfficeFile({
+      files,
       sourcePath: request.sourcePath,
       unitType,
       ...(request.formulaCalculationMode === undefined
@@ -46,18 +51,22 @@ export function registerExchangeHandlers(input: {
       request.worktreeId === undefined
         ? input.gateway.manager.createUniverfile(request.path)
         : input.gateway.manager.openByPath(request.path);
+    if (request.worktreeId !== undefined)
+      requireDraftWorktree(univerfile.collab, request.worktreeId);
     const created =
       request.worktreeId === undefined
-        ? await univerfile.collab.createUnit(unitType, {
-            data: imported,
-            name: request.name,
-          })
-        : await createImportedWorktreeUnit(
-            univerfile.collab,
+        ? await univerfile.collab.createUnit(
+            unitType,
+            { data: imported, name: request.name, unitId: files.unitId },
+            files.assets,
+          )
+        : await univerfile.collab.createWorktreeUnit(
             request.worktreeId,
             unitType,
             request.name,
+            files.unitId,
             imported,
+            files.assets,
           );
     return {
       filePath: univerfile.path,
@@ -112,17 +121,6 @@ export function registerExchangeHandlers(input: {
       else await lease.invalidate();
     }
   });
-}
-
-async function createImportedWorktreeUnit(
-  collab: LocalCollaboration,
-  worktreeId: string,
-  unitType: ExchangeUnitType,
-  name: string,
-  data: object,
-): Promise<{ readonly unitId: string }> {
-  requireDraftWorktree(collab, worktreeId);
-  return await collab.createWorktreeUnit(worktreeId, unitType, name, undefined, data);
 }
 
 function selectExportUnit(units: readonly UnitSummary[], unitId: string | undefined): UnitSummary {
