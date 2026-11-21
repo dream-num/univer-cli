@@ -224,7 +224,7 @@ Agent 从本仓库安装 `univer-cli` discovery Skill。CLI 只读取随包发�
 replace；失败不会替换 source。再次打开同一份未变化的文件时复用这份 backup。v3 再次打开是无副作用
 operation。
 
-完整合同见 [data compatibility contract](https://github.com/dream-num/univer-cli/blob/main/docs/data-compatibility.md)。
+完整合同见 [data compatibility contract](https://github.com/dream-num/univer-cli/blob/main/packages/univerfile-sqlite/data-compatibility.md)。
 
 ## Machine output
 

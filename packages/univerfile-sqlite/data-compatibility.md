@@ -1,7 +1,6 @@
 # `.univer` 数据兼容
 
-`.univer` 是 Univer CLI 的用户数据边界。当前新建文件使用 v3；v0、v1 与 v2 是受支持的输入格式，在
-application 显式打开对应路径时安全升级到 v3。
+`@univer/univerfile-sqlite` 创建 v3 格式的 `.univer` 文件。调用方通过 `openUniverfile()` 打开 v0、v1 或 v2 文件时，包会将其安全升级到 v3。
 
 ## 稳定合同
 
