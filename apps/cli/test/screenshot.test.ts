@@ -88,7 +88,7 @@ describe("Local screenshot command", () => {
     ).toBe(0);
     expect(captures[1]).toMatchObject({
       target: {
-        kind: "slide-pages",
+        kind: "page-selection",
         pages: [1, 3, 4, "cover"],
         contactSheet: { tile: { columns: 2, rows: 2 } },
       },

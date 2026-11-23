@@ -123,6 +123,7 @@ univer screenshot setup
 univer screenshot ./book.univer --unit <sheet-id> --range A1:H40 --out ./shots
 univer screenshot ./book.univer --worktree <id> --unit <slide-id> \
   --pages 1,3-5 --contact-slide --tile 3x2 --out ./shots
+univer screenshot ./book.univer --worktree <id> --unit <doc-id> --pages 9,18-19 --out ./shots
 univer print-pdf ./book.univer ./book.pdf --unit <sheet-id>
 univer print-pdf ./book.univer ./review.pdf --worktree <id> --unit <doc-id>
 univer lint --file ./book.univer --worktree <id> --unit <slide-id> --pages 1,3-5
@@ -146,14 +147,19 @@ pending fonts remain unresolved and inspection never resizes content.
 
 `compile-svg` uses real browser font measurement by default; `--estimate-text-size` opts into deterministic estimation. `compile-typst --apply` materializes a Doc snapshot in memory and writes it as one Worktree Unit. `resources` uses configured resource manifests and stores downloads under `${UNIVER_HOME}/cache/resources`.
 
-`compile-markdown` compiles CommonMark/GFM and supported Univer directives into an editable Modern Doc
-using the shared CLI SDK compiler and Univer SDK default typography. Local assets resolve beneath the
-source directory. Use `--source-map-out <file>` with `--apply` to retain actual native identities.
-ID-directed replacement requires `--blocks <ids> --source-map <file>`. The compiler validates native
+`compile-markdown` compiles CommonMark/GFM and supported Univer directives into an editable Doc
+using the shared CLI SDK compiler and Univer SDK default typography. New Docs default to pageless
+Modern. For physical pages, set `flavor: traditional` in frontmatter. Set `page.paper: a4` and
+`page.margin: 25mm` under `page` as needed. Between top-level blocks, `::page-break` starts the next
+paragraph on a new page in the current section and
+`::section-break{start="next-page" orientation="landscape"}` starts a landscape section.
+Local assets resolve beneath the source directory. Use `--source-map-out <file>` with `--apply` to
+retain actual native identities. ID-directed replacement is available for Modern Docs and requires
+`--blocks <ids> --source-map <file>`. The compiler validates native
 block identities and boundaries before changing the selected content.
 Unsupported syntax fails with structured diagnostics. New document creation never overwrites an existing Unit.
 
-For an existing generated Doc, use `export-markdown` to read the selected blocks from the current
+For an existing generated Modern Doc, use `export-markdown` to read the selected blocks from the current
 native content, including user edits. It works on draft and ready Worktrees without committing a
 change. The output includes local asset sidecars and a refreshed source map with the revision from
 the same runtime read; by default the map is written to `<out>.map.json`. Edit that Markdown, then

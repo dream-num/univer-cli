@@ -140,6 +140,7 @@ univer screenshot setup
 univer screenshot ./book.univer --unit <sheet-id> --range A1:H40 --out ./shots
 univer screenshot ./book.univer --worktree <id> --unit <slide-id> \
   --pages 1,3-5 --contact-slide --tile 3x2 --out ./shots
+univer screenshot ./book.univer --worktree <id> --unit <doc-id> --pages 9,18-19 --out ./shots
 univer print-pdf ./book.univer ./book.pdf --unit <sheet-id>
 univer print-pdf ./book.univer ./review.pdf --worktree <id> --unit <doc-id>
 univer lint --file ./book.univer --worktree <id> --unit <slide-id> --pages 1,3-5
@@ -172,12 +173,16 @@ Board 在 rendered 或 both 模式可使用 `--plan-labels`，通过 `analyses[]
 resource manifest，并将下载缓存写入 `${UNIVER_HOME}/cache/resources`。
 
 `compile-markdown` 通过共享 CLI SDK 编译器，将 CommonMark/GFM 与受支持的 Univer 指令转换为可编辑
-Modern Doc，继承 Univer SDK 默认排版。本地资源限定在源文件目录内。使用
-`--apply --source-map-out <file>` 保存实际原生对象 ID。按 ID 替换需要
+Doc，继承 Univer SDK 默认排版。新建文档默认为无页 Modern。需要物理页面时，在 frontmatter 设置
+`flavor: traditional`，可在 `page` 下设置 `paper: a4` 和 `margin: 25mm`。在顶层块之间用
+`::page-break` 让下一段在同一节从新页开始，或用
+`::section-break{start="next-page" orientation="landscape"}` 开启横向新节。
+本地资源限定在源文件目录内。使用 `--apply --source-map-out <file>` 保存实际原生对象 ID。
+Modern Doc 支持按 ID 替换，需要
 `--blocks <ids> --source-map <file>`；编译器在修改选定内容前校验原生块 ID 与边界。
 不支持的语法返回结构化诊断；新建不会覆盖已有 Unit。
 
-调整已有生成文档时，先用 `export-markdown` 从选定的当前原生块读取 Markdown，包含用户的原生编辑。
+调整已有生成的 Modern Doc 时，先用 `export-markdown` 从选定的当前原生块读取 Markdown，包含用户的原生编辑。
 读取支持 draft 和 ready Worktree，不产生内容提交。输出包含本地资源文件和刷新后的原生 ID 映射，
 revision 来自同一次 runtime 读取；映射默认写入 `<out>.map.json`。编辑该 Markdown 后，通过
 `compile-markdown --blocks ... --source-map ...` 只更新这些块，保留未选段落与对象的 ID。

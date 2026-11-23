@@ -130,7 +130,8 @@ The Skill selects these capabilities automatically. Most users do not need to ca
 | `inspect`                                          | Read Workbook, Worksheet, Range, Document, Paragraph, Presentation, or Slide data |
 | `execute`                                          | Read or edit content through trusted Univer Facade code                           |
 | `screenshot`, `print-pdf`, `lint`                  | Render content, print PDF, and diagnose Slide or Board layout issues              |
-| `compile-svg`, `compile-typst`, `compile-markdown` | Turn SVG, Typst, or Markdown sources into editable Univer content                 |
+| `compile-markdown`                                 | Create editable Modern Docs or paginated Traditional Docs from Markdown           |
+| `compile-svg`, `compile-typst`                     | Turn SVG or Typst sources into editable Univer content                            |
 | `export-markdown`                                  | Read selected current Modern Doc blocks into Markdown, assets, and a revision map |
 | `export`, `open`                                   | Export Office files or return a local Viewer URL                                  |
 | `api`, `resources`, `skills`                       | Find Facade APIs, visual resources, and operational guidance                      |

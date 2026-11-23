@@ -27,13 +27,17 @@ export function createCompileMarkdownCommand(
   content: LocalUnitContentApplication,
 ): Command {
   const command = new Command("compile-markdown")
-    .description("Compile Markdown into an editable Modern Doc")
+    .description("Create an editable Doc from Markdown or update selected Modern Doc blocks")
+    .addHelpText(
+      "after",
+      "\nNew Docs default to Modern. Set flavor: traditional in frontmatter for physical pages.\n",
+    )
     .argument("<source.md>", "Markdown source with optional Univer directives")
     .requiredOption("--unit <id>", "target Doc Unit ID")
     .option("--title <title>", "document title")
     .option("--apply <file.univer>", "create the Doc in a local Univerfile")
     .option("--worktree <id>", "writable Worktree for --apply")
-    .option("--blocks <ids>", "replace these comma-separated source block IDs")
+    .option("--blocks <ids>", "replace these comma-separated Modern Doc block IDs")
     .option("--source-map <file>", "runtime source map from the previous successful apply")
     .option("--out <program.js>", "write generated Facade code")
     .option("--diagnostics-out <file>", "write structured diagnostics")
@@ -114,6 +118,7 @@ export function createCompileMarkdownCommand(
           targetUnitId: options.unit,
           title: compiled.title,
           formatVersion: compiled.formatVersion,
+          ...(compiled.flavor === undefined ? {} : { flavor: compiled.flavor }),
           diagnostics: compiled.diagnostics,
           sourceMap,
           ...(options.out === undefined ? {} : { javascriptPath: resolve(options.out) }),
@@ -124,7 +129,7 @@ export function createCompileMarkdownCommand(
           .writeOut?.(
             options.json === true
               ? `${JSON.stringify(result, null, 2)}\n`
-              : `${applied === undefined ? "Compiled" : update ? "Updated" : "Created"} Modern Doc ${options.unit}\n`,
+              : `${applied === undefined ? "Compiled" : update ? "Updated" : "Created"} ${compiled.flavor === "traditional" ? "Traditional" : "Modern"} Doc ${options.unit}\n`,
           );
       } catch (error) {
         if (!(error instanceof Error)) throw error;

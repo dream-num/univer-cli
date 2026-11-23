@@ -53,7 +53,7 @@ export type LocalScreenshotTarget =
       readonly contactSheet?: {
         readonly tile?: { readonly columns: number; readonly rows: number };
       };
-      readonly kind: "slide-pages";
+      readonly kind: "page-selection";
       readonly pages?: readonly ScreenshotPageSelector[];
     }
   | {
@@ -369,12 +369,23 @@ function captureInput(
       if (target.kind !== "sheet-range") throw invalidTarget(source.unitType, target.kind);
       return { ...source, target };
     case "slide":
-      if (target.kind !== "slide-pages") throw invalidTarget(source.unitType, target.kind);
-      return { ...source, target };
+      if (target.kind !== "page-selection") throw invalidTarget(source.unitType, target.kind);
+      return { ...source, target: { ...target, kind: "slide-pages" } };
     case "board":
       if (target.kind !== "board-content") throw invalidTarget(source.unitType, target.kind);
       return { ...source, target };
-    case "doc":
+    case "doc": {
+      if (target.kind !== "page-selection" || target.contactSheet !== undefined)
+        throw invalidTarget(source.unitType, target.kind);
+      const { pages } = target;
+      if (pages === undefined) return source;
+      if (!pages.every((page) => typeof page === "number")) {
+        throw Object.assign(new Error("Doc --pages requires one-based page numbers or ranges"), {
+          code: "SCREENSHOT_INPUT_INVALID",
+        });
+      }
+      return { ...source, target: { kind: "doc-pages", pages } };
+    }
     case "base":
       throw invalidTarget(source.unitType, target.kind);
   }

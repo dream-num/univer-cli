@@ -28,7 +28,10 @@ export function createScreenshotCommand(application: LocalRenderApplication): Co
     .argument("<file.univer>", "local .univer file")
     .option("--worktree <id>", "read a Worktree; defaults to trunk")
     .option("--unit <unit-id>", "Unit to capture; optional only when the scope has one Unit")
-    .option("--pages <pages>", "Slide pages or page IDs, for example 1,3-5,cover or all")
+    .option(
+      "--pages <pages>",
+      "Doc or Slide page numbers, ranges, or all. Slide also accepts page IDs",
+    )
     .option("--contact-slide", "Slide overview containing all captured pages")
     .option("--tile <columns>x<rows>", "Contact slide grid, for example 4x2")
     .option("--sheet <name>", "Sheet name used with --range")
@@ -67,14 +70,14 @@ export function createScreenshotCommand(application: LocalRenderApplication): Co
 
 function screenshotTarget(options: ScreenshotOptions): LocalScreenshotTarget | undefined {
   const usesSheet = options.sheet !== undefined || options.range !== undefined;
-  const usesSlide =
+  const usesPages =
     options.pages !== undefined || options.contactSlide === true || options.tile !== undefined;
   const usesBoard =
     options.region !== undefined ||
     options.elements !== undefined ||
     options.padding !== undefined ||
     options.scale !== undefined;
-  if ([usesSheet, usesSlide, usesBoard].filter(Boolean).length > 1) {
+  if ([usesSheet, usesPages, usesBoard].filter(Boolean).length > 1) {
     throw codedError(
       "SCREENSHOT_INPUT_INVALID",
       "Sheet, Slide, and Board selector options cannot be combined",
@@ -90,14 +93,14 @@ function screenshotTarget(options: ScreenshotOptions): LocalScreenshotTarget | u
       ...(options.sheet === undefined ? {} : { sheetName: options.sheet }),
     };
   }
-  if (usesSlide) {
+  if (usesPages) {
     if (options.tile !== undefined && options.contactSlide !== true) {
       throw codedError("SCREENSHOT_INPUT_INVALID", "--tile requires --contact-slide");
     }
     const pages = parseOptionalPageSelectors(options.pages);
     const tile = parseOptionalTile(options.tile);
     return {
-      kind: "slide-pages",
+      kind: "page-selection",
       ...(pages === undefined ? {} : { pages }),
       ...(options.contactSlide === true
         ? { contactSheet: tile === undefined ? {} : { tile } }

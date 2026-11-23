@@ -123,7 +123,8 @@ Skill 会自动选择这些能力，日常使用通常不需要手动调用。
 | `inspect`                                          | 读取 Workbook、Worksheet、Range、Document、Paragraph、Presentation 或 Slide 数据 |
 | `execute`                                          | 通过可信 Univer Facade code 读取或编辑内容                                       |
 | `screenshot`、`print-pdf`、`lint`                  | 渲染内容、打印 PDF 并诊断 Slide 或 Board layout 问题                             |
-| `compile-svg`、`compile-typst`、`compile-markdown` | 将 SVG、Typst 或 Markdown source 转换为可编辑 Univer 内容                        |
+| `compile-markdown`                                 | 从 Markdown 创建可编辑的 Modern Doc 或可分页的 Traditional Doc                   |
+| `compile-svg`、`compile-typst`                     | 将 SVG 或 Typst 源码转换为可编辑 Univer 内容                                     |
 | `export-markdown`                                  | 将选定的当前 Modern Doc 块读回 Markdown、资源文件和 revision 映射                |
 | `export`、`open`                                   | 导出 Office 文件或返回本地 Viewer URL                                            |
 | `api`、`resources`、`skills`                       | 查找 Facade API、视觉资源与 operational guidance                                 |
