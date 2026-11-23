@@ -17,9 +17,10 @@
     "typecheck": "tsc -p tsconfig.test.json --noEmit --pretty false"
   },
   "dependencies": {
-    "@univerjs-pro/embed": "1.5.2",
-    "@univerjs/core": "1.5.2",
-    "@univerjs/engine-formula": "1.5.2",
-    "@univerjs/sheets-formula": "1.5.2"
+    "@univerjs-pro/embed": "1.6.1",
+    "@univerjs-pro/resources": "1.6.1",
+    "@univerjs/core": "1.6.1",
+    "@univerjs/engine-formula": "1.6.1",
+    "@univerjs/sheets-formula": "1.6.1"
   }
 }

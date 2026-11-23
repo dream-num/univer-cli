@@ -1,5 +1,6 @@
 import type { BaseDataModel, IBaseSnapshot } from "@univerjs/core";
-import type { IReferencedUnitManagerService, ResourceRefInput } from "@univerjs-pro/embed";
+import type { IReferencedUnitManagerService } from "@univerjs-pro/embed";
+import type { ResourceRefInput } from "@univerjs-pro/resources";
 import {
   BASE_RECORD_ID_FIELD_ID,
   BaseFieldType,

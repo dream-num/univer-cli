@@ -1,5 +1,5 @@
 import type { ICellData, ICommandInfo, Workbook } from "@univerjs/core";
-import type { ResourceRefInput } from "@univerjs-pro/embed";
+import type { ResourceRefInput } from "@univerjs-pro/resources";
 import type { ISetFormulaCalculationResultMutation } from "@univerjs/engine-formula";
 import { UniverInstanceType } from "@univerjs/core";
 import { SetRangeValuesMutation, InsertRowMutation } from "@univerjs/sheets";

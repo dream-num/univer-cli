@@ -6,8 +6,7 @@ import type {
 } from "@univerjs/core";
 import type {
   IEmbedResourceRefDataProviderRegistration,
-  IReferencedUnitManagerService,
-  IResourceRef
+  IReferencedUnitManagerService
 } from "@univerjs-pro/embed";
 import type { ISetFormulaCalculationResultMutation } from "@univerjs/engine-formula";
 import type {
@@ -25,10 +24,8 @@ import {
   Rectangle,
   UniverInstanceType
 } from "@univerjs/core";
-import {
-  isResourceRefRangePart,
-  ReferencedUnitDataType
-} from "@univerjs-pro/embed";
+import { ReferencedUnitDataType } from "@univerjs-pro/embed";
+import { type IResourceRef, isResourceRefRangePart } from "@univerjs-pro/resources";
 import { deserializeRangeWithSheet } from "@univerjs/engine-formula";
 import {
   InsertColMutation,
