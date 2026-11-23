@@ -22,10 +22,10 @@
     "typecheck": "tsc -p tsconfig.test.json --noEmit --pretty false"
   },
   "dependencies": {
-    "@univerjs-pro/boards": "1.5.2",
-    "@univerjs-pro/collaboration": "1.5.2",
-    "@univerjs-pro/edit-history": "1.5.2",
-    "@univerjs/core": "1.5.2",
-    "@univerjs/protocol": "1.5.2"
+    "@univerjs-pro/boards": "1.6.1",
+    "@univerjs-pro/collaboration": "1.6.1",
+    "@univerjs-pro/edit-history": "1.6.1",
+    "@univerjs/core": "1.6.1",
+    "@univerjs/protocol": "1.6.1"
   }
 }

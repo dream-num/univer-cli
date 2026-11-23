@@ -1,5 +1,13 @@
 import { spawnSync } from "node:child_process";
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -33,9 +41,10 @@ interface ISdkFixture {
 }
 
 function withSdkFixture(action: (fixture: ISdkFixture) => void): void {
-  const directory = mkdtempSync(join(tmpdir(), "univer-board-dev-sdk-"));
+  const tempRoot = realpathSync(tmpdir());
+  const directory = mkdtempSync(join(tempRoot, "univer-board-dev-sdk-"));
   if (
-    !resolve(directory).startsWith(resolve(tmpdir()) + sep) ||
+    !resolve(directory).startsWith(tempRoot + sep) ||
     !basename(directory).startsWith("univer-board-dev-sdk-")
   )
     throw new Error("SDK fixture cleanup escaped its temporary root");

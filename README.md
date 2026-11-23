@@ -202,15 +202,16 @@ Validation follows transitive SDK dependencies and checks that installed runtime
 
 ### SDK upgrades
 
-Every `@univerjs`, `@univerjs-pro`, and `@univer-cli` dependency shares one exact version baseline.
-Upgrade it with:
+To update the SDK manifests and lockfile, install the resolved packages, and verify the workspace, run:
 
 ```bash
 pnpm update:univer-sdk --sdk_version <exact-sdk-version>
+pnpm install --frozen-lockfile
+pnpm check
 ```
 
-The updater rewrites every matching declaration to the target version and strips any workspace
-overrides for those scopes. `@univerjs/icons`, `@univerjs-pro/cli-assets`, and
+The updater aligns dependencies in the `@univerjs`, `@univerjs-pro`, and `@univer-cli` scopes
+to the exact target version and removes workspace overrides for those scopes. `@univerjs/icons`, `@univerjs-pro/cli-assets`, and
 `@univerjs-pro/doc-typst-native-binding` keep their own version rules. Native bindings are never
 declared directly; they install transitively through their wrappers. Commit every affected manifest
 together with `pnpm-lock.yaml`; partial manual SDK updates are not allowed.

@@ -193,13 +193,15 @@ Daemon 启动时初始化本地 Gateway；content worker 或文档创建请求�
 
 ### SDK 升级
 
-`@univerjs`、`@univerjs-pro`、`@univer-cli` 的全部依赖使用同一个精确版本基线。使用以下命令升级：
+依次运行以下命令，更新 SDK 依赖清单和锁文件、安装锁定版本，并验证整个 workspace。
 
 ```bash
 pnpm update:univer-sdk --sdk_version <exact-sdk-version>
+pnpm install --frozen-lockfile
+pnpm check
 ```
 
-升级器把所有匹配的依赖声明改写为目标版本，并移除这些 scope 的 workspace overrides。
+升级器将 `@univerjs`、`@univerjs-pro` 和 `@univer-cli` 下的依赖统一到指定的精确版本，并移除这些 scope 的 workspace overrides。
 `@univerjs/icons`、`@univerjs-pro/cli-assets`、`@univerjs-pro/doc-typst-native-binding`
 遵循各自版本规则保持不变。native binding 不直接声明，始终通过其 wrapper 传递安装。
 必须同时提交所有受影响的 manifest 与 `pnpm-lock.yaml`，不得手工只更新部分 SDK dependency。

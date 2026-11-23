@@ -107,6 +107,8 @@ The comparison UI uses the same changes for its compact navigation. Coverage and
 
 The headless collaboration runtime has one writable Host Unit. When Embed encounters a `self` ResourceRef, the application's local provider materializes the child Unit on demand from the Snapshot endpoint scoped to the current file and Worktree, forwarding Embed's child creation options. The child is a read-only dependency in the same Univer instance. The Host owns the changeset state machine, and the runtime loads only the Units it needs.
 
+The Viewer and its `IMPORTRANGE` formula use the Univer SDK package `@univerjs-pro/resources` to parse ResourceRefs and identify range and table selectors. The rendering preset uses the same package's `IAttachmentIoService` token to configure Base attachment I/O.
+
 ## Source ownership
 
 `apps/cli/src/program.ts` is the composition root. Features are organized by user capability: `univerfile`, `exchange`, `optimize`, `worktree`, `unit`, `unit-content`, `render`, `lint`, `svg`, `typst`, `markdown`, `doctor`, `skills`, and `update`. Each feature keeps its command, application service, handlers, and private protocol together. Command handlers delegate business logic.

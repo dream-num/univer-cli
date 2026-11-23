@@ -129,6 +129,8 @@ Local provider 通过当前 `.univer` 与 Worktree 已限定的 Snapshot endpoin
 child create options；child 只作为同一 Univer instance 中的只读依赖，不进入 Host 的 changeset 状态机，也不触发
 Worktree 全量 Unit 预加载。
 
+Viewer 及其 `IMPORTRANGE` 公式通过 Univer SDK 的 `@univerjs-pro/resources` 解析 ResourceRef 并识别区域和表选择器。渲染预设使用同一包导出的 `IAttachmentIoService` 配置 Base 附件读写。
+
 ## 源码职责
 
 `apps/cli/src/program.ts` 是 composition root。源码按用户能力划分为 `univerfile`、`exchange`、`optimize`、
