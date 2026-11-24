@@ -101,7 +101,11 @@ function screenshotTarget(options: ScreenshotOptions): LocalScreenshotTarget | u
     const tile = parseOptionalTile(options.tile);
     return {
       kind: "page-selection",
-      ...(pages === undefined ? {} : { pages }),
+      ...(options.pages?.trim() === "all"
+        ? { allPages: true }
+        : pages === undefined
+          ? {}
+          : { pages }),
       ...(options.contactSlide === true
         ? { contactSheet: tile === undefined ? {} : { tile } }
         : {}),

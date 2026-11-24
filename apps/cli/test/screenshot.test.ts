@@ -150,6 +150,23 @@ describe("Local screenshot command", () => {
     });
   });
 
+  it("preserves the explicit all-pages selection", async () => {
+    const captures: unknown[] = [];
+    const application = fakeRender({
+      async capture(input) {
+        captures.push(input.target);
+        return { ok: true, unitId: "doc-1", unitKind: "doc", outputs: [] };
+      },
+    });
+
+    const result = await invoke(
+      ["screenshot", "book.univer", "--pages", "all", "--json"],
+      application,
+    );
+    expect(result.exitCode).toBe(0);
+    expect(captures).toEqual([{ kind: "page-selection", allPages: true }]);
+  });
+
   it("rejects selector families before opening the render runtime", async () => {
     const result = await invoke(
       ["screenshot", "book.univer", "--range", "A1", "--pages", "1", "--json"],
