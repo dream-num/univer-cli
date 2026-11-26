@@ -1,6 +1,6 @@
 ---
 name: doc
-description: "Generate and locally update Modern Docs from Markdown; read, edit, paginate, chart, and visually verify native Doc units with the Lite Interface."
+description: "Generate Modern and Traditional Docs from Markdown, update Modern blocks, and verify native Doc content and page layout."
 ---
 
 # Doc units
@@ -9,7 +9,13 @@ description: "Generate and locally update Modern Docs from Markdown; read, edit,
 
 Use `doc.getParagraphs()` and `doc.getParagraph(paragraphId)` to select paragraphs. Use `univer api find <query...>` to discover API symbols, then use `univer api show <symbol>` for exact signatures, enum values, documentation, and examples.
 
-## Generate Modern Docs from Markdown
+## Generate Docs from Markdown
+
+Use `compile-markdown` for new Docs. Choose `flavor: traditional` in frontmatter when the request
+needs physical pages, page margins, or a landscape section. Use `::page-break` before a heading
+or paragraph that starts a new page in the same section. Use
+`::section-break{start="next-page" orientation="landscape"}` to start a landscape section.
+Let the renderer paginate naturally within each section. Check screenshots and DOCX export when requested.
 
 For a new Modern Doc, author Markdown and use `compile-markdown`; keep the source and local assets.
 The shared AI SDK compiler creates editable native paragraphs, rich text, blocks, tables, and drawings.
@@ -27,7 +33,8 @@ supported syntax, assets, commands, and the selected-block update workflow. Load
 successful apply. For local edits, export the selected **current native** blocks first, then update
 with that read's refreshed map. The returned revision is read metadata. Preserve identities inside the
 exported fragment and content outside it. If native content cannot be represented without loss, report the diagnostics;
-do not regenerate the whole Doc over user edits. Use Typst or DOCX import for Traditional physical pages.
+do not regenerate the whole Doc over user edits. Edit existing Traditional Docs through the native
+Doc editor or Facade. Existing Typst bundles can be compiled with `compile-typst`.
 
 ## Model essentials
 
@@ -99,8 +106,8 @@ also verify DOCX export when it is part of the request.
 Check `doc.getDocumentFlavor()` or the positive `doc.isTraditional()` guard before page-specific
 work. A new empty Doc created by `createDocument` / `unit add --type doc` is Modern by default.
 Modern Docs are pageless: traditional section and page-setup APIs reject them, so do not simulate
-physical pages with large spacers. When the output requires Word-compatible pages, start from a
-Traditional Doc such as a DOCX import or the Traditional output of `compile-typst`.
+physical pages with large spacers. For Word-compatible pages, create a Traditional Doc with
+`compile-markdown` or import an existing DOCX.
 
 In a Traditional Doc, create a hard page boundary before a top-level paragraph with one atomic
 section command:

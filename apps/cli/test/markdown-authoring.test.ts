@@ -57,52 +57,60 @@ describe("Markdown authoring", () => {
     expect(await readFile(out, "utf8")).toContain("createDocument");
   });
 
-  it("returns actual runtime identities when creating a document", async () => {
-    const source = await sourceFile("# Report");
-    const sourceMap = [
-      {
-        id: "intro",
-        kind: "paragraph",
-        paragraphIds: ["native-1"],
-        objectIds: [],
-        source: { line: 1, column: 1, offset: 0, endOffset: 8 },
-      },
-    ];
-    const mapPath = join(source, "..", "map.json");
-    const typstApplication: LocalTypstApplication = {
-      async createDocumentFromProgram(input) {
-        return {
-          filePath: input.path,
-          worktreeId: input.worktreeId,
-          unitId: input.unitId,
-          name: input.name,
-          type: 2,
-          kind: "doc",
-          headRev: 1,
-          value: { sourceMap },
-        };
-      },
-    };
-    const created = await invoke(
-      [
-        "compile-markdown",
-        source,
-        "--unit",
-        "report",
-        "--apply",
-        "report.univer",
-        "--worktree",
-        "draft",
-        "--source-map-out",
-        mapPath,
-        "--json",
-      ],
-      { typstApplication },
-    );
-    expect(created.result).toBe(0);
-    expect(JSON.parse(created.stdout).sourceMap).toEqual(sourceMap);
-    expect(JSON.parse(await readFile(mapPath, "utf8"))).toEqual({ unitId: "report", sourceMap });
-  });
+  it.each([undefined, "traditional"] as const)(
+    "returns actual runtime identities when creating a Doc with flavor %s",
+    async (flavor) => {
+      const source = await sourceFile(
+        flavor ? "---\nflavor: traditional\n---\n\n# Report" : "# Report",
+      );
+      const sourceMap = [
+        {
+          id: "intro",
+          kind: "paragraph",
+          paragraphIds: ["native-1"],
+          objectIds: [],
+          source: { line: 1, column: 1, offset: 0, endOffset: 8 },
+        },
+      ];
+      const mapPath = join(source, "..", "map.json");
+      const typstApplication: LocalTypstApplication = {
+        async createDocumentFromProgram(input) {
+          if (flavor) expect(input.code).toContain("DocumentFlavor.TRADITIONAL");
+          return {
+            filePath: input.path,
+            worktreeId: input.worktreeId,
+            unitId: input.unitId,
+            name: input.name,
+            type: 2,
+            kind: "doc",
+            headRev: 1,
+            value: { sourceMap },
+          };
+        },
+      };
+      const created = await invoke(
+        [
+          "compile-markdown",
+          source,
+          "--unit",
+          "report",
+          "--apply",
+          "report.univer",
+          "--worktree",
+          "draft",
+          "--source-map-out",
+          mapPath,
+          "--json",
+        ],
+        { typstApplication },
+      );
+      expect(created.result).toBe(0);
+      const output = JSON.parse(created.stdout);
+      expect(output.flavor).toBe(flavor);
+      expect(output.sourceMap).toEqual(sourceMap);
+      expect(JSON.parse(await readFile(mapPath, "utf8"))).toEqual({ unitId: "report", sourceMap });
+    },
+  );
 
   it("updates selected blocks using their current native identity map", async () => {
     const source = await sourceFile(":::block{#intro}\nChanged **summary**.\n:::");

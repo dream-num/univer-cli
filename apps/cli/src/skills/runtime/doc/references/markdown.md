@@ -1,9 +1,19 @@
-# Modern Docs from Markdown
+# Docs from Markdown
 
-Use this path for editable, pageless Modern Docs. `compile-markdown` uses the AI SDK's
+New Docs default to pageless Modern. `compile-markdown` uses the AI SDK's
 `@univer-cli/doc-markdown-facade` compiler. It inherits SDK body typography and native block styling.
 Generate the completed Markdown once; visual verification is read-only. Correct the source or a
 conversion defect when the generated result is wrong, rather than applying cosmetic Facade patches.
+
+## Traditional pages
+
+Set `flavor: traditional` in YAML frontmatter when page geometry or physical breaks matter.
+The optional `page` mapping accepts `paper: a4` and a four-edge margin such as `margin: 25mm`.
+Between top-level blocks, use `::page-break` before a heading or paragraph to start a page in
+the current section, or `::section-break{start="next-page" orientation="landscape"}` to start
+a landscape section. Use `orientation="portrait"` to return to portrait. Keep a blank line
+before and after each break. Check each resulting page with `univer screenshot`.
+`columns` and selected-block reads and updates are available for Modern Docs.
 
 ## Source and native structure
 
