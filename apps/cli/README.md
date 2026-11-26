@@ -89,8 +89,6 @@ univer worktree merge ./book.univer --worktree <worktree-id>
 
 Unit mutations and `execute` are allowed only in a draft worktree. A ready worktree must be reopened before further writes. `execute` uses the CLI SDK content-execution prelude, pulls before execution, captures mutations, commits automatically, and reports the Collaboration revision. Use `-e` for one-line code and `--script` for multiline code. Explicitly `return` readback values; bare expressions and `console.log` do not populate `value`. Read-only code does not create a revision.
 
-In Sheet `execute` scripts, `range.getValue()` and `range.getValues()` return unformatted values, including formula results. For a cell displaying `25%`, `getValue()` returns the number `0.25` and `getDisplayValue()` returns the string `"25%"`.
-
 `status` and `unit list` read trunk by default and also accept an explicit `--trunk`; use `--worktree <id>` to read a Worktree.
 
 `inspect` supports Sheet workbook/worksheet/range, Doc document/paragraph, Slide
