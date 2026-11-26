@@ -990,7 +990,13 @@ describe("built univer executable", () => {
               "--unit",
               added.unitId,
               "-e",
-              'const sheet = workbook.getActiveSheet(); sheet.getRange("A1").setValue("phase-2"); const calculated = api.getFormula().onCalculationResultApplied(); sheet.getRange("B1").setFormula("=1+1"); await calculated; return sheet.getRange("B1").getCellDatas()[0][0].v;',
+              `const sheet = workbook.getActiveSheet();
+               sheet.getRange("A1").setValue("phase-2");
+               const cell = sheet.getRange("B1").setNumberFormat("0%");
+               const calculated = api.getFormula().onCalculationResultApplied();
+               cell.setFormula("=1/4");
+               await calculated;
+               return cell.getCellDatas()[0][0].v;`,
               "--json",
             ],
             env,
@@ -1001,7 +1007,7 @@ describe("built univer executable", () => {
         committed: true,
         revision: 2,
         unitId: added.unitId,
-        value: 2,
+        value: 0.25,
         worktreeId: worktree.worktreeId,
       });
       const readOnlyExecution = parseJson(
@@ -1015,14 +1021,19 @@ describe("built univer executable", () => {
               "--unit",
               added.unitId,
               "-e",
-              'return workbook.getActiveSheet().getRange("A1").getValue();',
+              `const sheet = workbook.getActiveSheet();
+               const cell = sheet.getRange("B1");
+               return [cell.getValue(), sheet.getRange("A1:B1").getValues(), cell.getDisplayValue()];`,
               "--json",
             ],
             env,
           )
         ).stdout,
       ) as Record<string, unknown>;
-      expect(readOnlyExecution).toMatchObject({ committed: false, value: "phase-2" });
+      expect(readOnlyExecution).toMatchObject({
+        committed: false,
+        value: [0.25, [["phase-2", 0.25]], "25%"],
+      });
       expect(readOnlyExecution).not.toHaveProperty("revision");
 
       const worktreeInspection = parseJson(
