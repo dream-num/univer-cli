@@ -1,6 +1,7 @@
 import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { startServer } from "@univer/collab-gateway";
 import { ExchangeFormat, configureExchange } from "@univerjs-pro/exchange-node";
 import {
   BaseFieldType,
@@ -17,6 +18,7 @@ import {
   importOfficeFile,
 } from "../src/features/exchange/exchange-node.js";
 import { UNIVER_LICENSE, UNIVER_LICENSE_KEY } from "../src/license.js";
+import { freePort, invoke } from "./built-cli.js";
 
 describe("Exchange Node application adapter", () => {
   // The daemon configures Exchange once per process; exports here run in the test process.
@@ -69,6 +71,53 @@ describe("Exchange Node application adapter", () => {
       await rm(directory, { force: true, recursive: true });
     }
   });
+
+  it("exports stored Base formula results from Trunk and a Worktree", async () => {
+    const root = await mkdtemp(join(tmpdir(), "exchange-base-cache-"));
+    const path = join(root, "tasks.univer");
+    const env = {
+      ...process.env,
+      UNIVER_HOME: join(root, "home"),
+      UNIVER_COLLAB_GATEWAY_PORT: String(await freePort()),
+    };
+    try {
+      const server = await startServer({ port: 0, allowedRoot: root });
+      let worktreeId: string;
+      try {
+        const { collab } = server.manager.createUniverfile(path);
+        const type = UniverInstanceType.UNIVER_BASE;
+        await collab.createUnit(type, { unitId: "trunk-base", data: baseData(3) });
+        worktreeId = (await collab.createWorktree()).worktreeId;
+        await collab.createWorktreeUnit(worktreeId, type, "Draft", "draft-base", baseData(5));
+      } finally {
+        await server.close();
+      }
+      for (const [unit, scope, expected] of [
+        ["trunk-base", [], [6, 8]],
+        ["draft-base", ["--worktree", worktreeId], [10, 12]],
+      ] as const) {
+        const output = join(root, unit + ".xlsx");
+        await invoke(["export", path, output, "--unit", unit, ...scope], env);
+        const result = (await importOfficeFile({
+          sourcePath: output,
+          unitType: UniverInstanceType.UNIVER_SHEET,
+          formulaCalculationMode: "no",
+        })) as IWorkbookData;
+        const cells = result.sheets[result.sheetOrder[0]!]!.cellData!;
+        for (const [index, value] of expected.entries()) {
+          const cell = cells[index + 1]?.[3];
+          expect(cell).toMatchObject({
+            f: expect.stringContaining("Score"),
+            t: CellValueType.NUMBER,
+          });
+          expect(Number(cell?.v)).toBe(value);
+        }
+      }
+    } finally {
+      await invoke(["daemon", "stop", "--json"], env).catch(() => undefined);
+      await rm(root, { recursive: true, force: true });
+    }
+  }, 120_000);
 
   it("requires a matching selector for delimited export", async () => {
     const directory = await mkdtemp(join(tmpdir(), "exchange-node-csv-"));
@@ -143,7 +192,9 @@ function documentData(): object {
   };
 }
 
-function baseData(): object {
+function baseData(firstScore = 1): object {
+  const ids = ["record-1", "record-2"];
+  const scores = [firstScore, firstScore + 1];
   return {
     createdAt: 0,
     id: "base-1",
@@ -153,15 +204,20 @@ function baseData(): object {
     tableOrder: ["table-1"],
     tables: {
       "table-1": {
-        cellData: {
-          0: {
-            0: { t: CellValueType.STRING, v: "record-1" },
-            1: { t: CellValueType.STRING, v: "Task" },
-          },
-        },
-        colId: { 0: "__record_id", 1: "title" },
-        colIndex: { __record_id: 0, title: 1 },
-        fieldOrder: ["__record_id", "title"],
+        cellData: Object.fromEntries(
+          ids.map((id, index) => [
+            index,
+            {
+              0: { t: CellValueType.STRING, v: id },
+              1: { t: CellValueType.STRING, v: "Task" },
+              2: { t: CellValueType.NUMBER, v: scores[index]! },
+              3: { t: CellValueType.NUMBER, v: scores[index]! * 2 },
+            },
+          ]),
+        ),
+        colId: { 0: "__record_id", 1: "title", 2: "score", 3: "double" },
+        colIndex: { __record_id: 0, title: 1, score: 2, double: 3 },
+        fieldOrder: ["__record_id", "title", "score", "double"],
         fields: {
           __record_id: {
             config: {},
@@ -177,22 +233,37 @@ function baseData(): object {
             name: "Title",
             type: BaseFieldType.Text,
           },
+          score: { id: "score", name: "Score", type: BaseFieldType.Number, config: {} },
+          double: {
+            id: "double",
+            name: "Double",
+            type: BaseFieldType.Formula,
+            config: { formula: "=table[Score]*2" },
+          },
         },
         id: "table-1",
         name: "Tasks",
         primaryFieldId: "title",
-        recordOrder: ["record-1"],
-        records: {
-          "record-1": {
-            createdAt: 1,
-            id: "record-1",
-            orderKey: "a0",
-            updatedAt: 1,
-            values: { __record_id: "record-1", title: "Task" },
-          },
-        },
-        rowId: { 0: "record-1" },
-        rowIndex: { "record-1": 0 },
+        recordOrder: ids,
+        records: Object.fromEntries(
+          ids.map((id, index) => [
+            id,
+            {
+              createdAt: 1,
+              id,
+              orderKey: "a" + index,
+              updatedAt: 1,
+              values: {
+                __record_id: id,
+                title: "Task",
+                score: scores[index]!,
+                double: scores[index]! * 2,
+              },
+            },
+          ]),
+        ),
+        rowId: { 0: ids[0], 1: ids[1] },
+        rowIndex: { "record-1": 0, "record-2": 1 },
         viewOrder: ["grid"],
         views: {
           grid: {

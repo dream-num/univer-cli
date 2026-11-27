@@ -166,15 +166,23 @@ export class CollabService {
     return this.runtime.trunkAdapter.listUnits();
   }
 
-  public async materializeUnit(unitId: string, type: UniverType): Promise<ISnapshotWithBlocks> {
-    const unit = this.listUnits().find((candidate) => candidate.unitId === unitId);
+  public async materializeUnit(
+    unitId: string,
+    type: UniverType,
+    worktreeId?: string,
+  ): Promise<ISnapshotWithBlocks> {
+    const units = worktreeId === undefined ? this.listUnits() : this.worktreeUnits(worktreeId);
+    const unit = units.find((candidate) => candidate.unitId === unitId);
     if (unit === undefined || unit.type !== type) {
       throw new Error(`Unit ${unitId} was not found with type ${String(type)}`);
     }
-    const loadData = await this.runtime.trunkService.getUnitLoadDataWithBlocks(
-      { unitID: unitId, type, revision: 0 },
-      callOptions("local", { source: "gateway-exchange" }),
-    );
+    const loadData =
+      worktreeId === undefined
+        ? await this.runtime.trunkService.getUnitLoadDataWithBlocks(
+            { unitID: unitId, type, revision: unit.headRev },
+            callOptions("local", { source: "gateway-exchange" }),
+          )
+        : await this._getWorktreeLoadDataWithBlocks(worktreeId, unitId, type, unit.headRev);
     const materializer = new UnitSnapshotMaterializer(GATEWAY_UNIT_RUNTIME);
     try {
       return await materializer.materializeSnapshot(loadData);

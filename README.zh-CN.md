@@ -73,6 +73,8 @@ https://discord.gg/nThHPupraR
 
 所有内容类型都支持隔离草稿、审阅、继续修改、合并和放弃。Board 暂不支持文件导入与导出。
 
+将 Base 导出为 XLSX 时，会保留所选主线或工作树版本中的公式及其已保存的结果。
+
 ## 工作方式
 
 1. Discovery Skill 检查 Univer CLI 是否已安装、已更新且运行正常。

@@ -224,7 +224,7 @@ describe("events heartbeat", () => {
       expect(uf.events.hasConnections()).toBe(false);
     } finally {
       await new Promise<void>((resolve) => httpServer.close(() => resolve()));
-      manager.dispose();
+      await manager.dispose();
       rmSync(dir, { recursive: true, force: true });
     }
   });

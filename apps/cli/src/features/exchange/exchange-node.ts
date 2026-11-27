@@ -5,10 +5,12 @@ import {
   ExchangeErrorCode,
   ExchangeFormat,
   FormulaCalculationMode as NodeFormulaCalculationMode,
+  exportSnapshotToFile,
   exportToFile,
   importFile,
   type ExportOptions,
   type ImportOptions,
+  type ISnapshotWithBlocks,
 } from "@univerjs-pro/exchange-node";
 import { UniverInstanceType } from "@univerjs/core";
 import { extname } from "node:path";
@@ -51,16 +53,24 @@ export async function importOfficeFile(input: {
   return await withExchangeError(() => importUnitData(input.sourcePath, options));
 }
 
-export async function exportOfficeFile(input: {
-  readonly data: CollaborationUnitData;
-  readonly scope?: OfficeExportScope;
-  readonly format: ExchangeFormat;
-  readonly formulaCalculationMode?: FormulaCalculationMode;
-  readonly outputPath: string;
-  readonly sheetName?: string;
-  readonly tableName?: string;
-  readonly unitType: ExchangeUnitType;
-}): Promise<void> {
+export async function exportOfficeFile(
+  input: (
+    | {
+        readonly data: CollaborationUnitData;
+      }
+    | {
+        readonly snapshot: ISnapshotWithBlocks;
+      }
+  ) & {
+    readonly scope?: OfficeExportScope;
+    readonly format: ExchangeFormat;
+    readonly formulaCalculationMode?: FormulaCalculationMode;
+    readonly outputPath: string;
+    readonly sheetName?: string;
+    readonly tableName?: string;
+    readonly unitType: ExchangeUnitType;
+  },
+): Promise<void> {
   const options = {
     type: input.unitType,
     format: input.format,
@@ -72,7 +82,11 @@ export async function exportOfficeFile(input: {
     ...csvExportOptions(input),
   } as ExportOptions;
   const scopedOptions = input.scope ? withOfficeExportFiles(options, input.scope) : options;
-  await withExchangeError(() => exportUnitData(input.data, input.outputPath, scopedOptions));
+  await withExchangeError(() =>
+    "snapshot" in input
+      ? exportSnapshotToFile(input.snapshot, input.outputPath, scopedOptions)
+      : exportUnitData(input.data, input.outputPath, scopedOptions),
+  );
 }
 
 export function exchangeImportFormatOverride(extension: string): ExchangeFormat | undefined {

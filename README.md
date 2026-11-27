@@ -73,6 +73,8 @@ with the Slide chart reading data from the Sheet.
 
 Every content type supports isolated draft editing, review, revision, merge, and discard. Board file import and export are not currently supported.
 
+Base XLSX exports preserve formulas and their saved results from the selected Trunk or Worktree.
+
 ## How it works
 
 1. The discovery Skill checks that Univer CLI is installed, current, and ready.

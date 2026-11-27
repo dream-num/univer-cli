@@ -89,6 +89,8 @@ The daemon manages local services and runtime lifecycles. For rendering, it mate
 
 Each open `.univer` file has its own Gateway runtime for the Viewer Ribbon's `source=1` exchange uploads, asynchronous import and export tasks, and temporary artifacts. Imports create a Unit in Trunk, and exports materialize the Trunk head. Exchange is available only on Trunk routes. Embedded resources have a separate `source=3` file protocol with access scoped to a Unit and Worktree.
 
+For Base XLSX exports, the CLI materializes the selected Trunk or Worktree head through the Collaboration SDK. Exchange reads the formulas and their saved results from that revision.
+
 CLI and Gateway Unit exports both use Exchange's `files.load` to resolve embedded images. The CLI reads from the selected Trunk or Worktree, and the Gateway reads from Trunk. PPTX, DOCX, and XLSX exports preserve the original embedded image bytes and use transparent placeholders for URL images. A Gateway export from an uploaded JSON snapshot has no access to local assets.
 
 The Gateway uses the Collaboration SDK's in-process execution for Trunk, Worktrees, and snapshot materialization. Open files share the application daemon's process rather than starting a worker pool per file. CLI Facade execution runs in a separate runtime worker.

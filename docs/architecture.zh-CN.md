@@ -93,6 +93,8 @@ daemon 只管理本地服务和 runtime lifecycle。它为 render operation 物�
 
 Gateway 按 `.univer` runtime 隔离 Viewer Ribbon 使用的 `source=1` exchange 上传、异步 import/export task 与临时 artifact；导入在当前 trunk 创建新 Unit，导出物化 trunk head。Worktree 路径不暴露 exchange。嵌入资源继续使用按 Unit/worktree 授权的 `source=3` 文件协议，不能与 exchange artifact 混用。
 
+CLI 将 Base 导出为 XLSX 时，通过 Collaboration SDK 物化所选 trunk 或 worktree 的最新版本。Exchange 从该版本读取公式及其已保存的结果。
+
 CLI 与 Gateway 的 Unit 导出共用 Exchange 的 `files.load`。CLI 按选定的 trunk 或 worktree 读取当前 Unit 的嵌入图片，Gateway 按 trunk 读取。PPTX、DOCX 和 XLSX 均保留原始图片字节，URL 图片使用透明占位图。Gateway 导出上传的 JSON 快照时不提供本地资源读取能力。
 
 Gateway 的 Trunk、Worktree 与 snapshot materialization 显式使用 Collaboration SDK 的 in-process execution，复用 application daemon 的进程边界，避免每个文件嵌套创建 runtime worker pool。CLI Facade 执行仍由独立 runtime worker 承担。
